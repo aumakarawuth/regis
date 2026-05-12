@@ -7,16 +7,133 @@
   <title>สมัครเรียน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/steps.css">
+  <style>
+    /* ---- base.css inlined ---- */
+    :root {
+      --clr-primary:#00B900; --clr-primary-dark:#009900; --clr-primary-light:#E8F9E8;
+      --clr-accent:#FF6B35; --clr-accent-dark:#E85A24;
+      --clr-bg:#F5F7FA; --clr-surface:#FFFFFF; --clr-border:#DDE1E9;
+      --clr-text:#1A1D23; --clr-text-muted:#6B7280; --clr-text-light:#9CA3AF;
+      --clr-success:#10B981; --clr-warning:#F59E0B; --clr-danger:#EF4444; --clr-info:#3B82F6;
+      --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+      --r-sm:6px;--r-md:10px;--r-lg:16px;--r-full:9999px;
+      --shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.10);
+      --font-sans:'Sarabun','Noto Sans Thai',sans-serif;
+      --transition:0.2s ease;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--clr-bg);color:var(--clr-text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+    input,select,textarea,button{font-family:inherit;font-size:inherit}
+    a{color:inherit;text-decoration:none}
+    .hidden{display:none!important}
+    .text-muted{color:var(--clr-text-muted)}
+    .text-sm{font-size:0.875rem}
+    .text-xs{font-size:0.75rem}
+    .fw-600{font-weight:600}
+    .mt-4{margin-top:var(--sp-4)}
+    #app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--clr-surface);position:relative}
+    #toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:90vw}
+    .toast{padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);font-size:0.875rem;font-weight:500;color:#fff;box-shadow:var(--shadow-md);animation:toast-in 0.3s ease forwards}
+    .toast.success{background:var(--clr-success)}.toast.error{background:var(--clr-danger)}.toast.warning{background:var(--clr-warning)}.toast.info{background:var(--clr-info)}
+    @keyframes toast-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000}
+    .spinner{width:40px;height:40px;border:3px solid var(--clr-border);border-top-color:var(--clr-primary);border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #loading-overlay p{margin-top:var(--sp-3);color:var(--clr-text-muted);font-size:0.875rem}
+
+    /* ---- components ---- */
+    .app-header{background:var(--clr-primary);color:#fff;padding:var(--sp-4);display:flex;align-items:center;gap:var(--sp-3);position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md)}
+    .app-header h1{font-size:1rem;font-weight:700;flex:1}
+    .user-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);padding:var(--sp-3) var(--sp-5);border-radius:var(--r-md);border:none;font-size:0.9375rem;font-weight:600;cursor:pointer;transition:all var(--transition);text-align:center;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+    .btn-primary{background:var(--clr-primary);color:#fff}
+    .btn-accent{background:var(--clr-accent);color:#fff}
+    .btn-outline{background:transparent;color:var(--clr-primary);border:1.5px solid var(--clr-primary)}
+    .btn-ghost{background:transparent;color:var(--clr-text-muted)}
+    .btn-danger{background:var(--clr-danger);color:#fff}
+    .btn-sm{padding:var(--sp-2) var(--sp-3);font-size:0.8125rem}
+    .btn-full{width:100%}
+    .form-group{display:flex;flex-direction:column;gap:var(--sp-1)}
+    .form-label{font-size:0.875rem;font-weight:600;color:var(--clr-text)}
+    .required{color:var(--clr-danger);margin-left:2px}
+    .form-control{width:100%;padding:var(--sp-3) var(--sp-4);border:1.5px solid var(--clr-border);border-radius:var(--r-md);background:var(--clr-surface);color:var(--clr-text);font-size:1rem;transition:border-color var(--transition);-webkit-appearance:none;appearance:none}
+    .form-control:focus{outline:none;border-color:var(--clr-primary);box-shadow:0 0 0 3px rgba(0,185,0,0.12)}
+    select.form-control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+    .card{background:var(--clr-surface);border-radius:var(--r-lg);padding:var(--sp-5);box-shadow:var(--shadow-sm);border:1px solid var(--clr-border)}
+    .divider{border:none;border-top:1px solid var(--clr-border);margin:var(--sp-4) 0}
+    .section-title{font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--clr-text-muted);margin-bottom:var(--sp-3)}
+    .parent-item{background:var(--clr-bg);border:1.5px solid var(--clr-border);border-radius:var(--r-md);padding:var(--sp-4);position:relative}
+    .parent-item .remove-btn{position:absolute;top:var(--sp-3);right:var(--sp-3)}
+    .doc-upload-card{border:2px dashed var(--clr-border);border-radius:var(--r-md);padding:var(--sp-5);text-align:center;transition:all var(--transition);cursor:pointer;background:var(--clr-bg)}
+    .doc-upload-card.has-file{border-style:solid;border-color:var(--clr-primary);background:var(--clr-primary-light)}
+    .doc-upload-card .doc-icon{font-size:2rem;margin-bottom:var(--sp-2)}
+    .doc-upload-card .doc-label{font-size:0.875rem;font-weight:600;color:var(--clr-text)}
+    .doc-upload-card .doc-sublabel{font-size:0.75rem;color:var(--clr-text-muted);margin-top:2px}
+    .doc-upload-card .doc-preview{width:100%;max-height:120px;object-fit:cover;border-radius:var(--r-sm);margin-top:var(--sp-3)}
+    .qr-container{text-align:center;padding:var(--sp-6)}
+    .qr-container img{width:200px;height:200px;margin:0 auto var(--sp-4);border:4px solid var(--clr-border);border-radius:var(--r-md)}
+    .payment-amount{font-size:1.5rem;font-weight:700;color:var(--clr-primary)}
+    .success-screen{padding:var(--sp-8) var(--sp-5);text-align:center}
+    .success-icon{width:80px;height:80px;background:var(--clr-primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--sp-5);font-size:2.5rem}
+    .app-number{font-size:1.75rem;font-weight:700;color:var(--clr-primary);letter-spacing:0.05em;background:var(--clr-primary-light);padding:var(--sp-3) var(--sp-6);border-radius:var(--r-md);display:inline-block;margin:var(--sp-4) 0}
+
+    /* ---- steps ---- */
+    .step-progress{background:var(--clr-bg);padding:var(--sp-4) var(--sp-4) var(--sp-3);border-bottom:1px solid var(--clr-border)}
+    .step-progress-bar{height:4px;background:var(--clr-border);border-radius:var(--r-full);overflow:hidden}
+    .step-progress-fill{height:100%;background:var(--clr-primary);border-radius:var(--r-full);transition:width 0.4s ease}
+    .step-progress-text{display:flex;justify-content:space-between;align-items:center;margin-top:var(--sp-2);font-size:0.8125rem}
+    .step-title{font-weight:700;color:var(--clr-text)}
+    .step-count{color:var(--clr-text-muted);font-size:0.75rem}
+    .step-panel{display:none;padding:var(--sp-5) var(--sp-4);animation:fade-in 0.25s ease}
+    .step-panel.active{display:block}
+    @keyframes fade-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+    .step-heading{font-size:1.125rem;font-weight:700;margin-bottom:var(--sp-5);color:var(--clr-text);display:flex;align-items:center;gap:var(--sp-2)}
+    .step-heading .step-icon{width:32px;height:32px;background:var(--clr-primary-light);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .field-stack{display:flex;flex-direction:column;gap:var(--sp-4)}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+    .step-nav{position:sticky;bottom:0;background:var(--clr-surface);padding:var(--sp-4);border-top:1px solid var(--clr-border);display:flex;gap:var(--sp-3)}
+    .step-nav .btn-back{flex-shrink:0;min-width:80px}
+    .step-nav .btn-next{flex:1}
+    .doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+    .doc-grid .doc-full{grid-column:1/-1}
+    .review-section{margin-bottom:var(--sp-5)}
+    .review-section h3{font-size:0.875rem;font-weight:700;color:var(--clr-text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:var(--sp-3);padding-bottom:var(--sp-2);border-bottom:1px solid var(--clr-border)}
+    .review-row{display:flex;gap:var(--sp-3);padding:var(--sp-2) 0;font-size:0.9rem}
+    .review-row .review-key{width:110px;flex-shrink:0;color:var(--clr-text-muted);font-size:0.8125rem}
+    .review-row .review-val{font-weight:500;flex:1}
+
+    /* round cards */
+    .round-cards{display:flex;flex-direction:column;gap:var(--sp-3)}
+    .round-card{border:2px solid var(--clr-border);border-radius:var(--r-md);padding:var(--sp-4);cursor:pointer;transition:all var(--transition);background:var(--clr-surface);display:flex;align-items:center;gap:var(--sp-3)}
+    .round-card:active{background:var(--clr-primary-light)}
+    .round-card.selected{border-color:var(--clr-primary);background:var(--clr-primary-light)}
+    .round-card input[type="radio"]{width:18px;height:18px;accent-color:var(--clr-primary);flex-shrink:0}
+    .round-card .rc-info{}
+    .round-card .rc-name{font-weight:700;font-size:1rem}
+    .round-card .rc-sub{font-size:0.8125rem;color:var(--clr-text-muted);margin-top:2px}
+
+    /* info banner */
+    .info-banner{background:var(--clr-primary-light);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-4);font-size:0.875rem;color:#005700;display:flex;align-items:flex-start;gap:var(--sp-2)}
+
+    /* camera */
+    #camera-overlay{position:fixed;inset:0;background:#000;z-index:8000;display:flex;flex-direction:column}
+    #camera-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .cam-corner{position:absolute;width:20px;height:20px;border-color:inherit;border-style:solid}
+    .cam-corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+    .cam-corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+    .cam-corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+    .cam-corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+    #camera-shutter:active{transform:scale(0.9)}
+    #camera-shutter.disabled{opacity:0.4;cursor:not-allowed}
+    #camera-shutter.disabled:active{transform:none}
+  </style>
 </head>
 <body>
-
 <div id="app">
 
   <!-- Loading -->
-  <div id="loading-overlay">
+  <div id="loading-overlay" class="hidden">
     <div class="spinner"></div>
     <p id="loading-text">กำลังโหลด...</p>
   </div>
@@ -26,8 +143,7 @@
 
   <!-- Header -->
   <header class="app-header">
-    <img id="header-avatar" class="user-avatar" src="" alt=""
-         style="display:none" onerror="this.style.display='none'">
+    <img id="header-avatar" class="user-avatar" src="" alt="" style="display:none" onerror="this.style.display='none'">
     <h1 id="header-name">ระบบรับสมัครนักเรียน</h1>
   </header>
 
@@ -37,35 +153,65 @@
       <div class="step-progress-fill" id="progress-fill" style="width:0%"></div>
     </div>
     <div class="step-progress-text">
-      <span class="step-title" id="step-title-text">เลือกหลักสูตร</span>
-      <span class="step-count">ขั้นตอน <span id="step-current">1</span>/8</span>
+      <span class="step-title" id="step-title-text">เลือกรอบเรียน</span>
+      <span class="step-count">ขั้นตอน <span id="step-current">1</span>/<span id="step-total">8</span></span>
     </div>
   </div>
 
-  <!-- ===== STEP 1: เลือกหลักสูตร ===== -->
+  <!-- ===== STEP 1: เลือกรอบ → ระดับ → สาขา ===== -->
   <div class="step-panel active" id="step-1">
     <div class="step-heading"><div class="step-icon">📚</div>เลือกหลักสูตร</div>
     <div class="field-stack">
+
+      <!-- 1A: รอบเรียน -->
       <div class="form-group">
+        <label class="form-label">รอบเรียน <span class="required">*</span></label>
+        <div class="round-cards" id="round-cards">
+          <label class="round-card" id="rc-morning">
+            <input type="radio" name="study-round" value="morning">
+            <div class="rc-info">
+              <div class="rc-name">☀️ รอบเช้า</div>
+              <div class="rc-sub">เรียน จ–ศ เวลา 08:00–16:30 น.</div>
+            </div>
+          </label>
+          <label class="round-card" id="rc-afternoon">
+            <input type="radio" name="study-round" value="afternoon">
+            <div class="rc-info">
+              <div class="rc-name">🌤️ รอบบ่าย</div>
+              <div class="rc-sub">เรียน จ–ศ เวลา 12:00–20:30 น.</div>
+            </div>
+          </label>
+          <label class="round-card" id="rc-dual">
+            <input type="radio" name="study-round" value="dual">
+            <div class="rc-info">
+              <div class="rc-name">🏭 ทวิภาคี</div>
+              <div class="rc-sub">เรียนควบคู่กับสถานประกอบการ</div>
+            </div>
+          </label>
+        </div>
+        <div id="dual-banner" class="info-banner hidden">
+          💡 <span>ระบบทวิภาคีไม่ต้องชำระค่าสมัครล่วงหน้า ข้ามขั้นตอนการชำระเงินได้</span>
+        </div>
+      </div>
+
+      <!-- 1B: ระดับการศึกษา -->
+      <div class="form-group" id="level-group" style="opacity:0.4;pointer-events:none">
         <label class="form-label">ระดับการศึกษา <span class="required">*</span></label>
         <select class="form-control" id="sel-level">
-          <option value="">-- กำลังโหลด --</option>
+          <option value="">-- เลือกรอบก่อน --</option>
         </select>
       </div>
-      <div class="form-group">
+
+      <!-- 1C: สาขาวิชา -->
+      <div class="form-group" id="branch-group" style="opacity:0.4;pointer-events:none">
         <label class="form-label">สาขาวิชา <span class="required">*</span></label>
         <select class="form-control" id="sel-branch" disabled>
           <option value="">-- เลือกระดับก่อน --</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">รอบการรับสมัคร <span class="required">*</span></label>
-        <select class="form-control" id="sel-round" disabled>
-          <option value="">-- เลือกสาขาก่อน --</option>
-        </select>
-      </div>
+
       <div class="card" style="background:var(--clr-primary-light)">
-        <p class="text-sm" style="color:var(--clr-primary-dark)">💡 แสดงเฉพาะสาขาที่เปิดรับสมัคร</p>
+        <p class="text-sm" style="color:#005700">💡 แสดงเฉพาะสาขาที่เปิดรับสมัคร</p>
       </div>
     </div>
   </div>
@@ -112,11 +258,7 @@
         <label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label>
         <select class="form-control" id="inp-education">
           <option value="">-- เลือก --</option>
-          <option value="ม.3">มัธยมศึกษาตอนต้น (ม.3)</option>
-          <option value="ม.6">มัธยมศึกษาตอนปลาย (ม.6)</option>
-          <option value="ปวช.">ปวช.</option>
-          <option value="ปวส.">ปวส.</option>
-          <option value="อื่นๆ">อื่นๆ</option>
+          <!-- filled dynamically based on level -->
         </select>
       </div>
       <div class="form-group">
@@ -135,7 +277,7 @@
   <!-- ===== STEP 3: ที่อยู่ ===== -->
   <div class="step-panel" id="step-3">
     <div class="step-heading"><div class="step-icon">🏠</div>ที่อยู่ปัจจุบัน</div>
-    <div class="field-stack address-chain">
+    <div class="field-stack">
       <div class="form-group">
         <label class="form-label">จังหวัด <span class="required">*</span></label>
         <select class="form-control" id="addr-province"><option value="">-- เลือกจังหวัด --</option></select>
@@ -179,9 +321,7 @@
         <div class="form-group">
           <label class="form-label">คำนำหน้า</label>
           <select class="form-control" id="grd-prefix">
-            <option value="นาย">นาย</option>
-            <option value="นาง">นาง</option>
-            <option value="นางสาว">นางสาว</option>
+            <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
           </select>
         </div>
         <div class="form-group">
@@ -207,12 +347,9 @@
         <div class="form-group">
           <label class="form-label">ความสัมพันธ์ <span class="required">*</span></label>
           <select class="form-control" id="grd-relation">
-            <option value="บิดา">บิดา</option>
-            <option value="มารดา">มารดา</option>
-            <option value="ปู่/ตา">ปู่/ตา</option>
-            <option value="ย่า/ยาย">ย่า/ยาย</option>
-            <option value="พี่">พี่</option>
-            <option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option>
+            <option value="บิดา">บิดา</option><option value="มารดา">มารดา</option>
+            <option value="ปู่/ตา">ปู่/ตา</option><option value="ย่า/ยาย">ย่า/ยาย</option>
+            <option value="พี่">พี่</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option>
             <option value="อื่นๆ">อื่นๆ</option>
           </select>
         </div>
@@ -220,14 +357,14 @@
     </div>
   </div>
 
-  <!-- ===== STEP 6: เอกสาร ===== -->
+  <!-- ===== STEP 6: เอกสาร (ตัดสลิป + เพิ่มวุฒิหลัง) ===== -->
   <div class="step-panel" id="step-6">
     <div class="step-heading"><div class="step-icon">📎</div>อัปโหลดเอกสาร</div>
     <p class="text-sm text-muted" style="margin-bottom:16px">ถ่ายภาพหรือเลือกจากแกลเลอรี่</p>
     <div class="doc-grid" id="doc-grid"></div>
   </div>
 
-  <!-- ===== STEP 7: ชำระเงิน ===== -->
+  <!-- ===== STEP 7: ชำระเงิน (ข้ามสำหรับทวิภาคี) ===== -->
   <div class="step-panel" id="step-7">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
     <div class="qr-container">
@@ -277,57 +414,770 @@
     <button id="btn-next" class="btn btn-accent btn-next">ถัดไป →</button>
   </div>
 
+</div><!-- /app -->
+
+<!-- Camera overlay -->
+<div id="camera-overlay" class="hidden">
+  <video id="camera-video" autoplay playsinline muted></video>
+  <div id="camera-frame-wrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+    <div id="camera-frame" style="border:3px solid rgba(255,255,255,0.6);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:border-color 0.2s,box-shadow 0.2s;position:relative">
+      <div class="cam-corner tl"></div><div class="cam-corner tr"></div>
+      <div class="cam-corner bl"></div><div class="cam-corner br"></div>
+      <div id="cam-status" style="position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8)">วางเอกสารในกรอบ</div>
+      <div id="cam-countdown" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.2s;pointer-events:none"></div>
+    </div>
+  </div>
+  <div id="camera-controls" style="position:absolute;bottom:0;left:0;right:0;padding:16px 24px 32px;background:linear-gradient(transparent,rgba(0,0,0,0.75));display:flex;align-items:center;justify-content:space-between">
+    <button id="camera-cancel" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer">ยกเลิก</button>
+    <button id="camera-shutter" style="width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,0.4);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.4)">
+      <div style="width:52px;height:52px;border-radius:50%;background:#fff;border:2px solid #ddd"></div>
+    </button>
+    <button id="camera-flip" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer">🔄 พลิก</button>
+  </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/liff.js"></script>
-<script src="js/address.js"></script>
-<script src="js/camera.js"></script>
-<script src="js/form.js"></script>
 <script>
-(async function() {
+// ============================================================
+// CONFIG
+// ============================================================
+const CONFIG = {
+  LIFF_ID: '2010038922-8oEBPiap',
+  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyaeKOOtAxBLnbS2i1mKCFB-8sAExUWLy4sqM8uZvAFPRkNQ-gB6ISLF6EskaJlcf-dww/exec',
+  PROMPTPAY_NUMBER: '0812345678',
+  APPLICATION_FEE: 300,
+  SCHOOL_NAME: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์',
+  ADMIN_PASSWORDS: ['admin1234'],
+  ACADEMIC_YEAR: 2569,
+};
 
-  // ---- ตรวจ session ----
-  var user = LIFF.requireUser();
-  if (!user) return; // requireUser() จะ redirect กลับ index.html เอง
+// ============================================================
+// HELPERS
+// ============================================================
+function showToast(msg, type='info', ms=3500) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type; t.textContent = msg; c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),300); }, ms);
+}
+function showLoading(msg='กำลังโหลด...') {
+  const el = document.getElementById('loading-overlay');
+  const p = el.querySelector('p'); if(p) p.textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
 
-  // ---- แสดงชื่อ / avatar ----
-  var nameEl = document.getElementById('header-name');
-  if (nameEl) nameEl.textContent = user.displayName || 'ผู้สมัคร';
-  var avatarEl = document.getElementById('header-avatar');
-  if (avatarEl && user.pictureUrl) {
-    avatarEl.src = user.pictureUrl;
-    avatarEl.style.display = 'block';
-  }
+// ============================================================
+// API
+// ============================================================
+const API = {
+  baseUrl: CONFIG.API_BASE_URL,
+  async get(action, params={}) {
+    const url = new URL(this.baseUrl);
+    url.searchParams.set('action', action);
+    Object.entries(params).forEach(([k,v]) => { if(v!==undefined&&v!==null) url.searchParams.set(k,v); });
+    const res = await fetch(url.toString(), { method:'GET' });
+    if(!res.ok) throw new Error('GET '+action+' failed: HTTP '+res.status);
+    return JSON.parse(await res.text());
+  },
+  async post(action, body={}) {
+    const url = new URL(this.baseUrl);
+    url.searchParams.set('action', action);
+    const payload = { ...body, action };
+    const res = await fetch(url.toString(), { method:'POST', body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error('POST '+action+' failed: HTTP '+res.status);
+    return JSON.parse(await res.text());
+  },
+  async getPrograms()  { return this.get('getPrograms'); },
+  async getProvinces() { return this.get('getProvinces'); },
+  async getDistricts(provinceId)  { return this.get('getDistricts',{provinceId}); },
+  async getSubDistricts(districtId){ return this.get('getSubDistricts',{districtId}); },
+  async submitApplication(data)   { return this.post('submitApplication',data); },
+};
 
-  // ---- PromptPay ----
-  var ppEl = document.getElementById('pp-number');
-  if (ppEl) ppEl.textContent = CONFIG.PROMPTPAY_NUMBER || '';
-  var amountEl = document.getElementById('payment-amount');
-  if (amountEl) amountEl.textContent = '฿' + (CONFIG.APPLICATION_FEE || 300).toLocaleString();
-  var qrImg = document.getElementById('promptpay-qr');
-  if (qrImg && CONFIG.PROMPTPAY_NUMBER) {
-    qrImg.src = 'https://promptpay.io/' + CONFIG.PROMPTPAY_NUMBER + '/' + (CONFIG.APPLICATION_FEE || 300) + '.png';
-  }
+// ============================================================
+// ADDRESS
+// ============================================================
+const Address = {
+  provinces:[], _districts:{}, _subdistricts:{}, _pvLoaded:false, _subLoaded:false,
+  _basePath() {
+    var s=document.querySelectorAll('script[src*="address"]');
+    return s.length ? s[s.length-1].src.replace(/\/[^/]+$/,'/') : location.href.replace(/\/[^/]*(\?.*)?$/,'/');
+  },
+  async _loadProvDist() {
+    if(this._pvLoaded) return;
+    // Try fetching from js/data/ folder (relative)
+    try {
+      var [pv,di] = await Promise.all([
+        fetch('js/data/provinces.json').then(r=>r.json()),
+        fetch('js/data/districts.json').then(r=>r.json()),
+      ]);
+      this.provinces=pv; this._districts=di; this._pvLoaded=true;
+    } catch(e) { console.warn('Address load:', e); this.provinces=[]; this._pvLoaded=true; }
+  },
+  async _loadSub() {
+    if(this._subLoaded) return;
+    try { this._subdistricts = await fetch('js/data/subdistricts.json').then(r=>r.json()); } catch(e){}
+    this._subLoaded=true;
+  },
+  async loadProvinces() { await this._loadProvDist(); return this.provinces; },
+  async loadDistricts(pid) { await this._loadProvDist(); return this._districts[String(pid)]||[]; },
+  async loadSubDistricts(did) { await this._loadSub(); return this._subdistricts[String(did)]||[]; },
+  populateSelect(sel,items,vk,lk,ph) {
+    var h='<option value="">'+ph+'</option>';
+    for(var i=0;i<items.length;i++){var it=items[i];var z=it.zipcode?' data-zipcode="'+it.zipcode+'"':'';h+='<option value="'+it[vk]+'"'+z+'>'+it[lk]+'</option>';}
+    sel.innerHTML=h; sel.disabled=items.length===0;
+  },
+  async bindAddressSelects(opts) {
+    var self=this;
+    var ps=opts.provinceSelect, ds=opts.districtSelect, ss=opts.subDistrictSelect, zi=opts.zipcodeInput;
+    var pvs=await this.loadProvinces();
+    this.populateSelect(ps,pvs,'id','name','-- เลือกจังหวัด --');
+    this.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');
+    this.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');
+    ds.disabled=ss.disabled=true;
+    setTimeout(()=>self._loadSub(),500);
+    ps.addEventListener('change',async function(){
+      var pid=ps.value,isBkk=(pid==='111');
+      if(!pid){self.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');self.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');ds.disabled=ss.disabled=true;if(zi)zi.value='';return;}
+      var dis=await self.loadDistricts(pid);
+      self.populateSelect(ds,dis,'id','name',isBkk?'-- เลือกเขต --':'-- เลือกอำเภอ --');
+      ds.disabled=false;
+      self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');
+      ss.disabled=true; if(zi)zi.value='';
+    });
+    ds.addEventListener('change',async function(){
+      var pid=ps.value,did=ds.value,isBkk=(pid==='111');
+      if(!did){self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');ss.disabled=true;if(zi)zi.value='';return;}
+      var sub=await self.loadSubDistricts(did);
+      self.populateSelect(ss,sub,'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');
+      ss.disabled=false; if(zi)zi.value='';
+    });
+    if(zi){ss.addEventListener('change',function(){var s=ss.options[ss.selectedIndex];zi.value=(s&&s.dataset.zipcode)?s.dataset.zipcode:'';});}
+  },
+};
 
-  // ---- โหลดจังหวัดสำหรับ dropdown การศึกษา ----
-  try {
-    var provSel = document.getElementById('inp-educationProvince');
-      if (provSel) {
-        var eduProvinces = await Address.loadProvinces();
-        eduProvinces.forEach(function(p) {
-          var o = document.createElement('option');
-          o.value = p.id; o.textContent = p.name;
-          provSel.appendChild(o);
-        });
+// ============================================================
+// CAMERA (simplified)
+// ============================================================
+const Camera = {
+  stream:null, currentCallback:null, currentDocType:null,
+  canvas:document.createElement('canvas'), _facingMode:'environment',
+  _checkInterval:null, _autoTimer:null, _frameOk:false,
+  get ctx() { return this.canvas.getContext('2d'); },
+  init() {
+    document.getElementById('camera-cancel').addEventListener('click',()=>this.close());
+    document.getElementById('camera-shutter').addEventListener('click',()=>{ if(this._frameOk) this.capture(); });
+    document.getElementById('camera-flip').addEventListener('click',()=>this.flipCamera());
+  },
+  async open(docType, callback) {
+    this.currentDocType=docType; this.currentCallback=callback;
+    const overlay=document.getElementById('camera-overlay');
+    const frame=document.getElementById('camera-frame');
+    const vw=window.innerWidth;
+    frame.style.width=Math.round(vw*0.82)+'px'; frame.style.height=Math.round(vw*0.82*0.63)+'px';
+    overlay.classList.remove('hidden');
+    await this._startStream(); this._startFrameCheck();
+  },
+  async _startStream() {
+    this._stopStream();
+    try { this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false}); document.getElementById('camera-video').srcObject=this.stream; }
+    catch(err) { showToast('ไม่สามารถเข้าถึงกล้องได้','error'); this.close(); }
+  },
+  _stopStream() { if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;} },
+  flipCamera() { this._facingMode=this._facingMode==='environment'?'user':'environment'; this._startStream(); },
+  _startFrameCheck() { clearInterval(this._checkInterval); this._checkInterval=setInterval(()=>this._checkFrame(),200); },
+  _checkFrame() {
+    const video=document.getElementById('camera-video');
+    if(!video||!video.videoWidth) return;
+    const w=160,h=90; this.canvas.width=w; this.canvas.height=h;
+    this.ctx.drawImage(video,0,0,w,h);
+    const frame=document.getElementById('camera-frame');
+    const status=document.getElementById('cam-status');
+    const shutter=document.getElementById('camera-shutter');
+    const imgData=this.ctx.getImageData(Math.round(w*0.1),Math.round(h*0.1),Math.round(w*0.8),Math.round(h*0.8));
+    var sum=0; for(var i=0;i<imgData.data.length;i+=4) sum+=0.299*imgData.data[i]+0.587*imgData.data[i+1]+0.114*imgData.data[i+2];
+    const brightness=sum/(imgData.data.length/4);
+    const ok=brightness>=40;
+    this._frameOk=ok;
+    if(!ok){this._setFrame('yellow','💡 แสงน้อยเกินไป',shutter,frame,false);}
+    else{this._setFrame('green','✅ พร้อมถ่าย',shutter,frame,true);this._triggerAuto();}
+  },
+  _setFrame(color,msg,shutter,frame,enabled){
+    const colors={red:'#EF4444',yellow:'#F59E0B',green:'#10B981'};const c=colors[color]||'#fff';
+    frame.style.borderColor=c; frame.style.boxShadow=`0 0 0 9999px rgba(0,0,0,0.45),0 0 20px ${c}55`;
+    document.querySelectorAll('.cam-corner').forEach(el=>el.style.borderColor=c);
+    document.getElementById('cam-status').textContent=msg;
+    if(enabled){shutter.classList.remove('disabled');shutter.style.opacity='1';}
+    else{shutter.classList.add('disabled');shutter.style.opacity='0.4';this._cancelAuto();}
+  },
+  _triggerAuto() {
+    if(this._autoTimer) return; let count=2;
+    const countdown=document.getElementById('cam-countdown');
+    const tick=()=>{
+      if(!this._frameOk){this._cancelAuto();return;}
+      if(count<=0){this._cancelAuto();if(this._frameOk)this.capture();return;}
+      countdown.textContent=count; countdown.style.opacity='1'; count--;
+      this._autoTimer=setTimeout(tick,700);
+    };
+    this._autoTimer=setTimeout(tick,800);
+  },
+  _cancelAuto(){if(this._autoTimer){clearTimeout(this._autoTimer);this._autoTimer=null;}const cd=document.getElementById('cam-countdown');if(cd){cd.style.opacity='0';cd.textContent='';} },
+  capture() {
+    clearInterval(this._checkInterval); this._cancelAuto();
+    const video=document.getElementById('camera-video');
+    const frame=document.getElementById('camera-frame');
+    const vr=video.getBoundingClientRect(),fr=frame.getBoundingClientRect();
+    const sx=(video.videoWidth/vr.width),sy=(video.videoHeight/vr.height);
+    const cx=(fr.left-vr.left)*sx,cy=(fr.top-vr.top)*sy,cw=fr.width*sx,ch=fr.height*sy;
+    this.canvas.width=Math.min(cw,1600); this.canvas.height=this.canvas.width*(ch/cw);
+    this.ctx.drawImage(video,cx,cy,cw,ch,0,0,this.canvas.width,this.canvas.height);
+    const base64=this.canvas.toDataURL('image/jpeg',0.85);
+    this.close(); if(this.currentCallback) this.currentCallback({base64,isBlurry:false,blurScore:999});
+  },
+  pickFromGallery(callback) {
+    const input=document.createElement('input'); input.type='file'; input.accept='image/*';
+    input.addEventListener('change',async(e)=>{
+      const file=e.target.files[0]; if(!file) return;
+      const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(file);});
+      callback({base64,isBlurry:false,blurScore:999});
+    });
+    input.click();
+  },
+  close() {
+    clearInterval(this._checkInterval); this._cancelAuto(); this._stopStream();
+    document.getElementById('camera-overlay').classList.add('hidden');
+  },
+};
+
+function initDocUpload(cardEl, docType, onFile) {
+  const preview=cardEl.querySelector('.doc-preview');
+  const label=cardEl.querySelector('.doc-label');
+  cardEl.addEventListener('click',()=>{
+    if(cardEl.classList.contains('has-file')) if(!confirm('ต้องการเปลี่ยนรูปใหม่?')) return;
+    const sheet=document.createElement('div');
+    sheet.style.cssText='position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;';
+    sheet.innerHTML=`<div style="width:100%;background:#fff;border-radius:16px 16px 0 0;padding:20px;">
+      <p style="font-weight:700;margin-bottom:16px;text-align:center">เลือกรูปภาพ</p>
+      <button id="btn-cam" class="btn btn-primary btn-full" style="margin-bottom:10px">📷 ถ่ายภาพอัตโนมัติ</button>
+      <button id="btn-gal" class="btn btn-outline btn-full" style="margin-bottom:10px">🖼️ เลือกจากแกลเลอรี่</button>
+      <button id="btn-cx" class="btn btn-ghost btn-full">ยกเลิก</button></div>`;
+    document.body.appendChild(sheet);
+    sheet.querySelector('#btn-cam').onclick=()=>{sheet.remove();Camera.open(docType,(r)=>_handlePhoto(cardEl,preview,label,r,docType,onFile));};
+    sheet.querySelector('#btn-gal').onclick=()=>{sheet.remove();Camera.pickFromGallery((r)=>_handlePhoto(cardEl,preview,label,r,docType,onFile));};
+    sheet.querySelector('#btn-cx').onclick=()=>sheet.remove();
+    sheet.addEventListener('click',e=>{if(e.target===sheet)sheet.remove();});
+  });
+}
+function _handlePhoto(cardEl,preview,label,result,docType,onFile){
+  const {base64}=result;
+  if(preview){preview.src=base64;preview.classList.remove('hidden');}
+  if(label) label.textContent='✅ อัปโหลดแล้ว';
+  cardEl.classList.add('has-file');
+  if(onFile) onFile(docType,base64);
+}
+
+// ============================================================
+// FORM CONTROLLER
+// ============================================================
+const Form = {
+  // steps: 1=program, 2=personal, 3=address, 4=parents, 5=guardian, 6=docs, 7=payment, 8=review
+  // For dual: skip step 7 → steps shown = 7
+  currentStep: 1,
+  isDual: false, // true when study round = dual
+  data: {
+    studyRound:'', studyRoundName:'',
+    levelId:'', levelName:'',
+    branchId:'', branchName:'',
+    idCard:'', prefix:'เด็กชาย', firstName:'', lastName:'',
+    birthDate:'', phone:'', education:'', oldSchool:'', educationProvince:'',
+    addrProvince:'', addrDistrict:'', addrSubDistrict:'', addrZipcode:'', addrDetail:'',
+    parents:[],
+    guardian:{},
+    documents:{},
+    payment:{ slipBase64:'' },
+    lineUserId:'', displayName:'', pictureUrl:'',
+  },
+  programs: { levels:[], branches:[], rounds:[] },
+
+  // Effective total steps
+  get totalSteps() { return this.isDual ? 7 : 8; },
+  // Map visual step → actual step id
+  stepId(n) {
+    if(!this.isDual) return n;
+    // dual: skip step 7 (payment)
+    if(n <= 6) return n;
+    return n + 1; // step 7 visual → step 8 id
+  },
+  // Actual step → visual step
+  visualStep(sid) {
+    if(!this.isDual) return sid;
+    if(sid <= 6) return sid;
+    return sid - 1;
+  },
+
+  async init() {
+    const user = LIFF && LIFF.getUser ? LIFF.getUser() : JSON.parse(sessionStorage.getItem('lineUser')||'null');
+    if(!user) { location.href='index.html'; return; }
+    this.data.lineUserId = user.userId;
+    this.data.displayName = user.displayName;
+    this.data.pictureUrl = user.pictureUrl;
+    const nameEl=document.getElementById('header-name');
+    if(nameEl) nameEl.textContent=user.displayName||'ผู้สมัคร';
+    const avatarEl=document.getElementById('header-avatar');
+    if(avatarEl&&user.pictureUrl){avatarEl.src=user.pictureUrl;avatarEl.style.display='block';}
+
+    Camera.init();
+    await this._loadPrograms();
+    this._bindNav();
+    this._renderStep(1);
+  },
+
+  async _loadPrograms() {
+    try {
+      showLoading('กำลังโหลดข้อมูลหลักสูตร...');
+      const res = await API.getPrograms();
+      this.programs = res.data || { levels:[], branches:[], rounds:[] };
+    } catch { showToast('โหลดข้อมูลหลักสูตรล้มเหลว','error'); }
+    finally { hideLoading(); }
+  },
+
+  _bindNav() {
+    document.getElementById('btn-next').onclick = () => this.next();
+    document.getElementById('btn-back').onclick = () => this.back();
+  },
+
+  next() {
+    if(!this._validate(this.currentStep)) return;
+    this._saveStep(this.currentStep);
+    if(this.currentStep < this.totalSteps) {
+      this._renderStep(this.currentStep + 1);
+    } else {
+      this._submit();
+    }
+  },
+  back() {
+    if(this.currentStep > 1) { this._renderStep(this.currentStep - 1); }
+    else { if(confirm('ออกจากการสมัคร?')) location.href='index.html'; }
+  },
+
+  async _renderStep(visual) {
+    this.currentStep = visual;
+    const sid = this.stepId(visual);
+
+    document.querySelectorAll('.step-panel').forEach(el=>el.classList.remove('active'));
+    const panel = document.getElementById('step-'+sid);
+    if(panel) panel.classList.add('active');
+
+    // Progress
+    const pct = ((visual-1)/(this.totalSteps-1))*100;
+    document.getElementById('progress-fill').style.width = pct+'%';
+    document.getElementById('step-current').textContent = visual;
+    document.getElementById('step-total').textContent = this.totalSteps;
+
+    const titles = ['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา/มารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
+    document.getElementById('step-title-text').textContent = titles[sid]||'';
+
+    document.getElementById('btn-back').textContent = visual===1 ? '✕ ออก' : '← ย้อนกลับ';
+    document.getElementById('btn-next').textContent = visual===this.totalSteps ? '✅ ส่งใบสมัคร' : 'ถัดไป →';
+
+    const initMap = {
+      1:()=>this._initStep1(),
+      2:()=>this._initStep2(),
+      3:()=>this._initStep3(),
+      4:()=>this._initStep4(),
+      5:()=>this._initStep5(),
+      6:()=>this._initStep6(),
+      7:()=>this._initStep7(),
+      8:()=>this._initStep8(),
+    };
+    if(initMap[sid]) await initMap[sid]();
+    window.scrollTo({top:0,behavior:'smooth'});
+  },
+
+  // ===== STEP 1: รอบ → ระดับ → สาขา =====
+  _initStep1() {
+    const {levels, branches} = this.programs;
+
+    // Style round cards
+    document.querySelectorAll('.round-card').forEach(card=>{
+      const radio = card.querySelector('input[type=radio]');
+      if(radio.value === this.data.studyRound) {
+        card.classList.add('selected'); radio.checked=true;
       }
-  } catch(e) { console.warn('Province load:', e); }
+      radio.addEventListener('change',()=>{
+        document.querySelectorAll('.round-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.data.studyRound = radio.value;
+        const names={morning:'รอบเช้า',afternoon:'รอบบ่าย',dual:'ทวิภาคี'};
+        this.data.studyRoundName = names[radio.value]||radio.value;
+        this.isDual = radio.value==='dual';
+        document.getElementById('dual-banner').classList.toggle('hidden', !this.isDual);
+        document.getElementById('step-total').textContent = this.totalSteps;
+        // enable level
+        const lg=document.getElementById('level-group');
+        lg.style.opacity='1'; lg.style.pointerEvents='auto';
+        this._populateLevels();
+      });
+    });
 
-  // ---- Init Form ----
+    if(this.data.studyRound) {
+      const lg=document.getElementById('level-group');
+      lg.style.opacity='1'; lg.style.pointerEvents='auto';
+      this._populateLevels();
+    }
+  },
+
+  _populateLevels() {
+    const {levels, branches} = this.programs;
+    const levelSel=document.getElementById('sel-level');
+    const branchSel=document.getElementById('sel-branch');
+
+    levelSel.innerHTML='<option value="">-- เลือกระดับการศึกษา --</option>';
+    levels.forEach(l=>{const o=new Option(l.name,l.id); levelSel.appendChild(o);});
+    levelSel.value = this.data.levelId;
+
+    const bg=document.getElementById('branch-group');
+
+    const updateBranches = ()=>{
+      const lvId=levelSel.value;
+      const filtered=branches.filter(b=>b.levelId===lvId && b.isOpen);
+      branchSel.innerHTML='<option value="">-- เลือกสาขาวิชา --</option>';
+      filtered.forEach(b=>{const o=new Option(b.name,b.id); branchSel.appendChild(o);});
+      branchSel.disabled=filtered.length===0;
+      if(filtered.length) { bg.style.opacity='1'; bg.style.pointerEvents='auto'; }
+      else { bg.style.opacity='0.4'; bg.style.pointerEvents='none'; }
+      branchSel.value=this.data.branchId;
+    };
+
+    levelSel.addEventListener('change', updateBranches);
+    branchSel.addEventListener('change',()=>{});
+
+    if(this.data.levelId) updateBranches();
+  },
+
+  // ===== STEP 2 =====
+  _initStep2() {
+    const fields=['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'];
+    fields.forEach(f=>{ const el=document.getElementById('inp-'+f); if(el&&this.data[f]) el.value=this.data[f]; });
+
+    // Filter education options based on selected level
+    this._updateEducationOptions();
+
+    // Phone / idCard format
+    document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
+    document.getElementById('inp-phone').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,10);});
+
+    // Province for edu
+    this._loadEduProvinces();
+  },
+
+  _updateEducationOptions() {
+    const sel = document.getElementById('inp-education');
+    const levelName = this.data.levelName.toLowerCase();
+    const isPwch = levelName.includes('ปวช');
+    const isPwส = levelName.includes('ปวส');
+
+    sel.innerHTML = '<option value="">-- เลือก --</option>';
+    if(isPwส) {
+      // ปวส → ม.6 หรือ ปวช.
+      [['ม.6','มัธยมศึกษาตอนปลาย (ม.6)'],['ปวช.','ปวช.']].forEach(([v,l])=>sel.add(new Option(l,v)));
+    } else {
+      // ปวช. หรืออื่นๆ → ม.3 เท่านั้น
+      sel.add(new Option('มัธยมศึกษาตอนต้น (ม.3)','ม.3'));
+    }
+    if(this.data.education) sel.value = this.data.education;
+  },
+
+  async _loadEduProvinces() {
+    const provSel=document.getElementById('inp-educationProvince');
+    try {
+      const pvs=await Address.loadProvinces();
+      pvs.forEach(p=>{ const o=new Option(p.name,p.id); provSel.appendChild(o); });
+      if(this.data.educationProvince) provSel.value=this.data.educationProvince;
+    } catch(e){}
+  },
+
+  // ===== STEP 3 =====
+  async _initStep3() {
+    await Address.bindAddressSelects({
+      provinceSelect:document.getElementById('addr-province'),
+      districtSelect:document.getElementById('addr-district'),
+      subDistrictSelect:document.getElementById('addr-subdistrict'),
+      zipcodeInput:document.getElementById('addr-zipcode'),
+    });
+    if(this.data.addrDetail) document.getElementById('addr-detail').value=this.data.addrDetail;
+    if(this.data.addrZipcode) document.getElementById('addr-zipcode').value=this.data.addrZipcode;
+  },
+
+  // ===== STEP 4 =====
+  _initStep4() {
+    this._renderParents();
+    document.getElementById('btn-add-parent').onclick=()=>{
+      this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',phone:'',occupation:'',isDeceased:false});
+      this._renderParents();
+    };
+  },
+  _renderParents() {
+    const container=document.getElementById('parents-container');
+    container.innerHTML='';
+    if(!this.data.parents.length){
+      container.innerHTML=`<p class="text-muted text-sm" style="padding:16px;text-align:center">ยังไม่มีข้อมูล — กดปุ่มด้านล่างเพื่อเพิ่ม</p>`;
+      return;
+    }
+    this.data.parents.forEach((p,i)=>{
+      const card=document.createElement('div'); card.className='parent-item';
+      card.innerHTML=`<button class="btn btn-sm btn-danger remove-btn" data-idx="${i}">ลบ</button>
+      <div class="field-stack" style="margin-top:8px">
+        <div class="form-group"><label class="form-label">ประเภท</label>
+        <select class="form-control" data-field="type" data-idx="${i}">
+          <option value="father" ${p.type==='father'?'selected':''}>บิดา</option>
+          <option value="mother" ${p.type==='mother'?'selected':''}>มารดา</option></select></div>
+        <div class="field-row">
+          <div class="form-group"><label class="form-label">คำนำหน้า</label>
+          <select class="form-control" data-field="prefix" data-idx="${i}">
+            <option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option>
+            <option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option>
+            <option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div>
+          <div class="form-group"><label class="form-label">เลขบัตร ปชช.</label>
+          <input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div>
+        <div class="field-row">
+          <div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div>
+          <div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div>
+        <div class="field-row">
+          <div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div>
+          <div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.875rem">
+          <input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label>
+      </div>`;
+      container.appendChild(card);
+    });
+    container.querySelectorAll('.remove-btn').forEach(btn=>{ btn.onclick=()=>{ this.data.parents.splice(+btn.dataset.idx,1); this._renderParents(); }; });
+    container.querySelectorAll('[data-field]').forEach(el=>{ el.addEventListener('change',()=>{ const idx=+el.dataset.idx,field=el.dataset.field; this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value; }); });
+  },
+
+  // ===== STEP 5 =====
+  _initStep5() {
+    ['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{
+      const el=document.getElementById('grd-'+f); if(el&&this.data.guardian[f]) el.value=this.data.guardian[f];
+    });
+    document.getElementById('btn-copy-father').onclick=()=>this._copyParent('father');
+    document.getElementById('btn-copy-mother').onclick=()=>this._copyParent('mother');
+  },
+  _copyParent(type) {
+    const parent=this.data.parents.find(p=>p.type===type);
+    if(!parent){showToast('ไม่พบข้อมูล','warning');return;}
+    ['idCard','prefix','firstName','lastName','phone'].forEach(f=>{ const el=document.getElementById('grd-'+f); if(el){el.value=parent[f];this.data.guardian[f]=parent[f];} });
+    document.getElementById('grd-relation').value=type==='father'?'บิดา':'มารดา';
+    this.data.guardian.relation=type==='father'?'บิดา':'มารดา';
+    showToast('คัดลอกข้อมูลแล้ว','success');
+  },
+
+  // ===== STEP 6: เอกสาร (ไม่มีสลิป + มีวุฒิด้านหลัง) =====
+  _initStep6() {
+    const docTypes = [
+      { id:'id_card_front', label:'บัตร ปชช. ด้านหน้า', icon:'🪪', required:true },
+      { id:'id_card_back',  label:'บัตร ปชช. ด้านหลัง', icon:'🪪', required:true },
+      { id:'house_reg',     label:'ทะเบียนบ้าน',          icon:'🏠', required:true },
+      { id:'edu_cert_front',label:'วุฒิการศึกษา ด้านหน้า', icon:'📜', required:true },
+      { id:'edu_cert_back', label:'วุฒิการศึกษา ด้านหลัง', icon:'📜', required:true },
+    ];
+    const grid=document.getElementById('doc-grid');
+    grid.innerHTML='';
+    docTypes.forEach(doc=>{
+      const wrapper=document.createElement('div');
+      // ทะเบียนบ้าน และวุฒิ ให้ full width
+      if(['house_reg','edu_cert_front','edu_cert_back'].includes(doc.id)) wrapper.className='doc-full';
+      const card=document.createElement('div'); card.className='doc-upload-card'; card.dataset.docType=doc.id;
+      card.innerHTML=`<div class="doc-icon">${doc.icon}</div>
+        <div class="doc-label">${doc.label}${doc.required?' <span style="color:var(--clr-danger)">*</span>':''}</div>
+        <div class="doc-sublabel">แตะเพื่อถ่าย/เลือก</div>
+        <img class="doc-preview hidden" alt="preview">`;
+      if(this.data.documents[doc.id]){
+        card.classList.add('has-file');
+        card.querySelector('.doc-preview').src=this.data.documents[doc.id];
+        card.querySelector('.doc-preview').classList.remove('hidden');
+        card.querySelector('.doc-label').innerHTML='✅ '+doc.label;
+      }
+      initDocUpload(card,doc.id,(type,base64)=>{ this.data.documents[type]=base64; });
+      wrapper.appendChild(card); grid.appendChild(wrapper);
+    });
+  },
+
+  // ===== STEP 7: ชำระเงิน =====
+  _initStep7() {
+    const amount=CONFIG.APPLICATION_FEE;
+    document.getElementById('payment-amount').textContent='฿'+amount.toLocaleString();
+    const qrImg=document.getElementById('promptpay-qr');
+    qrImg.src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
+    document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER;
+    const slipCard=document.getElementById('slip-upload-card');
+    if(!slipCard._bound){
+      initDocUpload(slipCard,'payment_slip',(_, base64)=>{ this.data.payment.slipBase64=base64; });
+      slipCard._bound=true;
+    }
+    if(this.data.payment.slipBase64){
+      slipCard.classList.add('has-file');
+      slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;
+      slipCard.querySelector('.doc-preview').classList.remove('hidden');
+    }
+  },
+
+  // ===== STEP 8: ตรวจสอบ =====
+  _initStep8() {
+    const d=this.data;
+    const html=`
+      <div class="review-section"><h3>หลักสูตรที่เลือก</h3>
+        <div class="review-row"><span class="review-key">รอบเรียน</span><span class="review-val">${d.studyRoundName}</span></div>
+        <div class="review-row"><span class="review-key">ระดับ</span><span class="review-val">${d.levelName}</span></div>
+        <div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${d.branchName}</span></div>
+      </div>
+      <div class="review-section"><h3>ข้อมูลส่วนตัว</h3>
+        <div class="review-row"><span class="review-key">ชื่อ-นามสกุล</span><span class="review-val">${d.prefix}${d.firstName} ${d.lastName}</span></div>
+        <div class="review-row"><span class="review-key">เลขบัตร ปชช.</span><span class="review-val">${d.idCard}</span></div>
+        <div class="review-row"><span class="review-key">วันเกิด</span><span class="review-val">${d.birthDate}</span></div>
+        <div class="review-row"><span class="review-key">เบอร์โทร</span><span class="review-val">${d.phone}</span></div>
+        <div class="review-row"><span class="review-key">วุฒิการศึกษา</span><span class="review-val">${d.education}</span></div>
+        <div class="review-row"><span class="review-key">โรงเรียนเดิม</span><span class="review-val">${d.oldSchool}</span></div>
+      </div>
+      <div class="review-section"><h3>เอกสาร</h3>
+        ${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}
+        ${!this.isDual&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}
+        ${this.isDual?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ทวิภาคี — ไม่ต้องชำระล่วงหน้า</span></div>':''}
+      </div>`;
+    document.getElementById('review-content').innerHTML=html;
+  },
+
+  // ===== VALIDATE =====
+  _validate(visual) {
+    const err=(msg)=>{ showToast(msg,'error'); return false; };
+    const sid=this.stepId(visual);
+
+    if(sid===1){
+      if(!this.data.studyRound) return err('กรุณาเลือกรอบเรียน');
+      const levelSel=document.getElementById('sel-level');
+      const branchSel=document.getElementById('sel-branch');
+      if(!levelSel.value) return err('กรุณาเลือกระดับการศึกษา');
+      if(!branchSel.value) return err('กรุณาเลือกสาขาวิชา');
+    }
+    if(sid===2){
+      const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['birthDate','วันเกิด'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];
+      for(const [id,label] of required){ const el=document.getElementById('inp-'+id); if(!el||!el.value.trim()) return err('กรุณากรอก'+label); }
+      if(document.getElementById('inp-idCard').value.length!==13) return err('เลขบัตรประชาชนต้องมี 13 หลัก');
+    }
+    if(sid===3){
+      if(!document.getElementById('addr-province').value) return err('กรุณาเลือกจังหวัด');
+      if(!document.getElementById('addr-district').value) return err('กรุณาเลือกอำเภอ/เขต');
+      if(!document.getElementById('addr-subdistrict').value) return err('กรุณาเลือกตำบล/แขวง');
+      if(!document.getElementById('addr-detail').value.trim()) return err('กรุณากรอกรายละเอียดที่อยู่');
+    }
+    if(sid===6){
+      const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];
+      for(const r of required){ if(!this.data.documents[r]) return err('กรุณาอัปโหลด '+_docLabel(r)); }
+    }
+    if(sid===7){
+      if(!this.data.payment.slipBase64) return err('กรุณาแนบสลิปการชำระเงิน');
+    }
+    return true;
+  },
+
+  // ===== SAVE STEP =====
+  _saveStep(visual) {
+    const sid=this.stepId(visual);
+    if(sid===1){
+      const lv=document.getElementById('sel-level'), br=document.getElementById('sel-branch');
+      this.data.levelId=lv.value; this.data.levelName=lv.options[lv.selectedIndex]?.text||'';
+      this.data.branchId=br.value; this.data.branchName=br.options[br.selectedIndex]?.text||'';
+    }
+    if(sid===2){
+      ['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'].forEach(f=>{
+        const el=document.getElementById('inp-'+f); if(el) this.data[f]=el.value;
+      });
+    }
+    if(sid===3){
+      this.data.addrProvince=document.getElementById('addr-province').value;
+      this.data.addrDistrict=document.getElementById('addr-district').value;
+      this.data.addrSubDistrict=document.getElementById('addr-subdistrict').value;
+      this.data.addrZipcode=document.getElementById('addr-zipcode').value;
+      this.data.addrDetail=document.getElementById('addr-detail').value;
+    }
+    if(sid===5){
+      ['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{
+        const el=document.getElementById('grd-'+f); if(el) this.data.guardian[f]=el.value;
+      });
+    }
+  },
+
+  // ===== SUBMIT =====
+  async _submit() {
+    showLoading('กำลังส่งใบสมัคร...');
+    try {
+      const docs=Object.entries(this.data.documents).map(([type,base64])=>({
+        type, base64Data:base64.split(',')[1], mimeType:'image/jpeg',
+        fileName:`${this.data.idCard}_${type}.jpg`,
+      }));
+      const payload={
+        lineUserId:this.data.lineUserId, displayName:this.data.displayName,
+        program:{ levelId:this.data.levelId, branchId:this.data.branchId,
+                   roundId:this.data.branchId, studyRound:this.data.studyRound },
+        personal:{ idCard:this.data.idCard, prefix:this.data.prefix,
+                   firstName:this.data.firstName, lastName:this.data.lastName,
+                   birthDate:this.data.birthDate, phone:this.data.phone,
+                   education:this.data.education, oldSchool:this.data.oldSchool,
+                   educationProvince:this.data.educationProvince },
+        address:{ province:this.data.addrProvince, district:this.data.addrDistrict,
+                  subDistrict:this.data.addrSubDistrict, zipcode:this.data.addrZipcode,
+                  detail:this.data.addrDetail },
+        parents:this.data.parents, guardian:this.data.guardian, documents:docs,
+        payment:this.isDual ? { isDual:true } : {
+          amount:CONFIG.APPLICATION_FEE,
+          slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',
+          slipFileName:`${this.data.idCard}_payment_slip.jpg`,
+        },
+      };
+      const res=await API.submitApplication(payload);
+      if(res.success){ hideLoading(); this._showSuccess(res.applicationNo); }
+      else throw new Error(res.message||'เกิดข้อผิดพลาด');
+    } catch(err){ hideLoading(); showToast('ส่งใบสมัครล้มเหลว: '+err.message,'error'); }
+  },
+
+  _showSuccess(appNo) {
+    document.getElementById('step-progress').classList.add('hidden');
+    document.getElementById('step-nav').classList.add('hidden');
+    document.querySelectorAll('.step-panel').forEach(el=>el.classList.remove('active'));
+    const s=document.getElementById('success-screen'); s.classList.remove('hidden');
+    document.getElementById('app-number').textContent=appNo;
+    document.getElementById('btn-print').onclick=()=>window.print();
+  },
+};
+
+function _docLabel(type){
+  const map={
+    id_card_front:'บัตร ปชช. ด้านหน้า',id_card_back:'บัตร ปชช. ด้านหลัง',
+    house_reg:'ทะเบียนบ้าน',
+    edu_cert_front:'วุฒิการศึกษา ด้านหน้า', edu_cert_back:'วุฒิการศึกษา ด้านหลัง',
+    edu_cert:'วุฒิการศึกษา',
+    payment_slip:'สลิปโอนเงิน',
+  };
+  return map[type]||type;
+}
+
+// LIFF helper (simple)
+var LIFF = {
+  getUser(){ try{var s=sessionStorage.getItem('lineUser');return s?JSON.parse(s):null;}catch(e){return null;} },
+  requireUser(){ var u=this.getUser(); if(!u){location.href='index.html';return null;} return u; }
+};
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const user=LIFF.requireUser();
+  if(!user) return;
+  const nameEl=document.getElementById('header-name');
+  if(nameEl) nameEl.textContent=user.displayName||'ผู้สมัคร';
+  const avatarEl=document.getElementById('header-avatar');
+  if(avatarEl&&user.pictureUrl){avatarEl.src=user.pictureUrl;avatarEl.style.display='block';}
+  document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER||'';
   await Form.init();
-
-})();
+});
 </script>
 </body>
 </html>

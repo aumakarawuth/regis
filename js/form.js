@@ -87,7 +87,7 @@ const Form = {
     }
   },
 
-  _renderStep(n) {
+  async _renderStep(n) {
     this.currentStep = n;
     // ซ่อนทุก panel
     document.querySelectorAll('.step-panel').forEach(el => el.classList.remove('active'));

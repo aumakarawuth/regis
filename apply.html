@@ -314,15 +314,14 @@
 
   // ---- โหลดจังหวัดสำหรับ dropdown การศึกษา ----
   try {
-    var provinces = await Address.loadProvinces();
     var provSel = document.getElementById('inp-educationProvince');
-    if (provSel) {
-      provinces.forEach(function(p) {
-        var o = document.createElement('option');
-        o.value = p.id; o.textContent = p.name;
-        provSel.appendChild(o);
-      });
-    }
+      if (provSel) {
+        PROVINCES_DATA.forEach(function(p) {
+          var o = document.createElement('option');
+          o.value = p.id; o.textContent = p.name;
+          provSel.appendChild(o);
+        });
+      }
   } catch(e) { console.warn('Province load:', e); }
 
   // ---- Init Form ----

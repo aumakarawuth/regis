@@ -1,68 +1,65 @@
 // ============================================
 // address.js — จังหวัด / อำเภอ / ตำบล
-// โหลดจาก JSON files แยก (ไม่ฝังข้อมูลใน JS)
+// Optimized: โหลด provinces+districts ก่อน, subdistricts lazy
 // ============================================
 
 const Address = {
   provinces: [],
   _districts: {},
   _subdistricts: {},
-  _loaded: false,
+  _provDistLoaded: false,
+  _subLoaded: false,
 
-  // หา base path ของไฟล์ data/
   _basePath() {
-    // หา script tag ของ address.js
     var scripts = document.querySelectorAll('script[src*="address"]');
-    if (scripts.length) {
-      return scripts[scripts.length-1].src.replace(/\/[^/]+$/, '/');
-    }
+    if (scripts.length) return scripts[scripts.length-1].src.replace(/\/[^/]+$/, '/');
     return location.href.replace(/\/[^/]*(\?.*)?$/, '/');
   },
 
-  // โหลด JSON ทั้ง 3 ไฟล์พร้อมกัน (ครั้งเดียว)
-  async _loadAll() {
-    if (this._loaded) return;
+  // โหลด provinces + districts พร้อมกัน (เล็ก รวดเร็ว)
+  async _loadProvDist() {
+    if (this._provDistLoaded) return;
     var base = this._basePath();
-    try {
-      var results = await Promise.all([
-        fetch(base + 'data/provinces.json').then(function(r){ return r.json(); }),
-        fetch(base + 'data/districts.json').then(function(r){ return r.json(); }),
-        fetch(base + 'data/subdistricts.json').then(function(r){ return r.json(); }),
-      ]);
-      this.provinces     = results[0];
-      this._districts    = results[1];
-      this._subdistricts = results[2];
-      this._loaded = true;
-      console.log('[Address] โหลดสำเร็จ:', this.provinces.length, 'จังหวัด');
-    } catch(e) {
-      console.error('[Address] โหลดล้มเหลว:', e);
-    }
+    var results = await Promise.all([
+      fetch(base + 'data/provinces.json').then(function(r){ return r.json(); }),
+      fetch(base + 'data/districts.json').then(function(r){ return r.json(); }),
+    ]);
+    this.provinces  = results[0];
+    this._districts = results[1];
+    this._provDistLoaded = true;
+  },
+
+  // โหลด subdistricts เฉพาะเมื่อต้องการ (lazy)
+  async _loadSub() {
+    if (this._subLoaded) return;
+    var base = this._basePath();
+    this._subdistricts = await fetch(base + 'data/subdistricts.json').then(function(r){ return r.json(); });
+    this._subLoaded = true;
   },
 
   async loadProvinces() {
-    await this._loadAll();
+    await this._loadProvDist();
     return this.provinces;
   },
 
   async loadDistricts(provinceId) {
-    await this._loadAll();
+    await this._loadProvDist();
     return this._districts[String(provinceId)] || [];
   },
 
   async loadSubDistricts(provinceId, districtId) {
-    await this._loadAll();
+    await this._loadSub();
     return this._subdistricts[String(districtId)] || [];
   },
 
   populateSelect(selectEl, items, valueKey, labelKey, placeholder) {
-    selectEl.innerHTML = '<option value="">' + placeholder + '</option>';
-    items.forEach(function(item) {
-      var opt = document.createElement('option');
-      opt.value = item[valueKey];
-      opt.textContent = item[labelKey];
-      if (item.zipcode) opt.dataset.zipcode = item.zipcode;
-      selectEl.appendChild(opt);
-    });
+    var html = '<option value="">' + placeholder + '</option>';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var zip = item.zipcode ? ' data-zipcode="' + item.zipcode + '"' : '';
+      html += '<option value="' + item[valueKey] + '"' + zip + '>' + item[labelKey] + '</option>';
+    }
+    selectEl.innerHTML = html;
     selectEl.disabled = items.length === 0;
   },
 
@@ -79,6 +76,9 @@ const Address = {
     this.populateSelect(subDistrictSelect, [], 'id', 'name', '-- เลือกตำบล/แขวง --');
     districtSelect.disabled    = true;
     subDistrictSelect.disabled = true;
+
+    // Preload subdistricts ใน background ขณะที่ user ยังเลือกจังหวัดอยู่
+    setTimeout(function(){ self._loadSub(); }, 500);
 
     provinceSelect.addEventListener('change', async function() {
       var provId = provinceSelect.value;

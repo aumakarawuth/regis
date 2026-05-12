@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#00B900">
-  <title>สมัครเรียน — LINE OA</title>
+  <title>สมัครเรียน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
@@ -16,190 +16,215 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 32px 24px;
+      padding: 32px 20px;
       background: linear-gradient(160deg, #f0fdf0 0%, #fff 60%);
     }
-
     .school-logo {
-      width: 100px; height: 100px;
+      width: 96px; height: 96px;
       background: var(--clr-primary-light);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 3rem;
-      margin-bottom: 24px;
+      font-size: 2.75rem;
+      margin-bottom: 20px;
       border: 3px solid var(--clr-primary);
     }
-
-    .school-name {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--clr-text);
-      text-align: center;
-      margin-bottom: 6px;
-    }
-
-    .school-sub {
-      font-size: 0.875rem;
-      color: var(--clr-text-muted);
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
+    .school-name { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .school-sub  { font-size: 0.875rem; color: var(--clr-text-muted); text-align: center; margin-bottom: 36px; }
     .login-card {
-      width: 100%;
-      max-width: 360px;
-      background: #fff;
-      border-radius: 20px;
+      width: 100%; max-width: 360px;
+      background: #fff; border-radius: 20px;
       padding: 28px 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
     }
-
-    .login-card h2 {
-      font-size: 1.125rem;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 8px;
+    .login-card h2 { font-size: 1.1rem; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .login-card p  { font-size: 0.875rem; color: var(--clr-text-muted); text-align: center; margin-bottom: 22px; line-height: 1.7; }
+    .btn-line {
+      background: #06C755; color: #fff;
+      font-size: 1rem; font-weight: 700;
+      padding: 14px 20px; border-radius: 50px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; border: none; cursor: pointer;
     }
-
-    .login-card p {
-      font-size: 0.875rem;
-      color: var(--clr-text-muted);
-      text-align: center;
-      margin-bottom: 24px;
-      line-height: 1.7;
-    }
-
-    .line-icon {
-      width: 24px; height: 24px;
-    }
-
-    .already-applied {
-      margin-top: 16px;
-      text-align: center;
-    }
-
-    .already-applied a {
-      color: var(--clr-primary);
-      font-size: 0.875rem;
-      font-weight: 600;
-      text-decoration: underline;
-    }
-
-    .status-card {
-      background: var(--clr-bg);
-      border-radius: var(--r-lg);
-      padding: var(--sp-5);
-      margin-top: 24px;
-    }
-
+    .btn-line:active { background: #05a548; }
+    .status-card { background: var(--clr-bg); border-radius: var(--r-lg); padding: 20px; }
     .status-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+    .review-row { display: flex; gap: 12px; padding: 6px 0; font-size: 0.9rem; border-bottom: 1px solid var(--clr-border); }
+    .review-row:last-child { border: none; }
+    .review-key { width: 90px; flex-shrink: 0; color: var(--clr-text-muted); font-size: 0.8rem; }
+    .review-val { font-weight: 500; flex: 1; }
+    .err-box { background: #FEE2E2; border-radius: 10px; padding: 16px; margin: 20px; text-align: center; color: #991B1B; font-size: 0.875rem; }
   </style>
 </head>
 <body>
-
 <div id="app">
+
   <!-- Loading -->
   <div id="loading-overlay">
     <div class="spinner"></div>
-    <p>กำลังเชื่อมต่อ LINE...</p>
+    <p id="loading-text">กำลังเชื่อมต่อ LINE...</p>
   </div>
 
   <!-- Toast -->
   <div id="toast-container"></div>
 
-  <!-- Login Screen -->
+  <!-- Login Screen (แสดงเมื่อยังไม่ login) -->
   <div id="login-screen" class="login-page hidden">
     <div class="school-logo">🏫</div>
-    <div class="school-name" id="school-name">วิทยาลัยเทคนิคตัวอย่าง</div>
+    <div class="school-name" id="school-name">โรงเรียนตัวอย่าง</div>
     <div class="school-sub">ระบบรับสมัครนักเรียนใหม่ ปีการศึกษา 2568</div>
-
     <div class="login-card">
-      <h2>เข้าสู่ระบบสมัครเรียน</h2>
-      <p>กรุณาเข้าสู่ระบบด้วย LINE เพื่อดำเนินการสมัคร<br>ข้อมูลจะถูกเก็บเป็นความลับ</p>
-
-      <button id="btn-line-login" class="btn btn-line btn-full">
-        <svg class="line-icon" viewBox="0 0 24 24" fill="white">
+      <h2>เข้าสู่ระบบเพื่อสมัครเรียน</h2>
+      <p>กรุณาเข้าสู่ระบบด้วย LINE<br>เพื่อเริ่มกรอกใบสมัคร</p>
+      <button id="btn-line-login" class="btn-line">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
           <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
         </svg>
         เข้าสู่ระบบด้วย LINE
       </button>
-
-      <div class="already-applied">
-        <a id="link-check-status" href="#">ตรวจสอบสถานะการสมัคร</a>
-      </div>
+      <p style="margin-top:14px;font-size:0.8rem;color:var(--clr-text-muted);text-align:center">
+        * ต้องเปิดผ่าน LINE Application เท่านั้น
+      </p>
     </div>
   </div>
 
-  <!-- Logged in but already applied -->
-  <div id="applied-screen" class="hidden" style="padding:24px">
-    <div class="status-card">
-      <h3>📋 สถานะการสมัคร</h3>
-      <div id="status-content"></div>
-      <button id="btn-new-apply" class="btn btn-outline btn-full mt-4">สมัครใหม่ / แก้ไข</button>
+  <!-- สมัครแล้ว → แสดงสถานะ -->
+  <div id="applied-screen" class="hidden" style="padding:20px">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:2.5rem">📋</div>
+      <h2 style="font-size:1.1rem;font-weight:700;margin-top:8px">สมัครเรียนแล้ว</h2>
+      <p style="font-size:0.875rem;color:var(--clr-text-muted);margin-top:4px">ตรวจสอบสถานะด้านล่าง</p>
     </div>
+    <div class="status-card">
+      <h3>สถานะใบสมัคร</h3>
+      <div id="status-content"></div>
+    </div>
+    <button id="btn-go-apply" class="btn btn-primary btn-full" style="margin-top:16px">
+      📝 ไปยังหน้าสมัคร
+    </button>
+  </div>
+
+  <!-- Error Box -->
+  <div id="error-box" class="err-box hidden">
+    <div style="font-size:1.5rem;margin-bottom:8px">⚠️</div>
+    <div id="error-text">เกิดข้อผิดพลาด</div>
+    <button onclick="location.reload()" style="margin-top:12px;padding:6px 16px;background:#991B1B;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.875rem">ลองใหม่</button>
   </div>
 
 </div>
 
-<!-- LINE LIFF SDK -->
+<!-- LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
-<script src="js/liff.js"></script>
 <script>
-(async () => {
-  // ตั้งชื่อโรงเรียน
-  const nameEl = document.getElementById('school-name');
-  if (nameEl) nameEl.textContent = CONFIG.SCHOOL_NAME;
 
-  // Init LIFF
-  const ok = await LIFF.init();
+// ---- ตั้งชื่อโรงเรียน ----
+document.getElementById('school-name').textContent = CONFIG.SCHOOL_NAME || 'โรงเรียนตัวอย่าง';
 
+// ---- URL ที่ถูกต้องสำหรับ apply.html ----
+// ใช้ base URL เดียวกับ index.html เพื่อไม่ให้ 404
+function getApplyUrl() {
+  var base = location.href.replace(/index\.html.*$/, '').replace(/\?.*$/, '');
+  if (!base.endsWith('/')) base += '/';
+  return base + 'apply.html';
+}
+
+function showError(msg) {
   hideLoading();
+  document.getElementById('error-box').classList.remove('hidden');
+  document.getElementById('error-text').textContent = msg;
+}
 
-  if (ok) {
-    // ล็อกอินแล้ว → เช็คว่าสมัครแล้วหรือยัง
-    const user = LIFF.getUser();
-    try {
-      const res = await API.getApplicationStatus(user.userId);
-      if (res.applied) {
-        // แสดงสถานะ
-        document.getElementById('applied-screen').classList.remove('hidden');
-        document.getElementById('status-content').innerHTML = `
-          <div class="review-row"><span class="review-key">เลขสมัคร</span><span class="review-val fw-600">${res.applicationNo}</span></div>
-          <div class="review-row"><span class="review-key">สถานะ</span><span class="review-val">
-            <span class="badge ${_statusBadge(res.status)}">${res.statusLabel}</span>
-          </span></div>
-          <div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${res.branchName}</span></div>
-          <div class="review-row"><span class="review-key">วันที่สมัคร</span><span class="review-val">${res.applyDate}</span></div>
-        `;
-        document.getElementById('btn-new-apply').onclick = () => {
-          location.href = 'apply.html';
-        };
-        return;
-      }
-    } catch {}
+function statusBadge(s) {
+  var m = { pending:'badge-warning', verified:'badge-success', rejected:'badge-danger' };
+  return m[s] || 'badge-gray';
+}
 
-    // ยังไม่ได้สมัคร → ไปหน้าสมัคร
-    location.href = 'apply.html';
-  } else {
-    // ยังไม่ล็อกอิน
+// ---- Main ----
+(async function() {
+  var loadingText = document.getElementById('loading-text');
+
+  // ---- Dev Mode (localhost) ----
+  var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '';
+  if (isDev) {
+    hideLoading();
     document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('btn-line-login').onclick = () => {
+    document.getElementById('btn-line-login').onclick = function() {
+      // Dev: ข้ามไป apply โดยตรง
+      sessionStorage.setItem('lineUser', JSON.stringify({
+        userId: 'dev_' + Date.now(),
+        displayName: 'ผู้ทดสอบ Dev',
+        pictureUrl: ''
+      }));
+      location.href = getApplyUrl();
+    };
+    return;
+  }
+
+  // ---- LIFF Init ----
+  try {
+    loadingText.textContent = 'กำลังเชื่อมต่อ LINE...';
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+  } catch (initErr) {
+    showError('เปิดแอปใน LINE ไม่สำเร็จ: ' + initErr.message + '\n(กรุณาเปิดผ่าน LINE Application)');
+    return;
+  }
+
+  // ---- ยังไม่ login → แสดงปุ่ม ----
+  if (!liff.isLoggedIn()) {
+    hideLoading();
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('btn-line-login').onclick = function() {
+      // redirectUri ต้องเป็น URL ที่ลงทะเบียนใน LIFF Console
       liff.login({ redirectUri: location.href });
     };
+    return;
   }
 
-  document.getElementById('link-check-status').onclick = (e) => {
-    e.preventDefault();
-    showToast('กรุณาเข้าสู่ระบบก่อน', 'info');
-    document.getElementById('btn-line-login').click();
-  };
-
-  function _statusBadge(s) {
-    const m = { pending: 'badge-warning', verified: 'badge-success', rejected: 'badge-danger' };
-    return m[s] || 'badge-gray';
+  // ---- Login แล้ว → ดึง profile ----
+  try {
+    loadingText.textContent = 'กำลังโหลดข้อมูล...';
+    var profile = await liff.getProfile();
+    var user = {
+      userId: profile.userId,
+      displayName: profile.displayName,
+      pictureUrl: profile.pictureUrl || ''
+    };
+    sessionStorage.setItem('lineUser', JSON.stringify(user));
+  } catch (profileErr) {
+    showError('ดึงข้อมูล LINE ไม่สำเร็จ: ' + profileErr.message);
+    return;
   }
+
+  // ---- เช็คสถานะการสมัคร ----
+  try {
+    loadingText.textContent = 'กำลังตรวจสอบสถานะ...';
+    var user = JSON.parse(sessionStorage.getItem('lineUser'));
+    var res = await API.getApplicationStatus(user.userId);
+
+    if (res && res.applied) {
+      // สมัครแล้ว → แสดงสถานะ
+      hideLoading();
+      document.getElementById('applied-screen').classList.remove('hidden');
+      document.getElementById('status-content').innerHTML =
+        '<div class="review-row"><span class="review-key">เลขสมัคร</span><span class="review-val" style="font-weight:700;color:var(--clr-primary)">' + res.applicationNo + '</span></div>' +
+        '<div class="review-row"><span class="review-key">สถานะ</span><span class="review-val"><span class="badge ' + statusBadge(res.status) + '">' + (res.statusLabel || res.status) + '</span></span></div>' +
+        '<div class="review-row"><span class="review-key">สาขา</span><span class="review-val">' + (res.branchName || '—') + '</span></div>' +
+        '<div class="review-row"><span class="review-key">วันที่สมัคร</span><span class="review-val">' + (res.applyDate || '—') + '</span></div>';
+
+      document.getElementById('btn-go-apply').onclick = function() {
+        location.href = getApplyUrl();
+      };
+      return;
+    }
+  } catch (statusErr) {
+    // API error → ไม่บล็อก ข้ามไปหน้าสมัครเลย
+    console.warn('getApplicationStatus failed:', statusErr);
+  }
+
+  // ---- ยังไม่สมัคร → redirect ไป apply.html ----
+  location.href = getApplyUrl();
+
 })();
 </script>
 </body>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#00B900">
+  <title>สมัครเรียน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/steps.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Loading -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>กำลังโหลด...</p>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <img id="header-avatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
+    <h1 id="header-name">ระบบรับสมัคร</h1>
+  </header>
+
+  <!-- Step Progress -->
+  <div class="step-progress" id="step-progress">
+    <div class="step-progress-bar">
+      <div class="step-progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="step-progress-text">
+      <span class="step-title" id="step-title-text">เลือกหลักสูตร</span>
+      <span class="step-count">ขั้นตอน <span id="step-current">1</span>/8</span>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: เลือกหลักสูตร ===== -->
+  <div class="step-panel active" id="step-1">
+    <div class="step-heading">
+      <div class="step-icon">📚</div>
+      เลือกหลักสูตรที่ต้องการสมัคร
+    </div>
+
+    <div class="field-stack">
+      <div class="form-group">
+        <label class="form-label">ระดับการศึกษา <span class="required">*</span></label>
+        <select class="form-control" id="sel-level">
+          <option value="">-- กำลังโหลด --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">สาขาวิชา <span class="required">*</span></label>
+        <select class="form-control" id="sel-branch" disabled>
+          <option value="">-- เลือกระดับก่อน --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">รอบการรับสมัคร <span class="required">*</span></label>
+        <select class="form-control" id="sel-round" disabled>
+          <option value="">-- เลือกสาขาก่อน --</option>
+        </select>
+      </div>
+
+      <div class="card" style="background:var(--clr-primary-light)">
+        <p class="text-sm" style="color:var(--clr-primary-dark)">
+          💡 ระบบจะแสดงเฉพาะสาขาที่เปิดรับสมัครเท่านั้น<br>
+          หากไม่พบสาขาที่ต้องการ กรุณาติดต่อสถานศึกษา
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: ข้อมูลส่วนตัว ===== -->
+  <div class="step-panel" id="step-2">
+    <div class="step-heading">
+      <div class="step-icon">👤</div>
+      ข้อมูลส่วนตัว
+    </div>
+
+    <div class="field-stack">
+      <div class="form-group">
+        <label class="form-label">เลขบัตรประจำตัวประชาชน <span class="required">*</span></label>
+        <input class="form-control" id="inp-idCard" type="tel" maxlength="13"
+          placeholder="0 0000 00000 00 0" inputmode="numeric">
+        <span class="form-hint">กรอก 13 หลัก ไม่ต้องใส่ขีด</span>
+      </div>
+
+      <div class="field-row">
+        <div class="form-group">
+          <label class="form-label">คำนำหน้า <span class="required">*</span></label>
+          <select class="form-control" id="inp-prefix">
+            <option value="เด็กชาย">เด็กชาย</option>
+            <option value="เด็กหญิง">เด็กหญิง</option>
+            <option value="นาย">นาย</option>
+            <option value="นางสาว">นางสาว</option>
+            <option value="นาง">นาง</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:span 1"><!-- spacer --></div>
+      </div>
+
+      <div class="field-row">
+        <div class="form-group">
+          <label class="form-label">ชื่อ <span class="required">*</span></label>
+          <input class="form-control" id="inp-firstName" type="text" placeholder="ชื่อ">
+        </div>
+        <div class="form-group">
+          <label class="form-label">นามสกุล <span class="required">*</span></label>
+          <input class="form-control" id="inp-lastName" type="text" placeholder="นามสกุล">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">วันเกิด <span class="required">*</span></label>
+        <input class="form-control" id="inp-birthDate" type="date">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label>
+        <input class="form-control" id="inp-phone" type="tel" maxlength="10"
+          placeholder="08X-XXX-XXXX" inputmode="numeric">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label>
+        <select class="form-control" id="inp-education">
+          <option value="">-- เลือก --</option>
+          <option value="ป.6">ประถมศึกษาปีที่ 6</option>
+          <option value="ม.3">มัธยมศึกษาตอนต้น (ม.3)</option>
+          <option value="ม.6">มัธยมศึกษาตอนปลาย (ม.6)</option>
+          <option value="ปวช.">ปวช.</option>
+          <option value="ปวส.">ปวส.</option>
+          <option value="ปริญญาตรี">ปริญญาตรี</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">โรงเรียน/สถาบันเดิม <span class="required">*</span></label>
+        <input class="form-control" id="inp-oldSchool" type="text" placeholder="ชื่อโรงเรียน/สถาบัน">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">จังหวัดที่ศึกษา</label>
+        <select class="form-control" id="inp-educationProvince">
+          <option value="">-- เลือกจังหวัด --</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: ที่อยู่ ===== -->
+  <div class="step-panel" id="step-3">
+    <div class="step-heading">
+      <div class="step-icon">🏠</div>
+      ที่อยู่ปัจจุบัน
+    </div>
+
+    <div class="field-stack address-chain">
+      <div class="form-group">
+        <label class="form-label">จังหวัด <span class="required">*</span></label>
+        <select class="form-control" id="addr-province">
+          <option value="">-- เลือกจังหวัด --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="label-district">อำเภอ/เขต <span class="required">*</span></label>
+        <select class="form-control" id="addr-district" disabled>
+          <option value="">-- เลือกจังหวัดก่อน --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="label-subdistrict">ตำบล/แขวง <span class="required">*</span></label>
+        <select class="form-control" id="addr-subdistrict" disabled>
+          <option value="">-- เลือกอำเภอก่อน --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">รหัสไปรษณีย์</label>
+        <input class="form-control" id="addr-zipcode" type="tel" maxlength="5"
+          placeholder="รหัสไปรษณีย์" inputmode="numeric" readonly>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">รายละเอียดที่อยู่ <span class="required">*</span></label>
+        <textarea class="form-control" id="addr-detail" rows="3"
+          placeholder="บ้านเลขที่ / หมู่ / ซอย / ถนน"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4: บิดา/มารดา ===== -->
+  <div class="step-panel" id="step-4">
+    <div class="step-heading">
+      <div class="step-icon">👨‍👩‍👦</div>
+      ข้อมูลบิดา / มารดา
+    </div>
+
+    <p class="text-sm text-muted" style="margin-bottom:16px">
+      สามารถข้ามขั้นตอนนี้ได้หากไม่มีข้อมูล
+    </p>
+
+    <div id="parents-container"></div>
+
+    <button id="btn-add-parent" class="btn btn-outline btn-full mt-4">
+      + เพิ่มข้อมูลบิดา/มารดา
+    </button>
+  </div>
+
+  <!-- ===== STEP 5: ผู้ปกครอง ===== -->
+  <div class="step-panel" id="step-5">
+    <div class="step-heading">
+      <div class="step-icon">🧑</div>
+      ข้อมูลผู้ปกครอง
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="btn-copy-father" class="btn btn-outline btn-sm flex-1">
+        📋 ดึงข้อมูลบิดา
+      </button>
+      <button id="btn-copy-mother" class="btn btn-outline btn-sm flex-1">
+        📋 ดึงข้อมูลมารดา
+      </button>
+    </div>
+
+    <div class="field-stack">
+      <div class="field-row">
+        <div class="form-group">
+          <label class="form-label">คำนำหน้า</label>
+          <select class="form-control" id="grd-prefix">
+            <option value="นาย">นาย</option>
+            <option value="นาง">นาง</option>
+            <option value="นางสาว">นางสาว</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">เลขบัตร ปชช.</label>
+          <input class="form-control" id="grd-idCard" type="tel" maxlength="13" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="form-group">
+          <label class="form-label">ชื่อ <span class="required">*</span></label>
+          <input class="form-control" id="grd-firstName" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">นามสกุล <span class="required">*</span></label>
+          <input class="form-control" id="grd-lastName" type="text">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="form-group">
+          <label class="form-label">เบอร์โทร</label>
+          <input class="form-control" id="grd-phone" type="tel" maxlength="10" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ความสัมพันธ์ <span class="required">*</span></label>
+          <select class="form-control" id="grd-relation">
+            <option value="บิดา">บิดา</option>
+            <option value="มารดา">มารดา</option>
+            <option value="ปู่/ตา">ปู่/ตา</option>
+            <option value="ย่า/ยาย">ย่า/ยาย</option>
+            <option value="พี่">พี่</option>
+            <option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 6: เอกสาร ===== -->
+  <div class="step-panel" id="step-6">
+    <div class="step-heading">
+      <div class="step-icon">📎</div>
+      อัปโหลดเอกสาร
+    </div>
+
+    <p class="text-sm text-muted" style="margin-bottom:16px">
+      ถ่ายภาพหรือเลือกจากแกลเลอรี่<br>
+      ระบบจะตรวจสอบความคมชัดอัตโนมัติ
+    </p>
+
+    <div class="doc-grid" id="doc-grid">
+      <!-- สร้างโดย JS -->
+    </div>
+  </div>
+
+  <!-- ===== STEP 7: ชำระเงิน ===== -->
+  <div class="step-panel" id="step-7">
+    <div class="step-heading">
+      <div class="step-icon">💳</div>
+      ชำระค่าสมัคร
+    </div>
+
+    <div class="qr-container">
+      <p class="text-sm text-muted">สแกน QR Code เพื่อชำระผ่าน PromptPay</p>
+      <img id="promptpay-qr" alt="QR PromptPay">
+      <div id="qr-fallback" class="hidden card" style="background:var(--clr-bg);padding:16px;text-align:center">
+        <p class="text-sm">PromptPay: <strong id="pp-number"></strong></p>
+      </div>
+      <div class="payment-amount" id="payment-amount">฿300</div>
+      <p class="text-xs text-muted mt-2">ค่าสมัครเรียน (ไม่คืนเงิน)</p>
+    </div>
+
+    <hr class="divider">
+
+    <p class="fw-600" style="margin-bottom:12px">แนบหลักฐานการชำระเงิน <span class="required">*</span></p>
+    <div class="doc-upload-card" id="slip-upload-card">
+      <div class="doc-icon">📸</div>
+      <div class="doc-label">แนบสลิปโอนเงิน</div>
+      <div class="doc-sublabel">แตะเพื่อถ่าย/เลือกภาพ</div>
+      <img class="doc-preview hidden" alt="slip preview">
+    </div>
+  </div>
+
+  <!-- ===== STEP 8: ตรวจสอบ ===== -->
+  <div class="step-panel" id="step-8">
+    <div class="step-heading">
+      <div class="step-icon">✅</div>
+      ตรวจสอบข้อมูลก่อนส่ง
+    </div>
+
+    <div id="review-content">
+      <!-- สร้างโดย JS -->
+    </div>
+
+    <div class="card mt-4" style="background:#FEF3C7">
+      <p class="text-sm" style="color:#92400E">
+        ⚠️ กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนกด "ส่งใบสมัคร"<br>
+        เมื่อส่งแล้วจะไม่สามารถแก้ไขได้
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== Success Screen ===== -->
+  <div id="success-screen" class="success-screen hidden">
+    <div class="success-icon">🎉</div>
+    <h2 style="font-size:1.25rem;font-weight:700">ส่งใบสมัครเรียบร้อย!</h2>
+    <p class="text-muted mt-2">เลขที่ใบสมัครของท่านคือ</p>
+    <div class="app-number" id="app-number">APP-2568-0001</div>
+    <p class="text-sm text-muted mt-2">
+      บันทึกเลขนี้ไว้เพื่อติดตามสถานะ<br>
+      ทางโรงเรียนจะแจ้งผลทาง LINE
+    </p>
+
+    <div style="display:flex;gap:12px;margin-top:32px">
+      <button id="btn-print" class="btn btn-outline" style="flex:1">🖨️ พิมพ์ใบสมัคร</button>
+      <button onclick="location.href='index.html'" class="btn btn-primary" style="flex:1">🏠 กลับหน้าหลัก</button>
+    </div>
+  </div>
+
+  <!-- Step Navigation -->
+  <div class="step-nav" id="step-nav">
+    <button id="btn-back" class="btn btn-outline btn-back">← ย้อนกลับ</button>
+    <button id="btn-next" class="btn btn-accent btn-next">ถัดไป →</button>
+  </div>
+
+</div>
+
+<!-- LINE LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/liff.js"></script>
+<script src="js/address.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/form.js"></script>
+<script>
+(async () => {
+  // PromptPay fallback number
+  const ppEl = document.getElementById('pp-number');
+  if (ppEl) ppEl.textContent = CONFIG.PROMPTPAY_NUMBER;
+
+  // Init LIFF แล้ว init form
+  showLoading('กำลังเชื่อมต่อ LINE...');
+  const ok = await LIFF.init();
+  hideLoading();
+
+  if (!ok) {
+    showToast('กรุณาเปิดใน LINE Application', 'error');
+    setTimeout(() => location.href = 'index.html', 2000);
+    return;
+  }
+
+  // Populate education province
+  const provSel = document.getElementById('inp-educationProvince');
+  if (provSel) {
+    const provinces = await Address.loadProvinces();
+    provinces.forEach(p => {
+      const o = new Option(p.name, p.id);
+      provSel.appendChild(o);
+    });
+  }
+
+  await Form.init();
+})();
+</script>
+</body>
+</html>

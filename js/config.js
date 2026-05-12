@@ -23,7 +23,7 @@ const CONFIG = {
 
   // School Info
   SCHOOL_NAME: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์',
-  SCHOOL_ADDRESS: '123 ถนนตัวอย่าง อำเภอเมือง จังหวัดตัวอย่าง 10000',
+  SCHOOL_ADDRESS: '18 ซอยจรัญสนิทวงศ์41 อรุณอมรินทร์ บางกอกน้อย กรุงเทพฯ',
   SCHOOL_PHONE: '02-4346155',
   SCHOOL_LINE: '@ctc.bangkok',
 
@@ -31,7 +31,7 @@ const CONFIG = {
   ADMIN_PASSWORDS: ['admin1234'],        // ในระบบจริงใช้ Token / OAuth
 
   // ปีการศึกษา
-  ACADEMIC_YEAR: 2568,
+  ACADEMIC_YEAR: 2569,
 };
 
 // อย่า export ถ้าใช้ใน plain HTML — ใช้ CONFIG object โดยตรง

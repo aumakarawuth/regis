@@ -316,7 +316,8 @@
   try {
     var provSel = document.getElementById('inp-educationProvince');
       if (provSel) {
-        PROVINCES_DATA.forEach(function(p) {
+        var eduProvinces = await Address.loadProvinces();
+        eduProvinces.forEach(function(p) {
           var o = document.createElement('option');
           o.value = p.id; o.textContent = p.name;
           provSel.appendChild(o);

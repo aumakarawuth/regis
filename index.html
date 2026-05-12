@@ -2,248 +2,205 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1A1D23">
-  <title>Admin — ระบบรับสมัคร</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#00B900">
+  <title>สมัครเรียน — LINE OA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    body { background: #1A1D23; }
-
-    .admin-header {
-      background: #1A1D23;
-      color: #fff;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #2D3139;
-    }
-
-    .admin-header h1 { font-size: 1rem; font-weight: 700; }
-    .admin-header .admin-badge {
-      background: var(--clr-accent);
-      color: #fff;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: var(--r-full);
-      letter-spacing: 0.05em;
-    }
-
-    .admin-content {
-      background: var(--clr-bg);
-      min-height: calc(100vh - 57px);
-      padding: 16px;
-    }
-
-    /* Login screen */
-    .admin-login {
+    .login-page {
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-    }
-
-    .login-box {
-      background: #fff;
-      border-radius: 20px;
       padding: 32px 24px;
-      width: 100%;
-      max-width: 360px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      background: linear-gradient(160deg, #f0fdf0 0%, #fff 60%);
     }
 
-    .login-box h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
-    .login-box p { font-size: 0.875rem; color: var(--clr-text-muted); margin-bottom: 24px; }
-
-    /* Student row */
-    .student-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--clr-border);
-      cursor: pointer;
-    }
-    .student-row:last-child { border-bottom: none; }
-    .student-avatar {
-      width: 40px; height: 40px;
+    .school-logo {
+      width: 100px; height: 100px;
       background: var(--clr-primary-light);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.125rem;
-      flex-shrink: 0;
-    }
-    .student-info { flex: 1; min-width: 0; }
-    .student-name { font-weight: 600; font-size: 0.9375rem; }
-    .student-meta { font-size: 0.75rem; color: var(--clr-text-muted); }
-    .student-appno { font-size: 0.75rem; font-weight: 700; color: var(--clr-primary); }
-
-    /* Detail modal */
-    #detail-modal {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 5000;
-      display: flex;
-      align-items: flex-end;
+      font-size: 3rem;
+      margin-bottom: 24px;
+      border: 3px solid var(--clr-primary);
     }
 
-    .modal-sheet {
-      background: #fff;
-      border-radius: 20px 20px 0 0;
+    .school-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--clr-text);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .school-sub {
+      font-size: 0.875rem;
+      color: var(--clr-text-muted);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-card {
       width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 20px;
+      max-width: 360px;
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     }
 
-    .modal-handle {
-      width: 40px; height: 4px;
-      background: var(--clr-border);
-      border-radius: 2px;
-      margin: 0 auto 16px;
+    .login-card h2 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
     }
 
-    .doc-verify-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--clr-border);
+    .login-card p {
+      font-size: 0.875rem;
+      color: var(--clr-text-muted);
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.7;
     }
 
-    .doc-verify-row img {
-      width: 60px; height: 45px;
-      object-fit: cover;
-      border-radius: 6px;
-      cursor: pointer;
+    .line-icon {
+      width: 24px; height: 24px;
     }
 
-    .doc-verify-row .doc-info { flex: 1; }
-    .doc-verify-row .doc-name { font-size: 0.875rem; font-weight: 600; }
+    .already-applied {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .already-applied a {
+      color: var(--clr-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .status-card {
+      background: var(--clr-bg);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      margin-top: 24px;
+    }
+
+    .status-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
   </style>
 </head>
 <body>
 
 <div id="app">
   <!-- Loading -->
-  <div id="loading-overlay" class="hidden">
+  <div id="loading-overlay">
     <div class="spinner"></div>
-    <p>กำลังโหลด...</p>
+    <p>กำลังเชื่อมต่อ LINE...</p>
   </div>
 
   <!-- Toast -->
   <div id="toast-container"></div>
 
-  <!-- Admin Login -->
-  <div id="admin-login" class="admin-login">
-    <div class="login-box">
-      <h2>🔐 Admin Login</h2>
-      <p>ระบบจัดการการรับสมัครนักเรียน</p>
-      <div class="field-stack">
-        <div class="form-group">
-          <label class="form-label">รหัสผ่าน</label>
-          <input class="form-control" id="admin-password" type="password" placeholder="กรอกรหัสผ่าน Admin">
-        </div>
-        <button id="btn-admin-login" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
-      </div>
-    </div>
-  </div>
+  <!-- Login Screen -->
+  <div id="login-screen" class="login-page hidden">
+    <div class="school-logo">🏫</div>
+    <div class="school-name" id="school-name">วิทยาลัยเทคนิคตัวอย่าง</div>
+    <div class="school-sub">ระบบรับสมัครนักเรียนใหม่ ปีการศึกษา 2568</div>
 
-  <!-- Admin Dashboard -->
-  <div id="admin-dashboard" class="hidden">
-    <header class="admin-header">
-      <div>
-        <h1>📊 Dashboard รับสมัคร</h1>
-      </div>
-      <span class="admin-badge">ADMIN</span>
-    </header>
+    <div class="login-card">
+      <h2>เข้าสู่ระบบสมัครเรียน</h2>
+      <p>กรุณาเข้าสู่ระบบด้วย LINE เพื่อดำเนินการสมัคร<br>ข้อมูลจะถูกเก็บเป็นความลับ</p>
 
-    <div class="admin-content">
-
-      <!-- Stats Grid -->
-      <div class="stats-grid" id="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="stat-total">—</div>
-          <div class="stat-label">ยอดสมัครทั้งหมด</div>
-        </div>
-        <div class="stat-card accent">
-          <div class="stat-value" id="stat-today">—</div>
-          <div class="stat-label">สมัครวันนี้</div>
-        </div>
-        <div class="stat-card warning">
-          <div class="stat-value" id="stat-pending">—</div>
-          <div class="stat-label">รอตรวจสอบ</div>
-        </div>
-        <div class="stat-card info">
-          <div class="stat-value" id="stat-verified">—</div>
-          <div class="stat-label">ผ่านการตรวจ</div>
-        </div>
-      </div>
-
-      <!-- Branch Stats -->
-      <div class="card mt-4" id="branch-stats-card">
-        <p class="section-title">ยอดสมัครแยกตามสาขา</p>
-        <div id="branch-stats">
-          <div style="text-align:center;padding:16px;color:var(--clr-text-muted)">กำลังโหลด...</div>
-        </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="tab-list mt-4">
-        <button class="tab-btn active" data-tab="all">ทั้งหมด</button>
-        <button class="tab-btn" data-tab="pending">รอตรวจ</button>
-        <button class="tab-btn" data-tab="verified">ผ่านแล้ว</button>
-        <button class="tab-btn" data-tab="incomplete">เอกสารไม่ครบ</button>
-      </div>
-
-      <!-- Search -->
-      <div class="search-bar mt-3">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      <button id="btn-line-login" class="btn btn-line btn-full">
+        <svg class="line-icon" viewBox="0 0 24 24" fill="white">
+          <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
         </svg>
-        <input class="form-control" id="search-input" type="search"
-          placeholder="ค้นหาชื่อ / เลขบัตร / เลขสมัคร" style="padding-left:40px">
-      </div>
+        เข้าสู่ระบบด้วย LINE
+      </button>
 
-      <!-- Export -->
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button id="btn-export-csv" class="btn btn-outline btn-sm">📥 Export CSV</button>
-        <button id="btn-refresh" class="btn btn-ghost btn-sm">🔄 รีเฟรช</button>
+      <div class="already-applied">
+        <a id="link-check-status" href="#">ตรวจสอบสถานะการสมัคร</a>
       </div>
-
-      <!-- Student List -->
-      <div class="card mt-3" style="padding:0;overflow:hidden">
-        <div id="student-list" style="padding:0 16px">
-          <div style="text-align:center;padding:24px;color:var(--clr-text-muted)">กำลังโหลด...</div>
-        </div>
-        <div id="pagination" style="padding:12px 16px;border-top:1px solid var(--clr-border);display:flex;gap:8px;justify-content:center"></div>
-      </div>
-
     </div>
   </div>
 
-  <!-- Detail Modal -->
-  <div id="detail-modal" class="hidden">
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <div id="modal-content"></div>
+  <!-- Logged in but already applied -->
+  <div id="applied-screen" class="hidden" style="padding:24px">
+    <div class="status-card">
+      <h3>📋 สถานะการสมัคร</h3>
+      <div id="status-content"></div>
+      <button id="btn-new-apply" class="btn btn-outline btn-full mt-4">สมัครใหม่ / แก้ไข</button>
     </div>
   </div>
 
 </div>
 
+<!-- LINE LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
-<script src="js/admin.js"></script>
+<script src="js/liff.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  Admin.init();
-});
+(async () => {
+  // ตั้งชื่อโรงเรียน
+  const nameEl = document.getElementById('school-name');
+  if (nameEl) nameEl.textContent = CONFIG.SCHOOL_NAME;
+
+  // Init LIFF
+  const ok = await LIFF.init();
+
+  hideLoading();
+
+  if (ok) {
+    // ล็อกอินแล้ว → เช็คว่าสมัครแล้วหรือยัง
+    const user = LIFF.getUser();
+    try {
+      const res = await API.getApplicationStatus(user.userId);
+      if (res.applied) {
+        // แสดงสถานะ
+        document.getElementById('applied-screen').classList.remove('hidden');
+        document.getElementById('status-content').innerHTML = `
+          <div class="review-row"><span class="review-key">เลขสมัคร</span><span class="review-val fw-600">${res.applicationNo}</span></div>
+          <div class="review-row"><span class="review-key">สถานะ</span><span class="review-val">
+            <span class="badge ${_statusBadge(res.status)}">${res.statusLabel}</span>
+          </span></div>
+          <div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${res.branchName}</span></div>
+          <div class="review-row"><span class="review-key">วันที่สมัคร</span><span class="review-val">${res.applyDate}</span></div>
+        `;
+        document.getElementById('btn-new-apply').onclick = () => {
+          location.href = 'apply.html';
+        };
+        return;
+      }
+    } catch {}
+
+    // ยังไม่ได้สมัคร → ไปหน้าสมัคร
+    location.href = 'apply.html';
+  } else {
+    // ยังไม่ล็อกอิน
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('btn-line-login').onclick = () => {
+      liff.login({ redirectUri: location.href });
+    };
+  }
+
+  document.getElementById('link-check-status').onclick = (e) => {
+    e.preventDefault();
+    showToast('กรุณาเข้าสู่ระบบก่อน', 'info');
+    document.getElementById('btn-line-login').click();
+  };
+
+  function _statusBadge(s) {
+    const m = { pending: 'badge-warning', verified: 'badge-success', rejected: 'badge-danger' };
+    return m[s] || 'badge-gray';
+  }
+})();
 </script>
 </body>
 </html>

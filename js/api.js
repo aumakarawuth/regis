@@ -1,36 +1,50 @@
 // ============================================
-// api.js — GAS API Client
+// api.js — GAS API Client (แก้ 400 Bad Request)
 // ============================================
+// ปัญหา: GAS Web App ไม่รองรับ CORS preflight (OPTIONS)
+// วิธีแก้:
+//   GET  → fetch ปกติ (ไม่มี preflight)
+//   POST → ส่ง body เป็น text/plain หรือ no-cors
+//          แต่ no-cors อ่าน response ไม่ได้
+//          → ใช้ GET + query string แทน POST สำหรับข้อมูลเล็ก
+//          → ใช้ POST + mode:'cors' + Content-Type ไม่ใส่ (ให้เป็น text/plain auto)
 
 const API = {
   baseUrl: CONFIG.API_BASE_URL,
 
+  // ---- GET request ----
   async get(action, params = {}) {
     const url = new URL(this.baseUrl);
     url.searchParams.set('action', action);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) url.searchParams.set(k, v);
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const res = await fetch(url.toString(), { method: 'GET' });
+    if (!res.ok) throw new Error('GET ' + action + ' failed: HTTP ' + res.status);
+    const text = await res.text();
+    return JSON.parse(text);
   },
 
+  // ---- POST request ----
+  // GAS รับ POST ได้แต่ต้องไม่ส่ง Content-Type: application/json (ทำให้เกิด preflight)
+  // วิธีที่ได้ผลสุด: ใส่ action ใน query string, ส่ง body เป็น JSON string ธรรมดา
   async post(action, body = {}) {
     const url = new URL(this.baseUrl);
     url.searchParams.set('action', action);
 
+    // ใส่ action ใน body ด้วยเพื่อความมั่นใจ
+    const payload = { ...body, action };
+
     const res = await fetch(url.toString(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      // ไม่ใส่ Content-Type header → browser ใช้ text/plain อัตโนมัติ → ไม่มี preflight
+      body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    if (!res.ok) throw new Error('POST ' + action + ' failed: HTTP ' + res.status);
+    const text = await res.text();
+    return JSON.parse(text);
   },
 
   // ---------- Programs ----------
@@ -61,9 +75,7 @@ const API = {
   },
 
   // ---------- Document Upload ----------
-  // GAS ไม่รองรับ multipart โดยตรง → ส่งเป็น base64
   async uploadDocument(payload) {
-    // payload = { studentId, docType, fileName, base64Data, mimeType }
     return this.post('uploadDocument', payload);
   },
 
@@ -83,15 +95,20 @@ const API = {
   async adminUpdateStatus(token, studentId, status) {
     return this.post('adminUpdateStatus', { token, studentId, status });
   },
+
+  // ---------- Health Check ----------
+  async ping() {
+    return this.get('ping');
+  },
 };
 
-// ---- Helpers ----
+// ---- UI Helpers ----
 function showLoading(msg = 'กำลังโหลด...') {
   const el = document.getElementById('loading-overlay');
-  if (el) {
-    el.querySelector('p').textContent = msg;
-    el.classList.remove('hidden');
-  }
+  if (!el) return;
+  const p = el.querySelector('p');
+  if (p) p.textContent = msg;
+  el.classList.remove('hidden');
 }
 
 function hideLoading() {
@@ -99,12 +116,12 @@ function hideLoading() {
   if (el) el.classList.add('hidden');
 }
 
-function showToast(msg, type = 'info', duration = 3000) {
+function showToast(msg, type = 'info', duration = 3500) {
   const container = document.getElementById('toast-container');
-  if (!container) return;
+  if (!container) { console.warn('Toast:', msg); return; }
 
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
+  toast.className = 'toast ' + type;
   toast.textContent = msg;
   container.appendChild(toast);
 

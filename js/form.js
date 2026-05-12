@@ -125,7 +125,7 @@ const Form = {
       7: () => this._initStep7(),
       8: () => this._initStep8(),
     };
-    if (initMap[n]) initMap[n]();
+    if (initMap[n]) await initMap[n]();
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
@@ -208,8 +208,8 @@ const Form = {
   },
 
   // ============ Step 3: ที่อยู่ ============
-  _initStep3() {
-    Address.bindAddressSelects({
+  async _initStep3() {
+    await Address.bindAddressSelects({
       provinceSelect: document.getElementById('addr-province'),
       districtSelect: document.getElementById('addr-district'),
       subDistrictSelect: document.getElementById('addr-subdistrict'),

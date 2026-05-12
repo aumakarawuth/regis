@@ -20,51 +20,25 @@ const Address = {
 
   async loadProvinces() {
     if (this.provinces.length) return this.provinces;
-    // ลองโหลดจาก API ก่อน, ถ้าล้มเหลวใช้ static data
-    try {
-      const res = await API.getProvinces();
-      if (res && res.data && res.data.length) {
-        this.provinces = res.data;
-        return this.provinces;
-      }
-    } catch (e) {}
-    // Fallback: ใช้ static data ที่ฝังไว้
+    // ใช้ static data ทันที (ครบ 77 จังหวัด ไม่ต้องรอ API)
     this.provinces = PROVINCES_DATA;
     return this.provinces;
   },
 
-  // โหลดอำเภอ — ใช้ static data ก่อน, fallback API
+  // โหลดอำเภอ — ใช้ static data ทันที
   async loadDistricts(provinceId) {
     const key = 'dist_' + provinceId;
     if (this.cache[key]) return this.cache[key];
-    // Static data
-    if (DISTRICTS_DATA[provinceId]) {
-      this.cache[key] = DISTRICTS_DATA[provinceId];
-      return this.cache[key];
-    }
-    // API fallback
-    try {
-      const res = await API.getDistricts(provinceId);
-      this.cache[key] = res.data || [];
-      return this.cache[key];
-    } catch { return []; }
+    this.cache[key] = DISTRICTS_DATA[provinceId] || [];
+    return this.cache[key];
   },
 
-  // โหลดตำบล — ใช้ static data ก่อน, fallback API
+  // โหลดตำบล — ใช้ static data ทันที
   async loadSubDistricts(provinceId, districtId) {
     const key = 'sub_' + districtId;
     if (this.cache[key]) return this.cache[key];
-    // Static data
-    if (SUBDISTRICTS_DATA[districtId]) {
-      this.cache[key] = SUBDISTRICTS_DATA[districtId];
-      return this.cache[key];
-    }
-    // API fallback
-    try {
-      const res = await API.getSubDistricts(districtId);
-      this.cache[key] = res.data || [];
-      return this.cache[key];
-    } catch { return []; }
+    this.cache[key] = SUBDISTRICTS_DATA[districtId] || [];
+    return this.cache[key];
   },
 
   // ---- Render Helpers ----

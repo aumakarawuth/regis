@@ -189,9 +189,7 @@
             </div>
           </label>
         </div>
-        <div id="dual-banner" class="info-banner hidden">
-          💡 <span>ระบบทวิภาคีไม่ต้องชำระค่าสมัครล่วงหน้า ข้ามขั้นตอนการชำระเงินได้</span>
-        </div>
+
       </div>
 
       <!-- 1B: ระดับการศึกษา -->
@@ -364,9 +362,14 @@
     <div class="doc-grid" id="doc-grid"></div>
   </div>
 
-  <!-- ===== STEP 7: ชำระเงิน (ข้ามสำหรับทวิภาคี) ===== -->
+  <!-- ===== STEP 7: ชำระเงิน ===== -->
   <div class="step-panel" id="step-7">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
+    <!-- Skip payment banner -->
+    <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
+      <button id="btn-skip-payment" class="btn btn-sm" style="background:#92400E;color:#fff;white-space:nowrap;flex-shrink:0">ข้ามขั้นตอนนี้</button>
+    </div>
     <div class="qr-container">
       <p class="text-sm text-muted">สแกน QR Code PromptPay</p>
       <img id="promptpay-qr" alt="QR PromptPay" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block'">
@@ -592,15 +595,36 @@ const Camera = {
     const w=160,h=90; this.canvas.width=w; this.canvas.height=h;
     this.ctx.drawImage(video,0,0,w,h);
     const frame=document.getElementById('camera-frame');
-    const status=document.getElementById('cam-status');
     const shutter=document.getElementById('camera-shutter');
+
+    // Brightness check
     const imgData=this.ctx.getImageData(Math.round(w*0.1),Math.round(h*0.1),Math.round(w*0.8),Math.round(h*0.8));
     var sum=0; for(var i=0;i<imgData.data.length;i+=4) sum+=0.299*imgData.data[i]+0.587*imgData.data[i+1]+0.114*imgData.data[i+2];
     const brightness=sum/(imgData.data.length/4);
-    const ok=brightness>=40;
-    this._frameOk=ok;
-    if(!ok){this._setFrame('yellow','💡 แสงน้อยเกินไป',shutter,frame,false);}
-    else{this._setFrame('green','✅ พร้อมถ่าย',shutter,frame,true);this._triggerAuto();}
+
+    // Edge / contrast detection — detect if a card-like object is in frame
+    // Sample pixel variance in center region: high variance = object present
+    const cx=Math.round(w*0.2), cy=Math.round(h*0.2), cw=Math.round(w*0.6), ch=Math.round(h*0.6);
+    const region=this.ctx.getImageData(cx,cy,cw,ch);
+    var mean=0,sq=0,n=region.data.length/4;
+    for(var j=0;j<region.data.length;j+=4) mean+=(0.299*region.data[j]+0.587*region.data[j+1]+0.114*region.data[j+2]);
+    mean/=n;
+    for(var k=0;k<region.data.length;k+=4){var lum=0.299*region.data[k]+0.587*region.data[k+1]+0.114*region.data[k+2];sq+=(lum-mean)*(lum-mean);}
+    const variance=sq/n;
+    const hasObject = variance > 200; // card/document has edges → high variance
+
+    const tooDark = brightness < 40;
+    const ok = !tooDark && hasObject;
+    this._frameOk = ok;
+
+    if(tooDark){
+      this._setFrame('yellow','💡 แสงน้อยเกินไป',shutter,frame,false);
+    } else if(!hasObject){
+      this._setFrame('yellow','🪪 วางบัตร/เอกสารในกรอบ',shutter,frame,false);
+    } else {
+      this._setFrame('green','✅ พบเอกสาร — กำลังนับถอยหลัง...',shutter,frame,true);
+      this._triggerAuto();
+    }
   },
   _setFrame(color,msg,shutter,frame,enabled){
     const colors={red:'#EF4444',yellow:'#F59E0B',green:'#10B981'};const c=colors[color]||'#fff';
@@ -610,16 +634,19 @@ const Camera = {
     if(enabled){shutter.classList.remove('disabled');shutter.style.opacity='1';}
     else{shutter.classList.add('disabled');shutter.style.opacity='0.4';this._cancelAuto();}
   },
+  // 5-second countdown: counts 5→4→3→2→1 then captures
   _triggerAuto() {
-    if(this._autoTimer) return; let count=2;
+    if(this._autoTimer) return;
+    let count=5;
     const countdown=document.getElementById('cam-countdown');
     const tick=()=>{
-      if(!this._frameOk){this._cancelAuto();return;}
-      if(count<=0){this._cancelAuto();if(this._frameOk)this.capture();return;}
-      countdown.textContent=count; countdown.style.opacity='1'; count--;
-      this._autoTimer=setTimeout(tick,700);
+      if(!this._frameOk){ this._cancelAuto(); return; }
+      if(count<=0){ this._cancelAuto(); if(this._frameOk) this.capture(); return; }
+      countdown.textContent=count; countdown.style.opacity='1';
+      count--;
+      this._autoTimer=setTimeout(tick,1000); // 1 วินาทีต่อตัวเลข → รวม 5 วิ
     };
-    this._autoTimer=setTimeout(tick,800);
+    this._autoTimer=setTimeout(tick,1000);
   },
   _cancelAuto(){if(this._autoTimer){clearTimeout(this._autoTimer);this._autoTimer=null;}const cd=document.getElementById('cam-countdown');if(cd){cd.style.opacity='0';cd.textContent='';} },
   capture() {
@@ -699,21 +726,10 @@ const Form = {
   },
   programs: { levels:[], branches:[], rounds:[] },
 
-  // Effective total steps
-  get totalSteps() { return this.isDual ? 7 : 8; },
-  // Map visual step → actual step id
-  stepId(n) {
-    if(!this.isDual) return n;
-    // dual: skip step 7 (payment)
-    if(n <= 6) return n;
-    return n + 1; // step 7 visual → step 8 id
-  },
-  // Actual step → visual step
-  visualStep(sid) {
-    if(!this.isDual) return sid;
-    if(sid <= 6) return sid;
-    return sid - 1;
-  },
+  // All rounds have 8 steps; payment step can be skipped via button
+  get totalSteps() { return 8; },
+  stepId(n) { return n; },
+  visualStep(sid) { return sid; },
 
   async init() {
     const user = LIFF && LIFF.getUser ? LIFF.getUser() : JSON.parse(sessionStorage.getItem('lineUser')||'null');
@@ -811,7 +827,6 @@ const Form = {
         const names={morning:'รอบเช้า',afternoon:'รอบบ่าย',dual:'ทวิภาคี'};
         this.data.studyRoundName = names[radio.value]||radio.value;
         this.isDual = radio.value==='dual';
-        document.getElementById('dual-banner').classList.toggle('hidden', !this.isDual);
         document.getElementById('step-total').textContent = this.totalSteps;
         // enable level
         const lg=document.getElementById('level-group');
@@ -1010,9 +1025,22 @@ const Form = {
     const qrImg=document.getElementById('promptpay-qr');
     qrImg.src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
     document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER;
+
+    // Skip payment button — available for ALL rounds
+    const skipBtn=document.getElementById('btn-skip-payment');
+    if(skipBtn && !skipBtn._bound){
+      skipBtn._bound=true;
+      skipBtn.onclick=()=>{
+        this.data.payment.skipped=true;
+        this.data.payment.slipBase64='';
+        this._saveStep(this.currentStep);
+        this._renderStep(this.currentStep+1);
+      };
+    }
+
     const slipCard=document.getElementById('slip-upload-card');
     if(!slipCard._bound){
-      initDocUpload(slipCard,'payment_slip',(_, base64)=>{ this.data.payment.slipBase64=base64; });
+      initDocUpload(slipCard,'payment_slip',(_, base64)=>{ this.data.payment.slipBase64=base64; this.data.payment.skipped=false; });
       slipCard._bound=true;
     }
     if(this.data.payment.slipBase64){
@@ -1041,8 +1069,8 @@ const Form = {
       </div>
       <div class="review-section"><h3>เอกสาร</h3>
         ${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}
-        ${!this.isDual&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}
-        ${this.isDual?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ทวิภาคี — ไม่ต้องชำระล่วงหน้า</span></div>':''}
+        ${!this.data.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}
+        ${this.data.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}
       </div>`;
     document.getElementById('review-content').innerHTML=html;
   },
@@ -1075,7 +1103,8 @@ const Form = {
       for(const r of required){ if(!this.data.documents[r]) return err('กรุณาอัปโหลด '+_docLabel(r)); }
     }
     if(sid===7){
-      if(!this.data.payment.slipBase64) return err('กรุณาแนบสลิปการชำระเงิน');
+      // ข้ามได้สำหรับทุกรอบ — ถ้ามีสลิปต้องมีไฟล์ ถ้าไม่มีก็ผ่านได้
+      // validation ไม่บังคับที่นี่ เพราะปุ่มข้ามจัดการแยก
     }
     return true;
   },

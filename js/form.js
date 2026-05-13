@@ -131,55 +131,115 @@ const Form = {
   },
 
   // ============ Step 1: เลือกหลักสูตร ============
-  _initStep1() {
-    const { levels, branches, rounds } = this.programs;
+_initStep1() {
+  const { levels, branches } = this.programs;
 
-    const levelSel = document.getElementById('sel-level');
-    const branchSel = document.getElementById('sel-branch');
-    const roundSel = document.getElementById('sel-round');
+  // --- 1. Bind round cards ---
+  document.querySelectorAll('input[name="study-round"]').forEach(radio => {
+    const card = radio.closest('.round-card');
+    if (radio.value === this.data.studyRound) {
+      card.classList.add('selected'); radio.checked = true;
+    }
 
-    // Populate levels
-    levelSel.innerHTML = '<option value="">-- เลือกระดับการศึกษา --</option>';
-    levels.forEach(l => {
-      const o = new Option(l.name, l.id);
-      levelSel.appendChild(o);
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.round-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      this.data.studyRound = radio.value;
+      this.data.studyRoundName = { morning:'รอบเช้า', afternoon:'รอบบ่าย', dual:'ทวิภาคี' }[radio.value] || radio.value;
+
+      // รีเซ็ต level/branch เมื่อเปลี่ยนรอบ
+      this.data.levelId = '';
+      this.data.levelName = '';
+      this.data.branchId = '';
+      this.data.branchName = '';
+      this.data.selectedProgramId = '';
+
+      // เปิด level group
+      const lg = document.getElementById('level-group');
+      lg.style.opacity = '1'; lg.style.pointerEvents = 'auto';
+      this._populateLevels();
     });
+  });
 
-    levelSel.value = this.data.levelId;
+  if (this.data.studyRound) {
+    document.getElementById('level-group').style.opacity = '1';
+    document.getElementById('level-group').style.pointerEvents = 'auto';
+    this._populateLevels();
+  }
+},
 
-    const updateBranches = () => {
-      const lvId = levelSel.value;
-      const filtered = branches.filter(b => b.levelId === lvId && b.isOpen);
-      branchSel.innerHTML = '<option value="">-- เลือกสาขาวิชา --</option>';
-      filtered.forEach(b => {
-        const o = new Option(b.name, b.id);
-        branchSel.appendChild(o);
-      });
-      branchSel.disabled = filtered.length === 0;
-      branchSel.value = this.data.branchId;
-      roundSel.innerHTML = '<option value="">-- เลือกรอบ --</option>';
-      roundSel.disabled = true;
-      roundSel.value = '';
-    };
+_populateLevels() {
+  const { levels, branches } = this.programs;
+  const round = this.data.studyRound;
 
-    const updateRounds = () => {
-      const brId = branchSel.value;
-      const filtered = rounds.filter(r => r.branchId === brId);
-      roundSel.innerHTML = '<option value="">-- เลือกรอบ --</option>';
-      filtered.forEach(r => {
-        const o = new Option(`${r.name} (${r.remaining} ที่เหลือ)`, r.id);
-        o.disabled = r.remaining <= 0;
-        roundSel.appendChild(o);
-      });
-      roundSel.disabled = filtered.length === 0;
-      roundSel.value = this.data.roundId;
-    };
+  // กรอง level เฉพาะที่มีสาขาเปิดในรอบนี้
+  const activeLevelIds = new Set(
+    branches
+      .filter(b => b.programs.some(p => p.round === this._roundLabel(round) && p.isOpen))
+      .map(b => b.levelId)
+  );
+  const filteredLevels = levels.filter(l => activeLevelIds.has(l.id));
 
-    levelSel.addEventListener('change', updateBranches);
-    branchSel.addEventListener('change', updateRounds);
+  const levelSel = document.getElementById('sel-level');
+  levelSel.innerHTML = '<option value="">-- เลือกระดับการศึกษา --</option>';
+  filteredLevels.forEach(l => levelSel.appendChild(new Option(l.name, l.id)));
+  levelSel.value = this.data.levelId;
 
-    if (this.data.levelId) { updateBranches(); updateRounds(); }
-  },
+  const bg = document.getElementById('branch-group');
+  bg.style.opacity = '0.4'; bg.style.pointerEvents = 'none';
+
+  // remove old listener แล้วผูกใหม่
+  const newSel = levelSel.cloneNode(true);
+  levelSel.parentNode.replaceChild(newSel, levelSel);
+  newSel.value = this.data.levelId;
+  newSel.addEventListener('change', () => this._populateBranches(newSel.value));
+  if (this.data.levelId) this._populateBranches(this.data.levelId);
+},
+
+_populateBranches(levelId) {
+  const { branches } = this.programs;
+  const roundLabel = this._roundLabel(this.data.studyRound);
+
+  // กรองสาขา: ต้องตรงระดับ + มีรอบที่เลือก + isOpen
+  const filtered = branches.filter(b =>
+    b.levelId === levelId &&
+    b.programs.some(p => p.round === roundLabel && p.isOpen)
+  );
+
+  const branchSel = document.getElementById('sel-branch');
+  branchSel.innerHTML = '<option value="">-- เลือกสาขาวิชา --</option>';
+  filtered.forEach(b => {
+    const prog = b.programs.find(p => p.round === roundLabel);
+    const label = `${b.name} (รับ ${prog?.remaining ?? 0} ที่)`;
+    const opt = new Option(label, b.id);
+    if ((prog?.remaining ?? 0) <= 0) opt.disabled = true;
+    branchSel.appendChild(opt);
+  });
+
+  branchSel.disabled = filtered.length === 0;
+  const bg = document.getElementById('branch-group');
+  if (filtered.length > 0) { bg.style.opacity = '1'; bg.style.pointerEvents = 'auto'; }
+  else { bg.style.opacity = '0.4'; bg.style.pointerEvents = 'none'; }
+
+  branchSel.value = this.data.branchId;
+
+  // ผูก event
+  const newSel = branchSel.cloneNode(true);
+  branchSel.parentNode.replaceChild(newSel, branchSel);
+  newSel.value = this.data.branchId;
+  newSel.addEventListener('change', () => {
+    // บันทึก programId ของรอบ+สาขาที่เลือก
+    const branch = this.programs.branches.find(b => b.id === newSel.value);
+    const prog = branch?.programs.find(p => p.round === this._roundLabel(this.data.studyRound));
+    this.data.selectedProgramId = prog?.programId || '';
+    this.data.fee = prog?.fee || CONFIG.APPLICATION_FEE;
+  });
+},
+
+// แปลง value ของ radio → ชื่อรอบในชีท
+_roundLabel(round) {
+  return { morning:'รอบเช้า', afternoon:'รอบบ่าย', dual:'ทวิภาคี' }[round] || round;
+},
 
   // ============ Step 2: ข้อมูลส่วนตัว ============
   _initStep2() {
@@ -501,16 +561,14 @@ const Form = {
 
   // ============ Save Step Data ============
   _saveStep(step) {
-    if (step === 1) {
-      const levelEl = document.getElementById('sel-level');
-      const branchEl = document.getElementById('sel-branch');
-      const roundEl = document.getElementById('sel-round');
-      this.data.levelId = levelEl.value;
-      this.data.levelName = levelEl.options[levelEl.selectedIndex]?.text || '';
-      this.data.branchId = branchEl.value;
-      this.data.branchName = branchEl.options[branchEl.selectedIndex]?.text || '';
-      this.data.roundId = roundEl.value;
-      this.data.roundName = roundEl.options[roundEl.selectedIndex]?.text || '';
+    if(sid === 1) {
+      const lv = document.getElementById('sel-level');
+      const br = document.getElementById('sel-branch');
+      this.data.levelId   = lv.value;
+      this.data.levelName = lv.options[lv.selectedIndex]?.text || '';
+      this.data.branchId  = br.value;
+      // ตัด "(รับ X ที่)" ออกจากชื่อสาขา
+      this.data.branchName = (br.options[br.selectedIndex]?.text || '').replace(/\s*\(รับ.+\)/, '');
     }
     if (step === 2) {
       ['idCard', 'prefix', 'firstName', 'lastName', 'birthDate',
@@ -550,10 +608,12 @@ const Form = {
         lineUserId: this.data.lineUserId,
         displayName: this.data.displayName,
         program: {
-          levelId: this.data.levelId,
-          branchId: this.data.branchId,
-          roundId: this.data.roundId,
-        },
+  levelId:  this.data.levelId,
+  branchId: this.data.branchId,
+  // ใช้ selectedProgramId แทน roundId เดิม
+  programId: this.data.selectedProgramId,
+  studyRound: this.data.studyRound,
+},
         personal: {
           idCard: this.data.idCard,
           prefix: this.data.prefix,

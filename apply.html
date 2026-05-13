@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* ---- base.css inlined ---- */
     :root {
       --clr-primary:#00B900; --clr-primary-dark:#009900; --clr-primary-light:#E8F9E8;
       --clr-accent:#FF6B35; --clr-accent-dark:#E85A24;
@@ -40,6 +41,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     #loading-overlay p{margin-top:var(--sp-3);color:var(--clr-text-muted);font-size:0.875rem}
 
+    /* ---- components ---- */
     .app-header{background:var(--clr-primary);color:#fff;padding:var(--sp-4);display:flex;align-items:center;gap:var(--sp-3);position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md)}
     .app-header h1{font-size:1rem;font-weight:700;flex:1}
     .user-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5)}
@@ -76,6 +78,7 @@
     .success-icon{width:80px;height:80px;background:var(--clr-primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--sp-5);font-size:2.5rem}
     .app-number{font-size:1.75rem;font-weight:700;color:var(--clr-primary);letter-spacing:0.05em;background:var(--clr-primary-light);padding:var(--sp-3) var(--sp-6);border-radius:var(--r-md);display:inline-block;margin:var(--sp-4) 0}
 
+    /* ---- steps ---- */
     .step-progress{background:var(--clr-bg);padding:var(--sp-4) var(--sp-4) var(--sp-3);border-bottom:1px solid var(--clr-border)}
     .step-progress-bar{height:4px;background:var(--clr-border);border-radius:var(--r-full);overflow:hidden}
     .step-progress-fill{height:100%;background:var(--clr-primary);border-radius:var(--r-full);transition:width 0.4s ease}
@@ -99,33 +102,52 @@
     .review-row{display:flex;gap:var(--sp-3);padding:var(--sp-2) 0;font-size:0.9rem}
     .review-row .review-key{width:110px;flex-shrink:0;color:var(--clr-text-muted);font-size:0.8125rem}
     .review-row .review-val{font-weight:500;flex:1}
+
+    /* round cards */
     .round-cards{display:flex;flex-direction:column;gap:var(--sp-3)}
     .round-card{border:2px solid var(--clr-border);border-radius:var(--r-md);padding:var(--sp-4);cursor:pointer;transition:all var(--transition);background:var(--clr-surface);display:flex;align-items:center;gap:var(--sp-3)}
     .round-card:active{background:var(--clr-primary-light)}
     .round-card.selected{border-color:var(--clr-primary);background:var(--clr-primary-light)}
     .round-card input[type="radio"]{width:18px;height:18px;accent-color:var(--clr-primary);flex-shrink:0}
+    .round-card .rc-info{}
     .round-card .rc-name{font-weight:700;font-size:1rem}
     .round-card .rc-sub{font-size:0.8125rem;color:var(--clr-text-muted);margin-top:2px}
 
-    /* Camera — ไม่มีกรอบ */
+    /* info banner */
+    .info-banner{background:var(--clr-primary-light);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-4);font-size:0.875rem;color:#005700;display:flex;align-items:flex-start;gap:var(--sp-2)}
+
+    /* camera */
     #camera-overlay{position:fixed;inset:0;background:#000;z-index:8000;display:flex;flex-direction:column}
     #camera-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .cam-corner{position:absolute;width:20px;height:20px;border-color:inherit;border-style:solid}
+    .cam-corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+    .cam-corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+    .cam-corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+    .cam-corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+    #camera-shutter:active{transform:scale(0.9)}
+    #camera-shutter.disabled{opacity:0.4;cursor:not-allowed}
+    #camera-shutter.disabled:active{transform:none}
   </style>
 </head>
 <body>
 <div id="app">
 
+  <!-- Loading -->
   <div id="loading-overlay" class="hidden">
     <div class="spinner"></div>
     <p id="loading-text">กำลังโหลด...</p>
   </div>
+
+  <!-- Toast -->
   <div id="toast-container"></div>
 
+  <!-- Header -->
   <header class="app-header">
     <img id="header-avatar" class="user-avatar" src="" alt="" style="display:none" onerror="this.style.display='none'">
     <h1 id="header-name">ระบบรับสมัครนักเรียน</h1>
   </header>
 
+  <!-- Step Progress -->
   <div class="step-progress" id="step-progress">
     <div class="step-progress-bar">
       <div class="step-progress-fill" id="progress-fill" style="width:0%"></div>
@@ -136,28 +158,41 @@
     </div>
   </div>
 
-  <!-- STEP 1: เลือกหลักสูตร -->
+  <!-- ===== STEP 1: เลือกรอบ → ระดับ → สาขา ===== -->
   <div class="step-panel active" id="step-1">
     <div class="step-heading"><div class="step-icon">📚</div>เลือกหลักสูตร</div>
     <div class="field-stack">
+
+      <!-- 1A: รอบเรียน -->
       <div class="form-group">
         <label class="form-label">รอบเรียน <span class="required">*</span></label>
-        <div class="round-cards">
-          <label class="round-card">
+        <div class="round-cards" id="round-cards">
+          <label class="round-card" id="rc-morning">
             <input type="radio" name="study-round" value="morning">
-            <div><div class="rc-name">☀️ รอบเช้า</div><div class="rc-sub">เรียน จ–ศ เวลา 08:00–16:30 น.</div></div>
+            <div class="rc-info">
+              <div class="rc-name">☀️ รอบเช้า</div>
+              <div class="rc-sub">เรียน จ–ศ เวลา 08:00–16:30 น.</div>
+            </div>
           </label>
-          <label class="round-card">
+          <label class="round-card" id="rc-afternoon">
             <input type="radio" name="study-round" value="afternoon">
-            <div><div class="rc-name">🌤️ รอบบ่าย</div><div class="rc-sub">เรียน จ–ศ เวลา 12:00–20:30 น.</div></div>
+            <div class="rc-info">
+              <div class="rc-name">🌤️ รอบบ่าย</div>
+              <div class="rc-sub">เรียน จ–ศ เวลา 12:00–20:30 น.</div>
+            </div>
           </label>
-          <label class="round-card">
+          <label class="round-card" id="rc-dual">
             <input type="radio" name="study-round" value="dual">
-            <div><div class="rc-name">🏭 ทวิภาคี</div><div class="rc-sub">เรียนควบคู่กับสถานประกอบการ</div></div>
+            <div class="rc-info">
+              <div class="rc-name">🏭 ทวิภาคี</div>
+              <div class="rc-sub">เรียนควบคู่กับสถานประกอบการ</div>
+            </div>
           </label>
         </div>
+
       </div>
 
+      <!-- 1B: ระดับการศึกษา -->
       <div class="form-group" id="level-group" style="opacity:0.4;pointer-events:none">
         <label class="form-label">ระดับการศึกษา <span class="required">*</span></label>
         <select class="form-control" id="sel-level">
@@ -165,6 +200,7 @@
         </select>
       </div>
 
+      <!-- 1C: สาขาวิชา -->
       <div class="form-group" id="branch-group" style="opacity:0.4;pointer-events:none">
         <label class="form-label">สาขาวิชา <span class="required">*</span></label>
         <select class="form-control" id="sel-branch" disabled>
@@ -178,7 +214,7 @@
     </div>
   </div>
 
-  <!-- STEP 2: ข้อมูลส่วนตัว -->
+  <!-- ===== STEP 2: ข้อมูลส่วนตัว ===== -->
   <div class="step-panel" id="step-2">
     <div class="step-heading"><div class="step-icon">👤</div>ข้อมูลส่วนตัว</div>
     <div class="field-stack">
@@ -220,9 +256,7 @@
         <label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label>
         <select class="form-control" id="inp-education">
           <option value="">-- เลือก --</option>
-          <option value="ม.3">มัธยมศึกษาตอนต้น (ม.3)</option>
-          <option value="ม.6">มัธยมศึกษาตอนปลาย (ม.6)</option>
-          <option value="ปวช.">ปวช.</option>
+          <!-- filled dynamically based on level -->
         </select>
       </div>
       <div class="form-group">
@@ -238,7 +272,7 @@
     </div>
   </div>
 
-  <!-- STEP 3: ที่อยู่ -->
+  <!-- ===== STEP 3: ที่อยู่ ===== -->
   <div class="step-panel" id="step-3">
     <div class="step-heading"><div class="step-icon">🏠</div>ที่อยู่ปัจจุบัน</div>
     <div class="field-stack">
@@ -265,7 +299,7 @@
     </div>
   </div>
 
-  <!-- STEP 4: บิดา/มารดา -->
+  <!-- ===== STEP 4: บิดา/มารดา ===== -->
   <div class="step-panel" id="step-4">
     <div class="step-heading"><div class="step-icon">👨‍👩‍👦</div>ข้อมูลบิดา / มารดา</div>
     <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่มีข้อมูล</p>
@@ -273,7 +307,7 @@
     <button id="btn-add-parent" class="btn btn-outline btn-full mt-4">+ เพิ่มข้อมูลบิดา/มารดา</button>
   </div>
 
-  <!-- STEP 5: ผู้ปกครอง -->
+  <!-- ===== STEP 5: ผู้ปกครอง ===== -->
   <div class="step-panel" id="step-5">
     <div class="step-heading"><div class="step-icon">🧑</div>ข้อมูลผู้ปกครอง</div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -321,16 +355,17 @@
     </div>
   </div>
 
-  <!-- STEP 6: เอกสาร (ไม่มี payment_slip) -->
+  <!-- ===== STEP 6: เอกสาร (ตัดสลิป + เพิ่มวุฒิหลัง) ===== -->
   <div class="step-panel" id="step-6">
     <div class="step-heading"><div class="step-icon">📎</div>อัปโหลดเอกสาร</div>
     <p class="text-sm text-muted" style="margin-bottom:16px">ถ่ายภาพหรือเลือกจากแกลเลอรี่</p>
     <div class="doc-grid" id="doc-grid"></div>
   </div>
 
-  <!-- STEP 7: ชำระเงิน -->
+  <!-- ===== STEP 7: ชำระเงิน ===== -->
   <div class="step-panel" id="step-7">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
+    <!-- Skip payment banner -->
     <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
       <button id="btn-skip-payment" class="btn btn-sm" style="background:#92400E;color:#fff;white-space:nowrap;flex-shrink:0">ข้ามขั้นตอนนี้</button>
@@ -354,7 +389,7 @@
     </div>
   </div>
 
-  <!-- STEP 8: ตรวจสอบ -->
+  <!-- ===== STEP 8: ตรวจสอบ ===== -->
   <div class="step-panel" id="step-8">
     <div class="step-heading"><div class="step-icon">✅</div>ตรวจสอบก่อนส่ง</div>
     <div id="review-content"></div>
@@ -363,7 +398,7 @@
     </div>
   </div>
 
-  <!-- Success -->
+  <!-- Success Screen -->
   <div id="success-screen" class="success-screen hidden">
     <div class="success-icon">🎉</div>
     <h2 style="font-size:1.25rem;font-weight:700">ส่งใบสมัครเรียบร้อย!</h2>
@@ -376,6 +411,7 @@
     </div>
   </div>
 
+  <!-- Navigation -->
   <div class="step-nav" id="step-nav">
     <button id="btn-back" class="btn btn-outline btn-back">← ย้อนกลับ</button>
     <button id="btn-next" class="btn btn-accent btn-next">ถัดไป →</button>
@@ -383,9 +419,17 @@
 
 </div><!-- /app -->
 
-<!-- Camera overlay — ไม่มีกรอบ ไม่มี frame detection -->
+<!-- Camera overlay -->
 <div id="camera-overlay" class="hidden">
   <video id="camera-video" autoplay playsinline muted></video>
+  <div id="camera-frame-wrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+    <div id="camera-frame" style="border:3px solid rgba(255,255,255,0.6);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:border-color 0.2s,box-shadow 0.2s;position:relative">
+      <div class="cam-corner tl"></div><div class="cam-corner tr"></div>
+      <div class="cam-corner bl"></div><div class="cam-corner br"></div>
+      <div id="cam-status" style="position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8)">วางเอกสารในกรอบ</div>
+      <div id="cam-countdown" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.2s;pointer-events:none"></div>
+    </div>
+  </div>
   <div id="camera-controls" style="position:absolute;bottom:0;left:0;right:0;padding:16px 24px 32px;background:linear-gradient(transparent,rgba(0,0,0,0.75));display:flex;align-items:center;justify-content:space-between">
     <button id="camera-cancel" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer">ยกเลิก</button>
     <button id="camera-shutter" style="width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,0.4);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.4)">
@@ -458,8 +502,13 @@ const API = {
 // ============================================================
 const Address = {
   provinces:[], _districts:{}, _subdistricts:{}, _pvLoaded:false, _subLoaded:false,
+  _basePath() {
+    var s=document.querySelectorAll('script[src*="address"]');
+    return s.length ? s[s.length-1].src.replace(/\/[^/]+$/,'/') : location.href.replace(/\/[^/]*(\?.*)?$/,'/');
+  },
   async _loadProvDist() {
     if(this._pvLoaded) return;
+    // Try fetching from js/data/ folder (relative)
     try {
       var [pv,di] = await Promise.all([
         fetch('js/data/provinces.json').then(r=>r.json()),
@@ -511,63 +560,107 @@ const Address = {
 };
 
 // ============================================================
-// CAMERA — ไม่มีกรอบ ไม่มี frame detection กดถ่ายได้เลย
+// CAMERA (simplified)
 // ============================================================
 const Camera = {
   stream:null, currentCallback:null, currentDocType:null,
-  canvas:document.createElement('canvas'),
-  _facingMode:'environment',
-
+  canvas:document.createElement('canvas'), _facingMode:'environment',
+  _checkInterval:null, _autoTimer:null, _frameOk:false,
   get ctx() { return this.canvas.getContext('2d'); },
-
   init() {
     document.getElementById('camera-cancel').addEventListener('click',()=>this.close());
-    // กดได้เลย ไม่มีเงื่อนไข frameOk
-    document.getElementById('camera-shutter').addEventListener('click',()=>this.capture());
+    document.getElementById('camera-shutter').addEventListener('click',()=>{ if(this._frameOk) this.capture(); });
     document.getElementById('camera-flip').addEventListener('click',()=>this.flipCamera());
   },
-
   async open(docType, callback) {
-    this.currentDocType=docType;
-    this.currentCallback=callback;
-    document.getElementById('camera-overlay').classList.remove('hidden');
-    await this._startStream();
+    this.currentDocType=docType; this.currentCallback=callback;
+    const overlay=document.getElementById('camera-overlay');
+    const frame=document.getElementById('camera-frame');
+    const vw=window.innerWidth;
+    frame.style.width=Math.round(vw*0.82)+'px'; frame.style.height=Math.round(vw*0.82*0.63)+'px';
+    overlay.classList.remove('hidden');
+    await this._startStream(); this._startFrameCheck();
   },
-
   async _startStream() {
     this._stopStream();
-    try {
-      this.stream=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},
-        audio:false
-      });
-      document.getElementById('camera-video').srcObject=this.stream;
-    } catch(err) {
-      showToast('ไม่สามารถเข้าถึงกล้องได้','error');
-      this.close();
+    try { this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false}); document.getElementById('camera-video').srcObject=this.stream; }
+    catch(err) { showToast('ไม่สามารถเข้าถึงกล้องได้','error'); this.close(); }
+  },
+  _stopStream() { if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;} },
+  flipCamera() { this._facingMode=this._facingMode==='environment'?'user':'environment'; this._startStream(); },
+  _startFrameCheck() { clearInterval(this._checkInterval); this._checkInterval=setInterval(()=>this._checkFrame(),200); },
+  _checkFrame() {
+    const video=document.getElementById('camera-video');
+    if(!video||!video.videoWidth) return;
+    const w=160,h=90; this.canvas.width=w; this.canvas.height=h;
+    this.ctx.drawImage(video,0,0,w,h);
+    const frame=document.getElementById('camera-frame');
+    const shutter=document.getElementById('camera-shutter');
+
+    // Brightness check
+    const imgData=this.ctx.getImageData(Math.round(w*0.1),Math.round(h*0.1),Math.round(w*0.8),Math.round(h*0.8));
+    var sum=0; for(var i=0;i<imgData.data.length;i+=4) sum+=0.299*imgData.data[i]+0.587*imgData.data[i+1]+0.114*imgData.data[i+2];
+    const brightness=sum/(imgData.data.length/4);
+
+    // Edge / contrast detection — detect if a card-like object is in frame
+    // Sample pixel variance in center region: high variance = object present
+    const cx=Math.round(w*0.2), cy=Math.round(h*0.2), cw=Math.round(w*0.6), ch=Math.round(h*0.6);
+    const region=this.ctx.getImageData(cx,cy,cw,ch);
+    var mean=0,sq=0,n=region.data.length/4;
+    for(var j=0;j<region.data.length;j+=4) mean+=(0.299*region.data[j]+0.587*region.data[j+1]+0.114*region.data[j+2]);
+    mean/=n;
+    for(var k=0;k<region.data.length;k+=4){var lum=0.299*region.data[k]+0.587*region.data[k+1]+0.114*region.data[k+2];sq+=(lum-mean)*(lum-mean);}
+    const variance=sq/n;
+    const hasObject = variance > 200; // card/document has edges → high variance
+
+    const tooDark = brightness < 40;
+    const ok = !tooDark && hasObject;
+    this._frameOk = ok;
+
+    if(tooDark){
+      this._setFrame('yellow','💡 แสงน้อยเกินไป',shutter,frame,false);
+    } else if(!hasObject){
+      this._setFrame('yellow','🪪 วางบัตร/เอกสารในกรอบ',shutter,frame,false);
+    } else {
+      this._setFrame('green','✅ พบเอกสาร — กำลังนับถอยหลัง...',shutter,frame,true);
+      this._triggerAuto();
     }
   },
-
-  _stopStream() {
-    if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;}
+  _setFrame(color,msg,shutter,frame,enabled){
+    const colors={red:'#EF4444',yellow:'#F59E0B',green:'#10B981'};const c=colors[color]||'#fff';
+    frame.style.borderColor=c; frame.style.boxShadow=`0 0 0 9999px rgba(0,0,0,0.45),0 0 20px ${c}55`;
+    document.querySelectorAll('.cam-corner').forEach(el=>el.style.borderColor=c);
+    document.getElementById('cam-status').textContent=msg;
+    if(enabled){shutter.classList.remove('disabled');shutter.style.opacity='1';}
+    else{shutter.classList.add('disabled');shutter.style.opacity='0.4';this._cancelAuto();}
   },
-
-  flipCamera() {
-    this._facingMode=this._facingMode==='environment'?'user':'environment';
-    this._startStream();
+  // 5-second countdown: counts 5→4→3→2→1 then captures
+  _triggerAuto() {
+    if(this._autoTimer) return;
+    let count=5;
+    const countdown=document.getElementById('cam-countdown');
+    const tick=()=>{
+      if(!this._frameOk){ this._cancelAuto(); return; }
+      if(count<=0){ this._cancelAuto(); if(this._frameOk) this.capture(); return; }
+      countdown.textContent=count; countdown.style.opacity='1';
+      count--;
+      this._autoTimer=setTimeout(tick,1000); // 1 วินาทีต่อตัวเลข → รวม 5 วิ
+    };
+    this._autoTimer=setTimeout(tick,1000);
   },
-
-  // ถ่ายภาพทั้งหน้าจอกล้อง ไม่ crop กรอบ
+  _cancelAuto(){if(this._autoTimer){clearTimeout(this._autoTimer);this._autoTimer=null;}const cd=document.getElementById('cam-countdown');if(cd){cd.style.opacity='0';cd.textContent='';} },
   capture() {
+    clearInterval(this._checkInterval); this._cancelAuto();
     const video=document.getElementById('camera-video');
-    this.canvas.width=video.videoWidth||1280;
-    this.canvas.height=video.videoHeight||720;
-    this.ctx.drawImage(video,0,0,this.canvas.width,this.canvas.height);
+    const frame=document.getElementById('camera-frame');
+    const vr=video.getBoundingClientRect(),fr=frame.getBoundingClientRect();
+    const sx=(video.videoWidth/vr.width),sy=(video.videoHeight/vr.height);
+    const cx=(fr.left-vr.left)*sx,cy=(fr.top-vr.top)*sy,cw=fr.width*sx,ch=fr.height*sy;
+    this.canvas.width=Math.min(cw,1600); this.canvas.height=this.canvas.width*(ch/cw);
+    this.ctx.drawImage(video,cx,cy,cw,ch,0,0,this.canvas.width,this.canvas.height);
     const base64=this.canvas.toDataURL('image/jpeg',0.85);
-    this.close();
-    if(this.currentCallback) this.currentCallback({base64,isBlurry:false,blurScore:999});
+    this.close(); if(this.currentCallback) this.currentCallback({base64,isBlurry:false,blurScore:999});
   },
-
   pickFromGallery(callback) {
     const input=document.createElement('input'); input.type='file'; input.accept='image/*';
     input.addEventListener('change',async(e)=>{
@@ -577,9 +670,8 @@ const Camera = {
     });
     input.click();
   },
-
   close() {
-    this._stopStream();
+    clearInterval(this._checkInterval); this._cancelAuto(); this._stopStream();
     document.getElementById('camera-overlay').classList.add('hidden');
   },
 };
@@ -593,7 +685,7 @@ function initDocUpload(cardEl, docType, onFile) {
     sheet.style.cssText='position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;';
     sheet.innerHTML=`<div style="width:100%;background:#fff;border-radius:16px 16px 0 0;padding:20px;">
       <p style="font-weight:700;margin-bottom:16px;text-align:center">เลือกรูปภาพ</p>
-      <button id="btn-cam" class="btn btn-primary btn-full" style="margin-bottom:10px">📷 ถ่ายภาพ</button>
+      <button id="btn-cam" class="btn btn-primary btn-full" style="margin-bottom:10px">📷 ถ่ายภาพอัตโนมัติ</button>
       <button id="btn-gal" class="btn btn-outline btn-full" style="margin-bottom:10px">🖼️ เลือกจากแกลเลอรี่</button>
       <button id="btn-cx" class="btn btn-ghost btn-full">ยกเลิก</button></div>`;
     document.body.appendChild(sheet);
@@ -603,7 +695,6 @@ function initDocUpload(cardEl, docType, onFile) {
     sheet.addEventListener('click',e=>{if(e.target===sheet)sheet.remove();});
   });
 }
-
 function _handlePhoto(cardEl,preview,label,result,docType,onFile){
   const {base64}=result;
   if(preview){preview.src=base64;preview.classList.remove('hidden');}
@@ -616,8 +707,10 @@ function _handlePhoto(cardEl,preview,label,result,docType,onFile){
 // FORM CONTROLLER
 // ============================================================
 const Form = {
+  // steps: 1=program, 2=personal, 3=address, 4=parents, 5=guardian, 6=docs, 7=payment, 8=review
+  // For dual: skip step 7 → steps shown = 7
   currentStep: 1,
-  isDual: false,
+  isDual: false, // true when study round = dual
   data: {
     studyRound:'', studyRoundName:'',
     levelId:'', levelName:'',
@@ -628,12 +721,15 @@ const Form = {
     parents:[],
     guardian:{},
     documents:{},
-    payment:{ slipBase64:'', skipped:false },
+    payment:{ slipBase64:'' },
     lineUserId:'', displayName:'', pictureUrl:'',
   },
   programs: { levels:[], branches:[], rounds:[] },
 
+  // All rounds have 8 steps; payment step can be skipped via button
   get totalSteps() { return 8; },
+  stepId(n) { return n; },
+  visualStep(sid) { return sid; },
 
   async init() {
     const user = LIFF && LIFF.getUser ? LIFF.getUser() : JSON.parse(sessionStorage.getItem('lineUser')||'null');
@@ -680,22 +776,25 @@ const Form = {
     else { if(confirm('ออกจากการสมัคร?')) location.href='index.html'; }
   },
 
-  async _renderStep(n) {
-    this.currentStep = n;
+  async _renderStep(visual) {
+    this.currentStep = visual;
+    const sid = this.stepId(visual);
+
     document.querySelectorAll('.step-panel').forEach(el=>el.classList.remove('active'));
-    const panel = document.getElementById('step-'+n);
+    const panel = document.getElementById('step-'+sid);
     if(panel) panel.classList.add('active');
 
-    const pct = ((n-1)/(this.totalSteps-1))*100;
+    // Progress
+    const pct = ((visual-1)/(this.totalSteps-1))*100;
     document.getElementById('progress-fill').style.width = pct+'%';
-    document.getElementById('step-current').textContent = n;
+    document.getElementById('step-current').textContent = visual;
     document.getElementById('step-total').textContent = this.totalSteps;
 
     const titles = ['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา/มารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
-    document.getElementById('step-title-text').textContent = titles[n]||'';
+    document.getElementById('step-title-text').textContent = titles[sid]||'';
 
-    document.getElementById('btn-back').textContent = n===1 ? '✕ ออก' : '← ย้อนกลับ';
-    document.getElementById('btn-next').textContent = n===this.totalSteps ? '✅ ส่งใบสมัคร' : 'ถัดไป →';
+    document.getElementById('btn-back').textContent = visual===1 ? '✕ ออก' : '← ย้อนกลับ';
+    document.getElementById('btn-next').textContent = visual===this.totalSteps ? '✅ ส่งใบสมัคร' : 'ถัดไป →';
 
     const initMap = {
       1:()=>this._initStep1(),
@@ -707,14 +806,15 @@ const Form = {
       7:()=>this._initStep7(),
       8:()=>this._initStep8(),
     };
-    if(initMap[n]) await initMap[n]();
+    if(initMap[sid]) await initMap[sid]();
     window.scrollTo({top:0,behavior:'smooth'});
   },
 
-  // ===== STEP 1 — แก้แล้ว: สาขา unlock ได้ =====
+  // ===== STEP 1: รอบ → ระดับ → สาขา =====
   _initStep1() {
     const {levels, branches} = this.programs;
 
+    // Style round cards
     document.querySelectorAll('.round-card').forEach(card=>{
       const radio = card.querySelector('input[type=radio]');
       if(radio.value === this.data.studyRound) {
@@ -727,11 +827,8 @@ const Form = {
         const names={morning:'รอบเช้า',afternoon:'รอบบ่าย',dual:'ทวิภาคี'};
         this.data.studyRoundName = names[radio.value]||radio.value;
         this.isDual = radio.value==='dual';
-
-        // reset level/branch เมื่อเปลี่ยนรอบ
-        this.data.levelId=''; this.data.levelName='';
-        this.data.branchId=''; this.data.branchName='';
-
+        document.getElementById('step-total').textContent = this.totalSteps;
+        // enable level
         const lg=document.getElementById('level-group');
         lg.style.opacity='1'; lg.style.pointerEvents='auto';
         this._populateLevels();
@@ -745,62 +842,65 @@ const Form = {
     }
   },
 
-  // กรอง levels ที่มีสาขาเปิด (branches เป็น flat array ธรรมดา ไม่มี .programs)
   _populateLevels() {
     const {levels, branches} = this.programs;
-
-    // branches เป็น [{id, name, levelId, isOpen}, ...]
-    const activeLevelIds = new Set(branches.filter(b=>b.isOpen).map(b=>b.levelId));
-    const filteredLevels = levels.filter(l=>activeLevelIds.has(l.id));
-
     const levelSel=document.getElementById('sel-level');
+    const branchSel=document.getElementById('sel-branch');
+
     levelSel.innerHTML='<option value="">-- เลือกระดับการศึกษา --</option>';
-    filteredLevels.forEach(l=>{levelSel.appendChild(new Option(l.name,l.id));});
-
-    // reset branch
-    const bg=document.getElementById('branch-group');
-    bg.style.opacity='0.4'; bg.style.pointerEvents='none';
-    const branchSel=document.getElementById('sel-branch');
-    branchSel.innerHTML='<option value="">-- เลือกสาขาวิชา --</option>';
-    branchSel.disabled=true;
-
-    levelSel.value=this.data.levelId;
-    // ใช้ onchange แทน addEventListener เพื่อไม่ให้ listener ซ้อนทับกัน
-    levelSel.onchange=()=>this._populateBranches(levelSel.value);
-    if(this.data.levelId) this._populateBranches(this.data.levelId);
-  },
-
-  // กรองสาขาตาม levelId และ isOpen (flat array)
-  _populateBranches(levelId) {
-    if(!levelId) return;
-    const {branches} = this.programs;
-
-    const filtered = branches.filter(b=>b.levelId===levelId && b.isOpen);
-
-    const branchSel=document.getElementById('sel-branch');
-    branchSel.innerHTML='<option value="">-- เลือกสาขาวิชา --</option>';
-    filtered.forEach(b=>{branchSel.appendChild(new Option(b.name,b.id));});
-    branchSel.disabled=filtered.length===0;
+    levels.forEach(l=>{const o=new Option(l.name,l.id); levelSel.appendChild(o);});
+    levelSel.value = this.data.levelId;
 
     const bg=document.getElementById('branch-group');
-    if(filtered.length>0){ bg.style.opacity='1'; bg.style.pointerEvents='auto'; }
-    else { bg.style.opacity='0.4'; bg.style.pointerEvents='none'; }
 
-    branchSel.value=this.data.branchId;
-    branchSel.onchange=()=>{
-      this.data.branchId=branchSel.value;
-      const opt=branchSel.options[branchSel.selectedIndex];
-      this.data.branchName=opt?opt.text:'';
+    const updateBranches = ()=>{
+      const lvId=levelSel.value;
+      const filtered=branches.filter(b=>b.levelId===lvId && b.isOpen);
+      branchSel.innerHTML='<option value="">-- เลือกสาขาวิชา --</option>';
+      filtered.forEach(b=>{const o=new Option(b.name,b.id); branchSel.appendChild(o);});
+      branchSel.disabled=filtered.length===0;
+      if(filtered.length) { bg.style.opacity='1'; bg.style.pointerEvents='auto'; }
+      else { bg.style.opacity='0.4'; bg.style.pointerEvents='none'; }
+      branchSel.value=this.data.branchId;
     };
+
+    levelSel.addEventListener('change', updateBranches);
+    branchSel.addEventListener('change',()=>{});
+
+    if(this.data.levelId) updateBranches();
   },
 
   // ===== STEP 2 =====
   _initStep2() {
     const fields=['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'];
     fields.forEach(f=>{ const el=document.getElementById('inp-'+f); if(el&&this.data[f]) el.value=this.data[f]; });
+
+    // Filter education options based on selected level
+    this._updateEducationOptions();
+
+    // Phone / idCard format
     document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
     document.getElementById('inp-phone').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,10);});
+
+    // Province for edu
     this._loadEduProvinces();
+  },
+
+  _updateEducationOptions() {
+    const sel = document.getElementById('inp-education');
+    const levelName = this.data.levelName.toLowerCase();
+    const isPwch = levelName.includes('ปวช');
+    const isPwส = levelName.includes('ปวส');
+
+    sel.innerHTML = '<option value="">-- เลือก --</option>';
+    if(isPwส) {
+      // ปวส → ม.6 หรือ ปวช.
+      [['ม.6','มัธยมศึกษาตอนปลาย (ม.6)'],['ปวช.','ปวช.']].forEach(([v,l])=>sel.add(new Option(l,v)));
+    } else {
+      // ปวช. หรืออื่นๆ → ม.3 เท่านั้น
+      sel.add(new Option('มัธยมศึกษาตอนต้น (ม.3)','ม.3'));
+    }
+    if(this.data.education) sel.value = this.data.education;
   },
 
   async _loadEduProvinces() {
@@ -887,20 +987,21 @@ const Form = {
     showToast('คัดลอกข้อมูลแล้ว','success');
   },
 
-  // ===== STEP 6: เอกสาร — ไม่มี payment_slip =====
+  // ===== STEP 6: เอกสาร (ไม่มีสลิป + มีวุฒิด้านหลัง) =====
   _initStep6() {
     const docTypes = [
       { id:'id_card_front', label:'บัตร ปชช. ด้านหน้า', icon:'🪪', required:true },
       { id:'id_card_back',  label:'บัตร ปชช. ด้านหลัง', icon:'🪪', required:true },
-      { id:'house_reg',     label:'ทะเบียนบ้าน',          icon:'🏠', required:true, full:true },
-      { id:'edu_cert_front',label:'วุฒิการศึกษา ด้านหน้า', icon:'📜', required:true, full:true },
-      { id:'edu_cert_back', label:'วุฒิการศึกษา ด้านหลัง', icon:'📜', required:true, full:true },
+      { id:'house_reg',     label:'ทะเบียนบ้าน',          icon:'🏠', required:true },
+      { id:'edu_cert_front',label:'วุฒิการศึกษา ด้านหน้า', icon:'📜', required:true },
+      { id:'edu_cert_back', label:'วุฒิการศึกษา ด้านหลัง', icon:'📜', required:true },
     ];
     const grid=document.getElementById('doc-grid');
     grid.innerHTML='';
     docTypes.forEach(doc=>{
       const wrapper=document.createElement('div');
-      if(doc.full) wrapper.className='doc-full';
+      // ทะเบียนบ้าน และวุฒิ ให้ full width
+      if(['house_reg','edu_cert_front','edu_cert_back'].includes(doc.id)) wrapper.className='doc-full';
       const card=document.createElement('div'); card.className='doc-upload-card'; card.dataset.docType=doc.id;
       card.innerHTML=`<div class="doc-icon">${doc.icon}</div>
         <div class="doc-label">${doc.label}${doc.required?' <span style="color:var(--clr-danger)">*</span>':''}</div>
@@ -925,6 +1026,7 @@ const Form = {
     qrImg.src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
     document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER;
 
+    // Skip payment button — available for ALL rounds
     const skipBtn=document.getElementById('btn-skip-payment');
     if(skipBtn && !skipBtn._bound){
       skipBtn._bound=true;
@@ -948,7 +1050,7 @@ const Form = {
     }
   },
 
-  // ===== STEP 8 =====
+  // ===== STEP 8: ตรวจสอบ =====
   _initStep8() {
     const d=this.data;
     const html=`
@@ -967,63 +1069,67 @@ const Form = {
       </div>
       <div class="review-section"><h3>เอกสาร</h3>
         ${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}
-        ${!d.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}
-        ${d.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}
+        ${!this.data.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}
+        ${this.data.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}
       </div>`;
     document.getElementById('review-content').innerHTML=html;
   },
 
   // ===== VALIDATE =====
-  _validate(step) {
+  _validate(visual) {
     const err=(msg)=>{ showToast(msg,'error'); return false; };
+    const sid=this.stepId(visual);
 
-    if(step===1){
+    if(sid===1){
       if(!this.data.studyRound) return err('กรุณาเลือกรอบเรียน');
       const levelSel=document.getElementById('sel-level');
       const branchSel=document.getElementById('sel-branch');
       if(!levelSel.value) return err('กรุณาเลือกระดับการศึกษา');
       if(!branchSel.value) return err('กรุณาเลือกสาขาวิชา');
     }
-    if(step===2){
+    if(sid===2){
       const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['birthDate','วันเกิด'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];
       for(const [id,label] of required){ const el=document.getElementById('inp-'+id); if(!el||!el.value.trim()) return err('กรุณากรอก'+label); }
       if(document.getElementById('inp-idCard').value.length!==13) return err('เลขบัตรประชาชนต้องมี 13 หลัก');
     }
-    if(step===3){
+    if(sid===3){
       if(!document.getElementById('addr-province').value) return err('กรุณาเลือกจังหวัด');
       if(!document.getElementById('addr-district').value) return err('กรุณาเลือกอำเภอ/เขต');
       if(!document.getElementById('addr-subdistrict').value) return err('กรุณาเลือกตำบล/แขวง');
       if(!document.getElementById('addr-detail').value.trim()) return err('กรุณากรอกรายละเอียดที่อยู่');
     }
-    if(step===6){
+    if(sid===6){
       const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];
       for(const r of required){ if(!this.data.documents[r]) return err('กรุณาอัปโหลด '+_docLabel(r)); }
+    }
+    if(sid===7){
+      // ข้ามได้สำหรับทุกรอบ — ถ้ามีสลิปต้องมีไฟล์ ถ้าไม่มีก็ผ่านได้
+      // validation ไม่บังคับที่นี่ เพราะปุ่มข้ามจัดการแยก
     }
     return true;
   },
 
   // ===== SAVE STEP =====
-  _saveStep(step) {
-    if(step===1){
+  _saveStep(visual) {
+    const sid=this.stepId(visual);
+    if(sid===1){
       const lv=document.getElementById('sel-level'), br=document.getElementById('sel-branch');
-      this.data.levelId=lv.value;
-      this.data.levelName=lv.options[lv.selectedIndex]?.text||'';
-      this.data.branchId=br.value;
-      this.data.branchName=br.options[br.selectedIndex]?.text||'';
+      this.data.levelId=lv.value; this.data.levelName=lv.options[lv.selectedIndex]?.text||'';
+      this.data.branchId=br.value; this.data.branchName=br.options[br.selectedIndex]?.text||'';
     }
-    if(step===2){
+    if(sid===2){
       ['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'].forEach(f=>{
         const el=document.getElementById('inp-'+f); if(el) this.data[f]=el.value;
       });
     }
-    if(step===3){
+    if(sid===3){
       this.data.addrProvince=document.getElementById('addr-province').value;
       this.data.addrDistrict=document.getElementById('addr-district').value;
       this.data.addrSubDistrict=document.getElementById('addr-subdistrict').value;
       this.data.addrZipcode=document.getElementById('addr-zipcode').value;
       this.data.addrDetail=document.getElementById('addr-detail').value;
     }
-    if(step===5){
+    if(sid===5){
       ['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{
         const el=document.getElementById('grd-'+f); if(el) this.data.guardian[f]=el.value;
       });
@@ -1078,16 +1184,19 @@ function _docLabel(type){
     id_card_front:'บัตร ปชช. ด้านหน้า',id_card_back:'บัตร ปชช. ด้านหลัง',
     house_reg:'ทะเบียนบ้าน',
     edu_cert_front:'วุฒิการศึกษา ด้านหน้า', edu_cert_back:'วุฒิการศึกษา ด้านหลัง',
-    edu_cert:'วุฒิการศึกษา', payment_slip:'สลิปโอนเงิน',
+    edu_cert:'วุฒิการศึกษา',
+    payment_slip:'สลิปโอนเงิน',
   };
   return map[type]||type;
 }
 
+// LIFF helper (simple)
 var LIFF = {
   getUser(){ try{var s=sessionStorage.getItem('lineUser');return s?JSON.parse(s):null;}catch(e){return null;} },
   requireUser(){ var u=this.getUser(); if(!u){location.href='index.html';return null;} return u; }
 };
 
+// ---- INIT ----
 document.addEventListener('DOMContentLoaded', async ()=>{
   const user=LIFF.requireUser();
   if(!user) return;

@@ -573,14 +573,31 @@ const Camera = {
     document.getElementById('camera-flip').addEventListener('click',()=>this.flipCamera());
   },
   async open(docType, callback) {
-    this.currentDocType=docType; this.currentCallback=callback;
-    const overlay=document.getElementById('camera-overlay');
-    const frame=document.getElementById('camera-frame');
-    const vw=window.innerWidth;
-    frame.style.width=Math.round(vw*0.82)+'px'; frame.style.height=Math.round(vw*0.82*0.63)+'px';
-    overlay.classList.remove('hidden');
-    await this._startStream(); this._startFrameCheck();
-  },
+  this.currentDocType = docType;
+  this.currentCallback = callback;
+
+  const overlay = document.getElementById('camera-overlay');
+  const frame = document.getElementById('camera-frame');
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // เอกสาร A4 → กรอบสูง (portrait), บัตร → กรอบกว้าง (landscape)
+  const isA4 = ['house_reg', 'edu_cert_front', 'edu_cert_back'].includes(docType);
+
+  if (isA4) {
+  const maxH = Math.round(vh * 0.75);
+  const w = Math.round(maxH / 1.414);
+  frame.style.width  = w + 'px';
+  frame.style.height = maxH + 'px';
+} else {
+  frame.style.width  = Math.round(vw * 0.82) + 'px';
+  frame.style.height = Math.round(vw * 0.82 * 0.63) + 'px';
+}
+
+  overlay.classList.remove('hidden');
+  await this._startStream();
+  this._startFrameCheck();
+},
   async _startStream() {
     this._stopStream();
     try { this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false}); document.getElementById('camera-video').srcObject=this.stream; }
@@ -589,43 +606,67 @@ const Camera = {
   _stopStream() { if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;} },
   flipCamera() { this._facingMode=this._facingMode==='environment'?'user':'environment'; this._startStream(); },
   _startFrameCheck() { clearInterval(this._checkInterval); this._checkInterval=setInterval(()=>this._checkFrame(),200); },
+
+
   _checkFrame() {
-    const video=document.getElementById('camera-video');
-    if(!video||!video.videoWidth) return;
-    const w=160,h=90; this.canvas.width=w; this.canvas.height=h;
-    this.ctx.drawImage(video,0,0,w,h);
-    const frame=document.getElementById('camera-frame');
-    const shutter=document.getElementById('camera-shutter');
+  const video = document.getElementById('camera-video');
+  if (!video || !video.videoWidth) return;
 
-    // Brightness check
-    const imgData=this.ctx.getImageData(Math.round(w*0.1),Math.round(h*0.1),Math.round(w*0.8),Math.round(h*0.8));
-    var sum=0; for(var i=0;i<imgData.data.length;i+=4) sum+=0.299*imgData.data[i]+0.587*imgData.data[i+1]+0.114*imgData.data[i+2];
-    const brightness=sum/(imgData.data.length/4);
+  const w = 160, h = 90;
+  this.canvas.width = w; this.canvas.height = h;
+  this.ctx.drawImage(video, 0, 0, w, h);
 
-    // Edge / contrast detection — detect if a card-like object is in frame
-    // Sample pixel variance in center region: high variance = object present
-    const cx=Math.round(w*0.2), cy=Math.round(h*0.2), cw=Math.round(w*0.6), ch=Math.round(h*0.6);
-    const region=this.ctx.getImageData(cx,cy,cw,ch);
-    var mean=0,sq=0,n=region.data.length/4;
-    for(var j=0;j<region.data.length;j+=4) mean+=(0.299*region.data[j]+0.587*region.data[j+1]+0.114*region.data[j+2]);
-    mean/=n;
-    for(var k=0;k<region.data.length;k+=4){var lum=0.299*region.data[k]+0.587*region.data[k+1]+0.114*region.data[k+2];sq+=(lum-mean)*(lum-mean);}
-    const variance=sq/n;
-    const hasObject = variance > 200; // card/document has edges → high variance
+  const frame   = document.getElementById('camera-frame');
+  const shutter = document.getElementById('camera-shutter');
+  const isA4    = ['house_reg', 'edu_cert_front', 'edu_cert_back'].includes(this.currentDocType);
 
-    const tooDark = brightness < 40;
-    const ok = !tooDark && hasObject;
-    this._frameOk = ok;
+  // Brightness
+  const imgData = this.ctx.getImageData(
+    Math.round(w * 0.1), Math.round(h * 0.1),
+    Math.round(w * 0.8), Math.round(h * 0.8)
+  );
+  let sum = 0;
+  for (let i = 0; i < imgData.data.length; i += 4)
+    sum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
+  const brightness = sum / (imgData.data.length / 4);
 
-    if(tooDark){
-      this._setFrame('yellow','💡 แสงน้อยเกินไป',shutter,frame,false);
-    } else if(!hasObject){
-      this._setFrame('yellow','🪪 วางบัตร/เอกสารในกรอบ',shutter,frame,false);
-    } else {
-      this._setFrame('green','✅ พบเอกสาร — กำลังนับถอยหลัง...',shutter,frame,true);
-      this._triggerAuto();
+  const tooDark = brightness < 40;
+
+  let ok;
+  if (isA4) {
+    // A4: เช็คแค่แสง ไม่ต้อง detect edge
+    ok = !tooDark;
+  } else {
+    // บัตร: เช็ค variance ว่ามีวัตถุในกรอบ
+    const cx = Math.round(w * 0.2), cy = Math.round(h * 0.2);
+    const cw = Math.round(w * 0.6), ch = Math.round(h * 0.6);
+    const region = this.ctx.getImageData(cx, cy, cw, ch);
+    let mean = 0, sq = 0, n = region.data.length / 4;
+    for (let j = 0; j < region.data.length; j += 4)
+      mean += (0.299 * region.data[j] + 0.587 * region.data[j+1] + 0.114 * region.data[j+2]);
+    mean /= n;
+    for (let k = 0; k < region.data.length; k += 4) {
+      const lum = 0.299 * region.data[k] + 0.587 * region.data[k+1] + 0.114 * region.data[k+2];
+      sq += (lum - mean) * (lum - mean);
     }
-  },
+    const variance = sq / n;
+    ok = !tooDark && variance > 200;
+  }
+
+  this._frameOk = ok;
+
+  if (tooDark) {
+    this._setFrame('yellow', '💡 แสงน้อยเกินไป', shutter, frame, false);
+  } else if (!ok) {
+    this._setFrame('yellow', '🪪 วางบัตรในกรอบ', shutter, frame, false);
+  } else {
+    const msg = isA4 ? '📄 พร้อมถ่าย — กำลังนับถอยหลัง...' : '✅ พบเอกสาร — กำลังนับถอยหลัง...';
+    this._setFrame('green', msg, shutter, frame, true);
+    this._triggerAuto();
+  }
+},
+
+  
   _setFrame(color,msg,shutter,frame,enabled){
     const colors={red:'#EF4444',yellow:'#F59E0B',green:'#10B981'};const c=colors[color]||'#fff';
     frame.style.borderColor=c; frame.style.boxShadow=`0 0 0 9999px rgba(0,0,0,0.45),0 0 20px ${c}55`;

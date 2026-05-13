@@ -501,61 +501,104 @@ const API = {
 // ADDRESS
 // ============================================================
 const Address = {
-  provinces:[], _districts:{}, _subdistricts:{}, _pvLoaded:false, _subLoaded:false,
-  _basePath() {
-    var s=document.querySelectorAll('script[src*="address"]');
-    return s.length ? s[s.length-1].src.replace(/\/[^/]+$/,'/') : location.href.replace(/\/[^/]*(\?.*)?$/,'/');
+  // inline provinces data — ไม่ต้อง fetch
+  provinces: [{"id":"517","name":"กระบี่"},{"id":"111","name":"กรุงเทพมหานคร"},{"id":"243","name":"กาญจนบุรี"},{"id":"327","name":"กาฬสินธุ์"},{"id":"414","name":"กำแพงเพชร"},{"id":"321","name":"ขอนแก่น"},{"id":"235","name":"จันทบุรี"},{"id":"232","name":"ฉะเชิงเทรา"},{"id":"231","name":"ชลบุรี"},{"id":"224","name":"ชัยนาท"},{"id":"312","name":"ชัยภูมิ"},{"id":"513","name":"ชุมพร"},{"id":"523","name":"ตรัง"},{"id":"234","name":"ตราด"},{"id":"413","name":"ตาก"},{"id":"225","name":"นครนายก"},{"id":"242","name":"นครปฐม"},{"id":"333","name":"นครพนม"},{"id":"311","name":"นครราชสีมา"},{"id":"511","name":"นครศรีธรรมราช"},{"id":"411","name":"นครสวรรค์"},{"id":"211","name":"นนทบุรี"},{"id":"527","name":"นราธิวาส"},{"id":"425","name":"น่าน"},{"id":"528","name":"บึงกาฬ"},{"id":"313","name":"บุรีรัมย์"},{"id":"212","name":"ปทุมธานี"},{"id":"245","name":"ประจวบคีรีขันธ์"},{"id":"233","name":"ปราจีนบุรี"},{"id":"526","name":"ปัตตานี"},{"id":"213","name":"พระนครศรีอยุธยา"},{"id":"435","name":"พะเยา"},{"id":"515","name":"พังงา"},{"id":"522","name":"พัทลุง"},{"id":"422","name":"พิจิตร"},{"id":"421","name":"พิษณุโลก"},{"id":"516","name":"ภูเก็ต"},{"id":"315","name":"มหาสารคาม"},{"id":"334","name":"มุกดาหาร"},{"id":"525","name":"ยะลา"},{"id":"332","name":"ยโสธร"},{"id":"514","name":"ระนอง"},{"id":"236","name":"ระยอง"},{"id":"241","name":"ราชบุรี"},{"id":"335","name":"ร้อยเอ็ด"},{"id":"222","name":"ลพบุรี"},{"id":"431","name":"ลำปาง"},{"id":"434","name":"ลำพูน"},{"id":"336","name":"ศรีสะเกษ"},{"id":"325","name":"สกลนคร"},{"id":"521","name":"สงขลา"},{"id":"524","name":"สตูล"},{"id":"215","name":"สมุทรปราการ"},{"id":"247","name":"สมุทรสงคราม"},{"id":"246","name":"สมุทรสาคร"},{"id":"221","name":"สระบุรี"},{"id":"237","name":"สระแก้ว"},{"id":"223","name":"สิงห์บุรี"},{"id":"226","name":"สุพรรณบุรี"},{"id":"512","name":"สุราษฎร์ธานี"},{"id":"314","name":"สุรินทร์"},{"id":"415","name":"สุโขทัย"},{"id":"323","name":"หนองคาย"},{"id":"326","name":"หนองบัวลำภู"},{"id":"337","name":"อำนาจเจริญ"},{"id":"324","name":"อุดรธานี"},{"id":"426","name":"อุตรดิตถ์"},{"id":"412","name":"อุทัยธานี"},{"id":"331","name":"อุบลราชธานี"},{"id":"214","name":"อ่างทอง"},{"id":"433","name":"เชียงราย"},{"id":"432","name":"เชียงใหม่"},{"id":"244","name":"เพชรบุรี"},{"id":"423","name":"เพชรบูรณ์"},{"id":"322","name":"เลย"},{"id":"424","name":"แพร่"},{"id":"436","name":"แม่ฮ่องสอน"}],
+
+  _districts: {},
+  _subdistricts: {},
+  _distLoaded: {},   // cache per province
+  _subLoaded: {},    // cache per district
+
+  async loadProvinces() {
+    return this.provinces; // instant — ไม่ต้อง fetch
   },
-  async _loadProvDist() {
-    if(this._pvLoaded) return;
-    // Try fetching from js/data/ folder (relative)
-    try {
-      var [pv,di] = await Promise.all([
-        fetch('js/data/provinces.json').then(r=>r.json()),
-        fetch('js/data/districts.json').then(r=>r.json()),
-      ]);
-      this.provinces=pv; this._districts=di; this._pvLoaded=true;
-    } catch(e) { console.warn('Address load:', e); this.provinces=[]; this._pvLoaded=true; }
+
+  async loadDistricts(provinceId) {
+    const pid = String(provinceId);
+    if (this._districts[pid]) return this._districts[pid];
+    // fetch districts.json ครั้งเดียว แล้ว cache ทั้งหมด
+    if (!this._allDistricts) {
+      this._allDistricts = await fetch('js/data/districts.json').then(r => r.json());
+    }
+    this._districts[pid] = this._allDistricts[pid] || [];
+    return this._districts[pid];
   },
-  async _loadSub() {
-    if(this._subLoaded) return;
-    try { this._subdistricts = await fetch('js/data/subdistricts.json').then(r=>r.json()); } catch(e){}
-    this._subLoaded=true;
+
+  async loadSubDistricts(districtId) {
+    const did = String(districtId);
+    if (this._subdistricts[did]) return this._subdistricts[did];
+    if (!this._allSubs) {
+      this._allSubs = await fetch('js/data/subdistricts.json').then(r => r.json());
+    }
+    this._subdistricts[did] = this._allSubs[did] || [];
+    return this._subdistricts[did];
   },
-  async loadProvinces() { await this._loadProvDist(); return this.provinces; },
-  async loadDistricts(pid) { await this._loadProvDist(); return this._districts[String(pid)]||[]; },
-  async loadSubDistricts(did) { await this._loadSub(); return this._subdistricts[String(did)]||[]; },
-  populateSelect(sel,items,vk,lk,ph) {
-    var h='<option value="">'+ph+'</option>';
-    for(var i=0;i<items.length;i++){var it=items[i];var z=it.zipcode?' data-zipcode="'+it.zipcode+'"':'';h+='<option value="'+it[vk]+'"'+z+'>'+it[lk]+'</option>';}
-    sel.innerHTML=h; sel.disabled=items.length===0;
+
+  populateSelect(sel, items, vk, lk, ph) {
+    // ใช้ DocumentFragment แทน innerHTML string — เร็วกว่า
+    sel.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    const def = document.createElement('option');
+    def.value = ''; def.textContent = ph;
+    frag.appendChild(def);
+    items.forEach(item => {
+      const o = document.createElement('option');
+      o.value = item[vk];
+      o.textContent = item[lk];
+      if (item.zipcode) o.dataset.zipcode = item.zipcode;
+      frag.appendChild(o);
+    });
+    sel.appendChild(frag);
+    sel.disabled = items.length === 0;
   },
+
   async bindAddressSelects(opts) {
-    var self=this;
-    var ps=opts.provinceSelect, ds=opts.districtSelect, ss=opts.subDistrictSelect, zi=opts.zipcodeInput;
-    var pvs=await this.loadProvinces();
-    this.populateSelect(ps,pvs,'id','name','-- เลือกจังหวัด --');
-    this.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');
-    this.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');
-    ds.disabled=ss.disabled=true;
-    setTimeout(()=>self._loadSub(),500);
-    ps.addEventListener('change',async function(){
-      var pid=ps.value,isBkk=(pid==='111');
-      if(!pid){self.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');self.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');ds.disabled=ss.disabled=true;if(zi)zi.value='';return;}
-      var dis=await self.loadDistricts(pid);
-      self.populateSelect(ds,dis,'id','name',isBkk?'-- เลือกเขต --':'-- เลือกอำเภอ --');
-      ds.disabled=false;
-      self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');
-      ss.disabled=true; if(zi)zi.value='';
+    const self = this;
+    const { provinceSelect: ps, districtSelect: ds, subDistrictSelect: ss, zipcodeInput: zi } = opts;
+
+    const pvs = await this.loadProvinces();
+    this.populateSelect(ps, pvs, 'id', 'name', '-- เลือกจังหวัด --');
+    this.populateSelect(ds, [], 'id', 'name', '-- เลือกอำเภอ/เขต --');
+    this.populateSelect(ss, [], 'id', 'name', '-- เลือกตำบล/แขวง --');
+    ds.disabled = ss.disabled = true;
+
+    ps.addEventListener('change', async function() {
+      const pid = ps.value, isBkk = pid === '111';
+      if (!pid) {
+        self.populateSelect(ds, [], 'id', 'name', '-- เลือกอำเภอ/เขต --');
+        self.populateSelect(ss, [], 'id', 'name', '-- เลือกตำบล/แขวง --');
+        ds.disabled = ss.disabled = true;
+        if (zi) zi.value = '';
+        return;
+      }
+      const dis = await self.loadDistricts(pid);
+      self.populateSelect(ds, dis, 'id', 'name', isBkk ? '-- เลือกเขต --' : '-- เลือกอำเภอ --');
+      ds.disabled = false;
+      self.populateSelect(ss, [], 'id', 'name', isBkk ? '-- เลือกแขวง --' : '-- เลือกตำบล --');
+      ss.disabled = true;
+      if (zi) zi.value = '';
     });
-    ds.addEventListener('change',async function(){
-      var pid=ps.value,did=ds.value,isBkk=(pid==='111');
-      if(!did){self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');ss.disabled=true;if(zi)zi.value='';return;}
-      var sub=await self.loadSubDistricts(did);
-      self.populateSelect(ss,sub,'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');
-      ss.disabled=false; if(zi)zi.value='';
+
+    ds.addEventListener('change', async function() {
+      const did = ds.value, isBkk = ps.value === '111';
+      if (!did) {
+        self.populateSelect(ss, [], 'id', 'name', isBkk ? '-- เลือกแขวง --' : '-- เลือกตำบล --');
+        ss.disabled = true;
+        if (zi) zi.value = '';
+        return;
+      }
+      const subs = await self.loadSubDistricts(did);
+      self.populateSelect(ss, subs, 'id', 'name', isBkk ? '-- เลือกแขวง --' : '-- เลือกตำบล --');
+      ss.disabled = false;
+      if (zi) zi.value = '';
     });
-    if(zi){ss.addEventListener('change',function(){var s=ss.options[ss.selectedIndex];zi.value=(s&&s.dataset.zipcode)?s.dataset.zipcode:'';});}
+
+    if (zi) {
+      ss.addEventListener('change', function() {
+        const s = ss.options[ss.selectedIndex];
+        zi.value = s?.dataset.zipcode || '';
+      });
+    }
   },
 };
 
@@ -605,8 +648,13 @@ const Camera = {
   },
   _stopStream() { if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;} },
   flipCamera() { this._facingMode=this._facingMode==='environment'?'user':'environment'; this._startStream(); },
-  _startFrameCheck() { clearInterval(this._checkInterval); this._checkInterval=setInterval(()=>this._checkFrame(),200); },
 
+
+  _startFrameCheck() {
+  clearInterval(this._checkInterval);
+  this._checkInterval = setInterval(() => this._checkFrame(), 300); // 300ms แทน 200ms
+},
+  
 
   _checkFrame() {
   const video = document.getElementById('camera-video');
@@ -784,10 +832,15 @@ const Form = {
     if(avatarEl&&user.pictureUrl){avatarEl.src=user.pictureUrl;avatarEl.style.display='block';}
 
     Camera.init();
-    await this._loadPrograms();
-    this._bindNav();
-    this._renderStep(1);
-  },
+    
+    await Promise.all([
+    this._loadPrograms(),
+    Address.loadProvinces(), // warm cache ไว้ก่อน (instant เพราะ inline แล้ว)
+  ]);
+
+  this._bindNav();
+  this._renderStep(1);
+},
 
   async _loadPrograms() {
     try {

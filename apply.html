@@ -851,40 +851,32 @@ _populateLevels() {
 
   const bg = document.getElementById('branch-group');
 
-  const updateBranches = () => {
-    const lvId = levelSel.value;
-    const roundLabel = this._roundLabel(this.data.studyRound);
+const updateBranches = () => {
+  const lvId = levelSel.value;
+  const roundLabel = this._roundLabel(this.data.studyRound);
 
-    // กรอง branch ที่ตรงระดับ และมีรอบที่เลือก และยังมีที่นั่ง
-    const filtered = branches.filter(b =>
-      b.levelId === lvId &&
-      b.programs.some(p => p.round === roundLabel && p.isOpen)
-    );
+  const filtered = branches.filter(b =>
+    b.levelId === lvId &&
+    b.programs.some(p => p.round === roundLabel)
+  );
 
-    const branchSel = document.getElementById('sel-branch');
-    branchSel.innerHTML = '<option value="">-- เลือกสาขาวิชา --</option>';
+  const branchSel = document.getElementById('sel-branch');
+  branchSel.innerHTML = '<option value="">-- เลือกสาขาวิชา --</option>';
+  filtered.forEach(b => {
+    branchSel.appendChild(new Option(b.name, b.id));
+  });
 
-    filtered.forEach(b => {
-      const prog = b.programs.find(p => p.round === roundLabel);
-      const label = `${b.name} (รับ ${prog?.remaining ?? 0} ที่)`;
-      const opt = new Option(label, b.id);
-      if ((prog?.remaining ?? 0) <= 0) opt.disabled = true;
-      branchSel.appendChild(opt);
-    });
+  branchSel.disabled = filtered.length === 0;
+  bg.style.opacity = filtered.length ? '1' : '0.4';
+  bg.style.pointerEvents = filtered.length ? 'auto' : 'none';
+  branchSel.value = this.data.branchId;
 
-    branchSel.disabled = filtered.length === 0;
-    bg.style.opacity = filtered.length ? '1' : '0.4';
-    bg.style.pointerEvents = filtered.length ? 'auto' : 'none';
-    branchSel.value = this.data.branchId;
-
-    // บันทึก programId เมื่อเลือกสาขา
-    branchSel.onchange = () => {
-      const branch = branches.find(b => b.id === branchSel.value);
-      const prog = branch?.programs.find(p => p.round === roundLabel);
-      this.data.selectedProgramId = prog?.programId || '';
-      this.data.fee = prog?.fee || CONFIG.APPLICATION_FEE;
-    };
+  branchSel.onchange = () => {
+    const branch = branches.find(b => b.id === branchSel.value);
+    const prog = branch?.programs.find(p => p.round === roundLabel);
+    this.data.selectedProgramId = prog?.programId || '';
   };
+};
 
   levelSel.onchange = updateBranches;
   if (this.data.levelId) updateBranches();

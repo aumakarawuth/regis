@@ -5,53 +5,41 @@
 function getPrograms() {
   const sheet = getSheet(SHEETS.PROGRAMS);
   const rows = sheetToObjects(sheet);
-
-  // คอลัมน์: id, level, levelId, branch, branchId, round, roundId, maxStudents, fee, isOpen
-  const levels = [], branches = [], rounds = [];
-  const levelSet = {}, branchSet = {};
+  const levels = [];
+  const levelSet = {};
+  const branchMap = {};
 
   rows.forEach(r => {
-    if (!r.isOpen) return; // แสดงเฉพาะที่เปิด
+    if (!r.isOpen) return;
 
     if (!levelSet[r.levelId]) {
       levelSet[r.levelId] = true;
       levels.push({ id: r.levelId, name: r.level });
     }
 
-    if (!branchSet[r.branchId]) {
-      branchSet[r.branchId] = true;
-      // นับที่นั่งที่เหลือ
-      const enrollSheet = getSheet(SHEETS.ENROLLMENTS);
-      const enrollRows = sheetToObjects(enrollSheet);
-      const taken = enrollRows.filter(e => e.programId === r.id).length;
-      const remaining = Math.max(0, (r.maxStudents || 0) - taken);
-
-      branches.push({
-        id: r.branchId, name: r.branch,
-        levelId: r.levelId, isOpen: !!r.isOpen,
-      });
-
-      rounds.push({
-        id: r.id, name: r.round,
-        branchId: r.branchId, levelId: r.levelId,
-        fee: r.fee, maxStudents: r.maxStudents,
-        remaining, isOpen: remaining > 0,
-      });
-    } else {
-      // มีหลายรอบสำหรับสาขาเดิม
-      const enrollSheet = getSheet(SHEETS.ENROLLMENTS);
-      const enrollRows = sheetToObjects(enrollSheet);
-      const taken = enrollRows.filter(e => e.programId === r.id).length;
-      const remaining = Math.max(0, (r.maxStudents || 0) - taken);
-      rounds.push({
-        id: r.id, name: r.round,
-        branchId: r.branchId, levelId: r.levelId,
-        fee: r.fee, remaining, isOpen: remaining > 0,
-      });
+    if (!branchMap[r.branchId]) {
+      branchMap[r.branchId] = {
+        id: r.branchId,
+        name: r.branch,
+        levelId: r.levelId,
+        isOpen: true,
+        programs: [],
+      };
     }
+
+    branchMap[r.branchId].programs.push({
+      programId: r.id,
+      round: r.round,
+    });
   });
 
-  return { success: true, data: { levels, branches, rounds } };
+  return {
+    success: true,
+    data: {
+      levels,
+      branches: Object.values(branchMap),
+    },
+  };
 }
 
 // ---- ตั้งค่า Header Sheet Programs (รันครั้งเดียว) ----

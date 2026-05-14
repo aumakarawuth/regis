@@ -43,6 +43,7 @@ function doGet(e) {
     if (action === 'adminGetStudents')     return _json(adminGetStudents(p));
     if (action === 'printApplication')     return printApplication(p);
     if (action === 'exportCSV')            return exportCSV(p.token);
+    if (action === 'generatePDF')           return generateStudentPDF(p)
     return _json({ success: false, message: 'Unknown action: ' + action });
   } catch (err) {
     Logger.log('doGet error [' + action + ']: ' + err.toString());

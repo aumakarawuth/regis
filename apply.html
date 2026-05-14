@@ -36,116 +36,7 @@
     .toast{padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);font-size:0.875rem;font-weight:500;color:#fff;box-shadow:var(--shadow-md);animation:toast-in 0.3s ease forwards}
     .toast.success{background:var(--clr-success)}.toast.error{background:var(--clr-danger)}.toast.warning{background:var(--clr-warning)}.toast.info{background:var(--clr-info)}
     @keyframes toast-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-  <div id="loading-overlay">
-  <div class="lo-scene-box">
-    <svg class="lo-scene-svg" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
 
-      <!-- ท้องฟ้า -->
-      <rect x="0" y="0" width="520" height="110" fill="#D6EEFF"/>
-
-      <!-- เมฆ 1 -->
-      <g class="lo-cloud-1">
-        <ellipse cx="380" cy="30" rx="34" ry="16" fill="white" opacity="0.9"/>
-        <ellipse cx="360" cy="36" rx="22" ry="13" fill="white" opacity="0.9"/>
-        <ellipse cx="404" cy="36" rx="18" ry="12" fill="white" opacity="0.9"/>
-      </g>
-      <!-- เมฆ 2 -->
-      <g class="lo-cloud-2">
-        <ellipse cx="560" cy="22" rx="28" ry="13" fill="white" opacity="0.7"/>
-        <ellipse cx="544" cy="27" rx="18" ry="10" fill="white" opacity="0.7"/>
-        <ellipse cx="578" cy="27" rx="14" ry="10" fill="white" opacity="0.7"/>
-      </g>
-
-      <!-- พื้นหญ้า -->
-      <rect x="0" y="108" width="520" height="52" fill="#7BC67E"/>
-      <!-- ถนน/ทางเดิน -->
-      <rect x="0" y="118" width="520" height="8" fill="#D4A96A" rx="2"/>
-
-      <!-- โรงเรียน (ด้านขวา) -->
-      <rect x="440" y="52" width="72" height="68" fill="#FF8A65" rx="3"/>
-      <rect x="450" y="38" width="52" height="20" fill="#EF6C00" rx="2"/>
-      <rect x="456" y="28" width="8" height="14" fill="#FFA726"/>
-      <rect x="440" y="52" width="72" height="6" fill="#BF360C"/>
-      <rect x="450" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
-      <rect x="468" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
-      <rect x="486" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
-      <rect x="456" y="85" width="22" height="35" fill="#D32F2F" rx="1"/>
-      <rect x="455" y="83" width="24" height="6" fill="#B71C1C" rx="1"/>
-
-      <!-- ต้นไม้ -->
-      <rect x="10"  y="70" width="18" height="38" fill="#5D4037" rx="1"/>
-      <ellipse cx="19" cy="58" rx="14" ry="18" fill="#4CAF50"/>
-      <rect x="60"  y="75" width="14" height="33" fill="#5D4037" rx="1"/>
-      <ellipse cx="67" cy="64" rx="11" ry="14" fill="#388E3C"/>
-      <rect x="130" y="75" width="12" height="32" fill="#5D4037" rx="1"/>
-      <ellipse cx="136" cy="66" rx="10" ry="13" fill="#66BB6A"/>
-      <rect x="170" y="80" width="10" height="27" fill="#5D4037" rx="1"/>
-      <ellipse cx="175" cy="73" rx="8"  ry="10"  fill="#81C784"/>
-
-      <!-- นักเรียน -->
-      <g class="lo-student">
-        <!-- หัว (bob) -->
-        <g class="lo-head-bob">
-          <ellipse cx="30" cy="18" rx="11" ry="12" fill="#FFCC80"/>
-          <rect x="19" y="6" width="22" height="10" rx="3" fill="#1565C0"/>
-          <ellipse cx="30" cy="6" rx="10" ry="5" fill="#0D47A1"/>
-          <circle cx="26" cy="16" r="2" fill="#6D4C41"/>
-          <circle cx="34" cy="16" r="2" fill="#6D4C41"/>
-          <path d="M27 23 Q30 26 33 23" stroke="#BF8050" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        </g>
-        <!-- ลำตัว -->
-        <rect x="22" y="30" width="16" height="20" fill="#1565C0" rx="2"/>
-        <rect x="22" y="30" width="16" height="4"  fill="#0D47A1"/>
-        <rect x="26" y="44" width="12" height="4"  fill="#0D47A1" rx="1"/>
-        <!-- แขนซ้าย -->
-        <g class="lo-arm-left">
-          <rect x="14" y="30" width="8" height="16" fill="#1565C0" rx="3"/>
-          <ellipse cx="18" cy="47" rx="4" ry="4" fill="#FFCC80"/>
-        </g>
-        <!-- แขนขวา (มีกระเป๋า) -->
-        <g class="lo-arm-right">
-          <rect x="38" y="30" width="8" height="16" fill="#1565C0" rx="3"/>
-          <ellipse cx="42" cy="47" rx="4" ry="4" fill="#FFCC80"/>
-        </g>
-        <!-- กระเป๋า -->
-        <rect x="32" y="28" width="14" height="18" fill="#F57C00" rx="2"/>
-        <rect x="33" y="32" width="12" height="3"  fill="#E65100" rx="1"/>
-        <rect x="33" y="37" width="12" height="3"  fill="#E65100" rx="1"/>
-        <path d="M32 28 Q39 24 46 28" stroke="#E65100" stroke-width="1.5" fill="none"/>
-        <!-- ขาซ้าย -->
-        <g class="lo-leg-left">
-          <rect x="22" y="48" width="9" height="20" fill="#0D47A1" rx="2"/>
-          <rect x="20" y="65" width="13" height="6"  fill="#37474F" rx="2"/>
-          <rect x="18" y="68" width="10" height="4"  fill="#263238" rx="1"/>
-        </g>
-        <!-- ขาขวา -->
-        <g class="lo-leg-right">
-          <rect x="31" y="48" width="9" height="20" fill="#0D47A1" rx="2"/>
-          <rect x="29" y="65" width="13" height="6"  fill="#37474F" rx="2"/>
-          <rect x="31" y="68" width="10" height="4"  fill="#263238" rx="1"/>
-        </g>
-      </g>
-
-    </svg>
-  </div>
-
-  <!-- Progress bar -->
-  <div class="lo-progress-wrap">
-    <div class="lo-bar-track">
-      <div class="lo-bar-fill" id="lo-bar-fill"></div>
-    </div>
-    <div class="lo-bar-meta">
-      <span id="lo-status-detail">กำลังเชื่อมต่อ...</span>
-      <span id="lo-pct">0%</span>
-    </div>
-  </div>
-
-  <p id="lo-status-text">กำลังโหลดข้อมูลหลักสูตร...</p>
-
-  <p id="lo-done-msg" style="display:none">
-    <span class="lo-check"></span> โหลดข้อมูลเสร็จแล้ว พร้อมสมัครเรียน!
-  </p>
-</div>
 
 
     #loading-overlay {
@@ -367,14 +258,120 @@
 <body>
 <div id="app">
 
-  <!-- Loading -->
-  <div id="loading-overlay" class="hidden">
-    <div class="spinner"></div>
-    <p id="loading-text">กำลังโหลด...</p>
+  
+
+   <div id="loading-overlay">
+  <div class="lo-scene-box">
+    <svg class="lo-scene-svg" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- ท้องฟ้า -->
+      <rect x="0" y="0" width="520" height="110" fill="#D6EEFF"/>
+
+      <!-- เมฆ 1 -->
+      <g class="lo-cloud-1">
+        <ellipse cx="380" cy="30" rx="34" ry="16" fill="white" opacity="0.9"/>
+        <ellipse cx="360" cy="36" rx="22" ry="13" fill="white" opacity="0.9"/>
+        <ellipse cx="404" cy="36" rx="18" ry="12" fill="white" opacity="0.9"/>
+      </g>
+      <!-- เมฆ 2 -->
+      <g class="lo-cloud-2">
+        <ellipse cx="560" cy="22" rx="28" ry="13" fill="white" opacity="0.7"/>
+        <ellipse cx="544" cy="27" rx="18" ry="10" fill="white" opacity="0.7"/>
+        <ellipse cx="578" cy="27" rx="14" ry="10" fill="white" opacity="0.7"/>
+      </g>
+
+      <!-- พื้นหญ้า -->
+      <rect x="0" y="108" width="520" height="52" fill="#7BC67E"/>
+      <!-- ถนน/ทางเดิน -->
+      <rect x="0" y="118" width="520" height="8" fill="#D4A96A" rx="2"/>
+
+      <!-- โรงเรียน (ด้านขวา) -->
+      <rect x="440" y="52" width="72" height="68" fill="#FF8A65" rx="3"/>
+      <rect x="450" y="38" width="52" height="20" fill="#EF6C00" rx="2"/>
+      <rect x="456" y="28" width="8" height="14" fill="#FFA726"/>
+      <rect x="440" y="52" width="72" height="6" fill="#BF360C"/>
+      <rect x="450" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
+      <rect x="468" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
+      <rect x="486" y="64" width="12" height="14" fill="#E3F2FD" rx="1"/>
+      <rect x="456" y="85" width="22" height="35" fill="#D32F2F" rx="1"/>
+      <rect x="455" y="83" width="24" height="6" fill="#B71C1C" rx="1"/>
+
+      <!-- ต้นไม้ -->
+      <rect x="10"  y="70" width="18" height="38" fill="#5D4037" rx="1"/>
+      <ellipse cx="19" cy="58" rx="14" ry="18" fill="#4CAF50"/>
+      <rect x="60"  y="75" width="14" height="33" fill="#5D4037" rx="1"/>
+      <ellipse cx="67" cy="64" rx="11" ry="14" fill="#388E3C"/>
+      <rect x="130" y="75" width="12" height="32" fill="#5D4037" rx="1"/>
+      <ellipse cx="136" cy="66" rx="10" ry="13" fill="#66BB6A"/>
+      <rect x="170" y="80" width="10" height="27" fill="#5D4037" rx="1"/>
+      <ellipse cx="175" cy="73" rx="8"  ry="10"  fill="#81C784"/>
+
+      <!-- นักเรียน -->
+      <g class="lo-student">
+        <!-- หัว (bob) -->
+        <g class="lo-head-bob">
+          <ellipse cx="30" cy="18" rx="11" ry="12" fill="#FFCC80"/>
+          <rect x="19" y="6" width="22" height="10" rx="3" fill="#1565C0"/>
+          <ellipse cx="30" cy="6" rx="10" ry="5" fill="#0D47A1"/>
+          <circle cx="26" cy="16" r="2" fill="#6D4C41"/>
+          <circle cx="34" cy="16" r="2" fill="#6D4C41"/>
+          <path d="M27 23 Q30 26 33 23" stroke="#BF8050" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- ลำตัว -->
+        <rect x="22" y="30" width="16" height="20" fill="#1565C0" rx="2"/>
+        <rect x="22" y="30" width="16" height="4"  fill="#0D47A1"/>
+        <rect x="26" y="44" width="12" height="4"  fill="#0D47A1" rx="1"/>
+        <!-- แขนซ้าย -->
+        <g class="lo-arm-left">
+          <rect x="14" y="30" width="8" height="16" fill="#1565C0" rx="3"/>
+          <ellipse cx="18" cy="47" rx="4" ry="4" fill="#FFCC80"/>
+        </g>
+        <!-- แขนขวา (มีกระเป๋า) -->
+        <g class="lo-arm-right">
+          <rect x="38" y="30" width="8" height="16" fill="#1565C0" rx="3"/>
+          <ellipse cx="42" cy="47" rx="4" ry="4" fill="#FFCC80"/>
+        </g>
+        <!-- กระเป๋า -->
+        <rect x="32" y="28" width="14" height="18" fill="#F57C00" rx="2"/>
+        <rect x="33" y="32" width="12" height="3"  fill="#E65100" rx="1"/>
+        <rect x="33" y="37" width="12" height="3"  fill="#E65100" rx="1"/>
+        <path d="M32 28 Q39 24 46 28" stroke="#E65100" stroke-width="1.5" fill="none"/>
+        <!-- ขาซ้าย -->
+        <g class="lo-leg-left">
+          <rect x="22" y="48" width="9" height="20" fill="#0D47A1" rx="2"/>
+          <rect x="20" y="65" width="13" height="6"  fill="#37474F" rx="2"/>
+          <rect x="18" y="68" width="10" height="4"  fill="#263238" rx="1"/>
+        </g>
+        <!-- ขาขวา -->
+        <g class="lo-leg-right">
+          <rect x="31" y="48" width="9" height="20" fill="#0D47A1" rx="2"/>
+          <rect x="29" y="65" width="13" height="6"  fill="#37474F" rx="2"/>
+          <rect x="31" y="68" width="10" height="4"  fill="#263238" rx="1"/>
+        </g>
+      </g>
+
+    </svg>
   </div>
 
-  <!-- Toast -->
-  <div id="toast-container"></div>
+  <!-- Progress bar -->
+  <div class="lo-progress-wrap">
+    <div class="lo-bar-track">
+      <div class="lo-bar-fill" id="lo-bar-fill"></div>
+    </div>
+    <div class="lo-bar-meta">
+      <span id="lo-status-detail">กำลังเชื่อมต่อ...</span>
+      <span id="lo-pct">0%</span>
+    </div>
+  </div>
+
+  <p id="lo-status-text">กำลังโหลดข้อมูลหลักสูตร...</p>
+
+  <p id="lo-done-msg" style="display:none">
+    <span class="lo-check"></span> โหลดข้อมูลเสร็จแล้ว พร้อมสมัครเรียน!
+  </p>
+</div>
+
+  
 
   <!-- Header -->
   <header class="app-header">

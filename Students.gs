@@ -65,10 +65,20 @@ function getApplicationStatus(lineUserId) {
   const enrollments = sheetToObjects(enrollSheet);
   const enroll = enrollments.find(e => e.studentId === student.id);
 
-  // ดึงชื่อสาขา
+  // ดึงชื่อสาขา — ลองหลาย field เพราะ programId อาจ store ต่างกัน
   const programSheet = getSheet(SHEETS.PROGRAMS);
   const programs = sheetToObjects(programSheet);
-  const program = programs.find(p => p.id === (enroll ? enroll.programId : '')) || {};
+
+  let branchName = '';
+  if (enroll) {
+    // ลองหาจาก branchId ก่อน (field ที่ถูกต้อง)
+    let prog = programs.find(p => p.branchId === enroll.branchId);
+    // fallback: หาจาก programId
+    if (!prog) prog = programs.find(p => p.id === enroll.programId);
+    // fallback: หาจาก roundId
+    if (!prog) prog = programs.find(p => p.id === enroll.roundId);
+    branchName = prog ? prog.branch : (enroll.branchId || '');
+  }
 
   return {
     success: true,
@@ -76,7 +86,7 @@ function getApplicationStatus(lineUserId) {
     applicationNo: student.applicationNo,
     status: student.status,
     statusLabel: _statusLabel(student.status),
-    branchName: program.branch || '',
+    branchName: branchName,
     applyDate: student.applyDate ? new Date(student.applyDate).toLocaleDateString('th-TH') : '',
   };
 }
@@ -154,14 +164,28 @@ function submitApplication(body) {
   }
 
   // 6. บันทึก enrollment
+  // FIX: เก็บ branchId และ programId แยกกันให้ถูกต้อง
+  const branchId  = body.program?.branchId || '';
+  const levelId   = body.program?.levelId  || '';
+  const studyRound= body.program?.studyRound|| '';
+
+  // หา programId ที่ตรงกับ branchId + round จาก Programs sheet
+  const programs = sheetToObjects(getSheet(SHEETS.PROGRAMS));
+  const roundLabel = { morning:'รอบเช้า', afternoon:'รอบบ่าย', dual:'ทวิภาคี' }[studyRound] || studyRound;
+  const matchedProg = programs.find(p =>
+    p.branchId === branchId && (p.round || '').includes(roundLabel.split(' ')[0])
+  ) || programs.find(p => p.branchId === branchId) || {};
+
   const enrollSheet = getSheet(SHEETS.ENROLLMENTS);
   appendRow(enrollSheet, {
-    id: generateId(), studentId,
-    programId: body.program?.roundId || '',
-    levelId: body.program?.levelId || '',
-    branchId: body.program?.branchId || '',
-    roundId: body.program?.roundId || '',
-    applicationNo: appNo, status: 'pending',
+    id: generateId(),
+    studentId,
+    programId: matchedProg.id || branchId,  // FIX: ใช้ ID จริงจาก programs sheet
+    levelId:   levelId,
+    branchId:  branchId,                     // FIX: เก็บ branchId แยก
+    roundId:   matchedProg.id || '',
+    applicationNo: appNo,
+    status: 'pending',
     applyDate: now.toISOString(),
   }, ENROLLMENT_HEADERS);
 

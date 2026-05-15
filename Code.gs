@@ -1,13 +1,9 @@
 // ============================================
-// Code.gs — Main Entry Point
-// Google Apps Script Web App
+// Code.gs — Main Entry Point (อัปเดต: เพิ่ม admin route)
 // ============================================
 
-// ---- Sheet IDs ----
-const SHEET_ID = '1Jji1XE5-pRezwFAf2z18AUXGDAwEGsALO6u84iDi_2E';  // แก้ตรงนี้
+const SHEET_ID = '1Jji1XE5-pRezwFAf2z18AUXGDAwEGsALO6u84iDi_2E';
 const DRIVE_FOLDER_ROOT = '1njmYVDNAI-IQZ4dGN_PqV_eb0Ut8p2m-';
-
-
 
 var SHEETS = {
   STUDENTS:     'students',
@@ -24,15 +20,23 @@ var SHEETS = {
 };
 
 function _json(obj) {
-  var text = JSON.stringify(obj);
-  return ContentService.createTextOutput(text)
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doGet(e) {
   var p = (e && e.parameter) ? e.parameter : {};
   var action = p.action || '';
+
   try {
+    // ---- Admin Page (HtmlService) ----
+    // เข้าถึงได้ที่: [GAS_URL]?action=adminPage
+    // หรือ: [GAS_URL]?action=adminPage&token=admin1234  (embed data ทันที)
+    if (action === 'admin' || action === 'adminPage') {
+      return serveAdminPage(e);
+    }
+
+    // ---- JSON API ----
     if (action === 'ping')                 return _json({ success: true, message: 'pong', time: new Date().toISOString() });
     if (action === 'getPrograms')          return _json(getPrograms());
     if (action === 'getProvinces')         return _json(getProvinces());
@@ -43,10 +47,14 @@ function doGet(e) {
     if (action === 'adminGetStudents')     return _json(adminGetStudents(p));
     if (action === 'printApplication')     return printApplication(p);
     if (action === 'exportCSV')            return exportCSV(p.token);
-    if (action === 'generatePDF')           return generateStudentPDF(p)
+
     return _json({ success: false, message: 'Unknown action: ' + action });
   } catch (err) {
     Logger.log('doGet error [' + action + ']: ' + err.toString());
+    // ถ้า admin page error → ส่ง JSON แทน (ไม่ให้หน้าขาว)
+    if (action === 'admin' || action === 'adminPage') {
+      return _json({ success: false, message: 'Admin page error: ' + err.toString() });
+    }
     return _json({ success: false, message: err.toString() });
   }
 }
@@ -139,7 +147,6 @@ function _checkAdmin(token) {
   if (valid.indexOf(String(token)) === -1) throw new Error('Unauthorized');
 }
 
-// ---- Setup (รันครั้งเดียวหลัง deploy) ----
 function setup() {
   setupAllSheets();
   Logger.log('Setup complete!');

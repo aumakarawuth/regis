@@ -1,11 +1,19 @@
-// ============================================
-// PDF_Generator.gs — สร้าง HTML ใบสมัครสำหรับพิมพ์
-// ============================================
+// ============================================================
+// PDF_Generator.gs — สร้างใบสมัคร ปวช./ปวส. สำหรับพิมพ์
+// เดียวกับแบบฟอร์มกระดาษจริงของวิทยาลัย (checkbox "( )", เส้นประ,
+// กล่องเลขบัตร 13 หลักแบ่งกลุ่ม 1-4-5-2-1, ตราวิทยาลัย)
+//
+// หมายเหตุ: เดิมมีไฟล์ Utils.gs / Utils_Print.gs ประกาศฟังก์ชันชื่อซ้ำ
+// (printApplication, _buildPvchForm, _buildPvsForm) ซึ่งใน Apps Script
+// ทุกไฟล์ใช้ global scope เดียวกัน ทำให้ไฟล์ที่โหลดทีหลังทับของเดิมแบบ
+// เงียบๆ และ Utils_Print.gs เรียกฟังก์ชันที่ไม่มีอยู่จริง (_getSubDistrictName
+// ฯลฯ) ทำให้กด "พิมพ์ใบสมัคร" แล้ว error ทุกครั้ง — รวมทุกอย่างมาไว้ที่
+// ไฟล์เดียวนี้ไฟล์เดียว ลบสองไฟล์นั้นทิ้งเพื่อไม่ให้ชนกันอีก
+// ============================================================
 
 /**
- * doGet action: generatePDF / printApplication
+ * doGet action: printApplication / generatePDF (alias)
  * GET: ?action=printApplication&token=xxx&studentId=yyy
- * GET: ?action=generatePDF&token=xxx&studentId=yyy   (alias)
  */
 function generateStudentPDF(params) {
   return printApplication(params);
@@ -30,21 +38,19 @@ function printApplication(params) {
 
   var enroll = enrollments.find(function(e){ return e.studentId === studentId; }) || {};
 
-  // ---- FIX: lookup program โดย branchId ก่อน แล้วค่อย programId ----
+  // lookup program โดย branchId ก่อน แล้วค่อย programId
   var prog = programs.find(function(p){ return p.branchId === enroll.branchId; });
   if (!prog) prog = programs.find(function(p){ return p.id === enroll.programId; });
   if (!prog) prog = programs.find(function(p){ return p.id === enroll.roundId; });
   prog = prog || {};
 
-  var rawAddr    = addresses.find(function(a){ return a.studentId === studentId; }) || {};
-  // ---- FIX: resolve address ID → ชื่อ ----
+  var rawAddr = addresses.find(function(a){ return a.studentId === studentId; }) || {};
   var addr = _resolveAddr(rawAddr);
 
   var parentList = parents.filter(function(p){ return p.studentId === studentId; });
   var guardian   = guardians.find(function(g){ return g.studentId === studentId; }) || {};
   var docs       = documents.filter(function(d){ return d.studentId === studentId; });
 
-  // ---- FIX: studyRound อาจอยู่ใน enroll หรือ s ----
   var studyRound = enroll.studyRound || s.studyRound || '';
 
   var isPvs = (prog.level || s.education || '').indexOf('ปวส') !== -1;
@@ -56,8 +62,7 @@ function printApplication(params) {
 }
 
 // ============================================================
-// Address resolver — ID → ชื่อ
-// ถ้าเก็บเป็นชื่อแล้ว (ไม่ใช่ตัวเลขล้วน) → คืนเดิม
+// Address resolver — ID → ชื่อ (ถ้าเก็บเป็นชื่อแล้วคืนเดิม)
 // ============================================================
 function _resolveAddr(addr) {
   return {
@@ -73,7 +78,6 @@ function _lookupName(sheetName, val) {
   if (!val) return '';
   var s = String(val).trim();
   if (!s || s === '0') return '';
-  // ถ้าไม่ใช่ตัวเลขล้วน = ชื่อจริงอยู่แล้ว
   if (!/^\d+$/.test(s)) return s;
   try {
     var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(sheetName);
@@ -84,66 +88,384 @@ function _lookupName(sheetName, val) {
       }
     }
   } catch(e) {}
-  return s; // fallback: แสดง ID
+  return s; // fallback: แสดง ID ถ้าหาชื่อไม่เจอ
 }
 
 // ============================================================
-// HTML Template — ปวช.
+// FORM PRIMITIVES — จำลององค์ประกอบของแบบฟอร์มกระดาษจริง
 // ============================================================
-function _buildPvchPDF(s, enroll, prog, addr, parents, guardian, docs, studyRound) {
-  var father = null, mother = null;
-  for (var i = 0; i < parents.length; i++) {
-    if (parents[i].type === 'father') father = parents[i];
-    if (parents[i].type === 'mother') mother = parents[i];
-  }
-  father = father || {};
-  mother = mother || {};
 
-  var fullName   = (s.prefix||'') + (s.firstName||'') + ' ' + (s.lastName||'');
-  var branchName = prog.branch || enroll.branchId || '';
+function _esc(v) {
+  if (v === undefined || v === null) return '';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
-  // วันที่ไทย
-  function thDate(d) {
-    if (!d) return '........./........./..........';
+// checkbox วงเล็บ "(  )" / "( / )" — ตรงกับฟอร์มจริง (ไม่ใช่กล่อง CSS)
+function _chk(checked) {
+  return '<span class="chk">(' + (checked ? '<b>&nbsp;/&nbsp;</b>' : '&nbsp;&nbsp;&nbsp;') + ')</span>';
+}
+
+// ช่องกรอกข้อความเส้นประ — แสดงค่าถ้ามี ว่างไว้ให้กรอกถ้าไม่มี
+function _fld(value, sizeClass) {
+  return '<span class="fld ' + (sizeClass || '') + '">' + _esc(value) + '</span>';
+}
+
+// วันที่แบบ 3 ช่อง วัน/เดือน/ปี(พ.ศ.) — ว่างไว้ถ้าไม่มีค่า
+function _dateSlots(d) {
+  var day = '', month = '', year = '';
+  if (d) {
     try {
       var dt = new Date(d);
-      if (isNaN(dt)) return String(d);
-      var months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
-                    'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-      return dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + (dt.getFullYear()+543);
-    } catch(e) { return String(d); }
+      if (!isNaN(dt.getTime())) {
+        day = String(dt.getDate());
+        month = String(dt.getMonth() + 1);
+        year = String(dt.getFullYear() + 543);
+      }
+    } catch (e) {}
   }
+  return _fld(day, 'fld-date') + '/' + _fld(month, 'fld-date') + '/' + _fld(year, 'fld-date2');
+}
 
-  // กล่องเลขบัตร 13 ช่อง — แสดงตัวเลขแต่ละหลัก
-  function idBoxes(idStr) {
-    var digits = String(idStr || '').replace(/\D/g,'');
-    var html = '';
-    for (var i = 0; i < 13; i++) {
-      html += '<span class="idbox">' + (digits[i] || '') + '</span>';
+// เลขบัตรประชาชน 13 หลัก แบ่งกลุ่ม 1-4-5-2-1 ตามฟอร์มจริง
+function _idCardBoxes(idCard) {
+  var digits = String(idCard || '').replace(/\D/g, '');
+  var groupLens = [1, 4, 5, 2, 1];
+  var pos = 0;
+  var html = '<span class="idwrap">';
+  for (var gi = 0; gi < groupLens.length; gi++) {
+    if (gi > 0) html += '<span class="idgap"></span>';
+    for (var i = 0; i < groupLens[gi]; i++) {
+      html += '<span class="idbox">' + (digits[pos] || '') + '</span>';
+      pos++;
     }
-    return html;
+  }
+  return html + '</span>';
+}
+
+// ============================================================
+// ตราวิทยาลัย (SVG จำลอง — ถ้ามีไฟล์โลโก้จริงค่อยเปลี่ยนเป็น <img> ทีหลัง)
+// ============================================================
+function _collegeSeal() {
+  return '<svg class="seal" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">' +
+    '<defs>' +
+      '<path id="sealTopArc" d="M 26,108 A 76,76 0 0 1 174,108" fill="none"/>' +
+      '<path id="sealBotArc" d="M 40,145 A 64,64 0 0 0 160,145" fill="none"/>' +
+    '</defs>' +
+    '<circle cx="100" cy="100" r="95" fill="none" stroke="#000" stroke-width="2.5"/>' +
+    '<circle cx="100" cy="100" r="87" fill="none" stroke="#000" stroke-width="1"/>' +
+    '<g stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M100,38 C93,47 91,54 100,61 C109,54 107,47 100,38 Z" fill="#000"/>' +
+      '<path d="M91,61 L109,61 L104,80 L96,80 Z" fill="#000"/>' +
+      '<line x1="100" y1="80" x2="100" y2="110"/>' +
+      '<path d="M86,110 C86,123 114,123 114,110"/>' +
+    '</g>' +
+    '<g stroke="#000" stroke-width="1.3" fill="none">' +
+      '<circle cx="100" cy="128" r="16"/>' +
+      '<circle cx="100" cy="128" r="3.5" fill="#000"/>' +
+      '<line x1="104" y1="128" x2="116" y2="128"/>' +
+      '<line x1="102.8" y1="131.3" x2="111.3" y2="139.3"/>' +
+      '<line x1="100" y1="132" x2="100" y2="144"/>' +
+      '<line x1="97.2" y1="131.3" x2="88.7" y2="139.3"/>' +
+      '<line x1="96" y1="128" x2="84" y2="128"/>' +
+      '<line x1="97.2" y1="124.7" x2="88.7" y2="116.7"/>' +
+      '<line x1="100" y1="124" x2="100" y2="112"/>' +
+      '<line x1="102.8" y1="124.7" x2="111.3" y2="116.7"/>' +
+    '</g>' +
+    '<text font-size="11.5" font-weight="700" letter-spacing="0.5">' +
+      '<textPath href="#sealTopArc" startOffset="50%" text-anchor="middle">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</textPath>' +
+    '</text>' +
+    '<text font-size="7.5" letter-spacing="0.3">' +
+      '<textPath href="#sealBotArc" startOffset="50%" text-anchor="middle">CHARANSANITWONG TECHNOLOGICAL COLLEGE</textPath>' +
+    '</text>' +
+  '</svg>';
+}
+
+// ============================================================
+// CSS ร่วม
+// ============================================================
+function _formCSS() {
+  return [
+    '@page { size: A4 portrait; margin: 10mm 12mm; }',
+    '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
+    'html{font-size:13px}',
+    'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.95}',
+    '.page{width:100%;padding:3mm 1mm;page-break-after:always}',
+    '.page:last-child{page-break-after:avoid}',
+    '@media print{.no-print{display:none!important}}',
+    '@media screen{body{background:#ddd}.page{background:#fff;max-width:194mm;margin:0 auto 18px;padding:8mm 10mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+
+    '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
+    '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
+    '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
+    '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
+
+    '.idwrap{display:inline-flex;align-items:center;vertical-align:middle}',
+    '.idbox{display:inline-flex;align-items:center;justify-content:center;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px}',
+    '.idgap{width:4px}',
+
+    '.row{margin:5px 0}',
+    '.indent{padding-left:20px}',
+    '.b{font-weight:700}',
+    '.center{text-align:center}',
+    '.branch-row{font-size:0.86rem;line-height:2}',
+    '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
+
+    '.top-row{font-size:0.9rem}',
+    '.cover-wrap{margin:8px 0;overflow:hidden}',
+    '.photo-box{width:86px;height:104px;border:1px solid #000;float:right;margin-left:10px;display:flex;align-items:center;justify-content:center;font-size:0.66rem;text-align:center;color:#555}',
+    '.cover-center{text-align:center}',
+    '.seal{width:130px;height:130px;display:block;margin:0 auto}',
+    '.cover-center h1{font-size:1.55rem;margin:2px 0 0}',
+    '.cover-center h2{font-size:1.05rem;margin:2px 0}',
+    '.cover-center .en{font-size:0.8rem}',
+    '.cover-center .addr{font-size:0.76rem;color:#222;margin-top:3px;line-height:1.55}',
+    '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px;clear:both}',
+
+    '.section-title{font-weight:700;margin:4px 0;font-size:0.96rem}',
+    '.checklist{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:0.8rem;margin-top:4px}',
+    '.checklist>div{display:flex;gap:4px;align-items:baseline;white-space:nowrap}',
+
+    '.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:22px;text-align:center;font-size:0.85rem}',
+    '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
+    '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
+
+    '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
+
+    '.doc-page{text-align:center;padding:10px 0}',
+    '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
+    '.doc-img{max-width:88%;max-height:190mm;border:1px solid #ccc;display:block;margin:0 auto}',
+    '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa}',
+    '.stamp-wrap{text-align:right;padding-right:24px;margin-top:14px}',
+    '.stamp{display:inline-block;border:2.5px solid #CC0000;border-radius:8px;padding:5px 18px;color:#CC0000;font-weight:700}',
+    '.doc-sig{margin-top:8px}',
+  ].join('\n');
+}
+
+function _wrapHtml(title, bodyHtml) {
+  return '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>' + _esc(title) + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">' +
+    '<style>' + _formCSS() + '</style>' +
+    '</head><body>' +
+    '<button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    bodyHtml +
+    '</body></html>';
+}
+
+// ============================================================
+// รายการหลักฐานการสมัคร — ตามแบบฟอร์มจริง
+// (เช็คให้อัตโนมัติเฉพาะรายการที่มีเอกสารอัปโหลดตรงกันจริง — ที่เหลือ
+//  เว้นว่างให้เจ้าหน้าที่ตรวจสอบเอง เพราะระบบไม่ได้เก็บสำเนาบัตร
+//  บิดา/มารดา/ผู้ปกครอง หรือสูติบัตรแยกไว้)
+// ============================================================
+function _checklistItems(level, hasDoc) {
+  var eduDone = hasDoc('edu_cert_front') || hasDoc('edu_cert');
+  var idDone  = hasDoc('id_card_front') && hasDoc('id_card_back');
+  if (level === 'pvs') {
+    return [
+      { n: 1, label: 'รูปถ่าย 1" หรือ 2" จำนวน 1 ใบ', checked: false },
+      { n: 2, label: 'วุฒิการศึกษาฉบับจริง', checked: eduDone },
+      { n: 3, label: 'สำเนาวุฒิการศึกษา 2 ฉบับ', checked: eduDone },
+      { n: 4, label: 'สำเนาบัตรประจำตัวประชาชนของตนเอง 2 ฉบับ', checked: idDone },
+      { n: 5, label: 'สำเนาบัตรประจำตัวประชาชนของบิดา', checked: false },
+      { n: 6, label: 'สำเนาบัตรประจำตัวประชาชนของมารดา', checked: false },
+      { n: 7, label: 'สำเนาบัตรประจำตัวประชาชนของผู้ปกครอง', checked: false },
+      { n: 8, label: 'สำเนาทะเบียนบ้านของตนเอง', checked: hasDoc('house_reg') },
+      { n: 9, label: 'กรณี โอนหน่วยกิต (วุฒิม.3 และรบ.โอน)', checked: false },
+    ];
+  }
+  return [
+    { n: 1,  label: 'รูปถ่าย 1" หรือ 2" จำนวน 1 ใบ', checked: false },
+    { n: 2,  label: 'วุฒิการศึกษาฉบับจริง', checked: eduDone },
+    { n: 3,  label: 'สำเนาวุฒิการศึกษา 2 ฉบับ', checked: eduDone },
+    { n: 4,  label: 'สำเนาบัตรประจำตัวประชาชนของตนเอง 1 ฉบับ', checked: idDone },
+    { n: 5,  label: 'สำเนาบัตรประจำตัวประชาชนของบิดา 1 ฉบับ', checked: false },
+    { n: 6,  label: 'สำเนาบัตรประจำตัวประชาชนของมารดา 1 ฉบับ', checked: false },
+    { n: 7,  label: 'สำเนาบัตรประจำตัวประชาชนของผู้ปกครอง 1 ฉบับ', checked: false },
+    { n: 8,  label: 'สำเนาทะเบียนบ้านของตนเอง 1 ฉบับ', checked: hasDoc('house_reg') },
+    { n: 9,  label: 'สำเนาสูติบัตร 1 ฉบับ', checked: false },
+    { n: 10, label: 'กรณี โอนหน่วยกิต (วุฒิม.3 และรบ.โอน)', checked: false },
+  ];
+}
+
+function _checklistHtml(items) {
+  var half = Math.ceil(items.length / 2);
+  var left = items.slice(0, half);
+  var right = items.slice(half);
+  var rows = '';
+  for (var i = 0; i < half; i++) {
+    var l = left[i], r = right[i];
+    rows += '<div>' + _chk(l.checked) + ' ' + l.n + '. ' + _esc(l.label) + '</div>';
+    rows += '<div>' + (r ? _chk(r.checked) + ' ' + r.n + '. ' + _esc(r.label) : '') + '</div>';
+  }
+  return '<div class="checklist">' + rows + '</div>';
+}
+
+// ============================================================
+// สาขาวิชา — ตามแบบฟอร์มจริง
+// ============================================================
+var PVCH_BRANCHES = ['การบัญชี', 'การตลาด', 'ภาษาต่างประเทศธุรกิจบริการ', 'ธุรกิจค้าปลีก [กทม./ต่างจังหวัด]', 'เทคโนโลยีธุรกิจดิจิทัล', 'เทคโนโลยีสารสนเทศ', 'ดิจิทัลกราฟิก', 'การท่องเที่ยว'];
+var PVS_BRANCHES  = ['การบัญชี', 'การตลาด', 'ภาษาและการจัดการธุรกิจระหว่างประเทศ', 'ธุรกิจค้าปลีก [กทม./ต่างจังหวัด]', 'เทคโนโลยีธุรกิจดิจิทัล', 'เทคโนโลยีสารสนเทศ', 'ดิจิทัลกราฟิก', 'การท่องเที่ยว', 'การจัดการดูแลผู้สูงอายุ', 'การจัดการสำนักงานดิจิทัล'];
+
+function _branchChecklistHtml(branches, branchName) {
+  branchName = branchName || '';
+  var perRow = 4;
+  var html = '';
+  for (var i = 0; i < branches.length; i += perRow) {
+    var rowItems = branches.slice(i, i + perRow);
+    var cells = [];
+    for (var j = 0; j < rowItems.length; j++) {
+      var b = rowItems[j];
+      var key = b.split(' [')[0];
+      cells.push('<span class="branch-item">' + _chk(branchName.indexOf(key) !== -1) + ' ' + _esc(b) + '</span>');
+    }
+    html += '<div class="row branch-row' + (i > 0 ? ' indent' : '') + '">' + cells.join('') + '</div>';
+  }
+  return html;
+}
+
+// ============================================================
+// หน้าปก — ใช้ร่วมกัน ปวช./ปวส.
+// ============================================================
+function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
+  return '<div class="page">' +
+    '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
+    '<div class="row" style="font-size:0.85rem">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row" style="font-size:0.85rem">' +
+      _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
+      _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +
+      _chk(false) + ' กรอกประวัติ' + _fld('', 'fld-md') +
+    '</div>' +
+
+    '<div class="cover-wrap">' +
+      '<div class="photo-box">รูปถ่าย<br>1" หรือ 2"</div>' +
+      '<div class="cover-center">' +
+        _collegeSeal() +
+        '<h1>ใบสมัคร ' + _esc(levelLabel) + '</h1>' +
+        '<h2>วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</h2>' +
+        '<div class="en">Charansanitwong Technogical College</div>' +
+        '<div class="addr">18 ถ.จรัญสนิทวงศ์ ซอย 41 แขวงอรุณอมรินทร์ เขตบางกอกน้อย กทม. 10700<br>' +
+        'โทร. 0-2434-6155-7 โทรสาร. 0-2433-3647 www.charansanitwong.ac.th</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<hr class="hr">' +
+    '<div class="section-title">หลักฐานการสมัครเรียน (เรียงตามหมายเลข)</div>' +
+    _checklistHtml(checklistItems) +
+  '</div>';
+}
+
+// ============================================================
+// หน้ากรอกข้อมูล — ใช้ร่วมกัน ปวช./ปวส. (ต่างกันแค่สาขา/วุฒิเดิม/บรรทัดปีที่เข้า)
+// ============================================================
+function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName) {
+  var isPvs = level === 'pvs';
+  var levelTitle = isPvs ? 'ปวส.' : 'ปวช.';
+  var branches = isPvs ? PVS_BRANCHES : PVCH_BRANCHES;
+  var edu = String(s.education || '');
+
+  var eduRow;
+  if (isPvs) {
+    var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
+    eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
+      _chk(edu.indexOf('ม.6') !== -1) + ' ม.6 ' +
+      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _fld(isPvchGrad ? s.education : '', 'fld-md') +
+      ' โรงเรียน ' + _fld(s.oldSchool, 'fld-lg') + '</div>';
+  } else {
+    eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
+      _chk(edu.indexOf('ม.3') !== -1) + ' ม.3' +
+      ' โรงเรียน/วิทยาลัย ' + _fld(s.oldSchool, 'fld-lg') + '</div>';
   }
 
-  // checkbox สาขา
-  function cbBranch(name) {
-    return branchName.indexOf(name) !== -1
-      ? '<span class="cb checked"></span>'
-      : '<span class="cb"></span>';
-  }
+  var transferRow = isPvs
+    ? '<div class="row indent">&#8211; เข้าศึกษา ' + _chk(false) + ' ปวส.2 ' + _chk(false) + ' ปวส.3 ห้อง/รอบ ' + _fld('', 'fld-md') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>'
+    : '<div class="row indent">&#8211; เข้าศึกษา ห้อง/รอบ ' + _fld('', 'fld-md') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>';
 
-  // checkbox รอบ
-  function cbRound(val) {
-    return String(studyRound||'').toLowerCase() === val
-      ? '<span class="cb checked"></span>'
-      : '<span class="cb"></span>';
-  }
+  var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
-  function hasDoc(type) {
-    return docs.some(function(d){ return d.type === type; });
-  }
+  return '<div class="page">' +
+    '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
-  // หน้าเอกสารแนบ
-  var docLabels = {
+    '<div class="row">' +
+      '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
+      '&emsp;<span class="b">ระดับที่สมัคร ' + levelTitle + '</span> &#8211; รอบ ' +
+      _chk(studyRound === 'morning') + ' เช้า ' +
+      _chk(studyRound === 'afternoon') + ' บ่าย ' +
+      _chk(studyRound === 'dual') + ' ทวิภาคี' +
+    '</div>' +
+
+    '<div class="row">' +
+      '<span class="b">1.</span> นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
+      ' นามสกุล ' + _fld(s.lastName, 'fld-lg') +
+      ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
+    '</div>' +
+    '<div class="row indent">' +
+      'Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') +
+      ' เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) +
+    '</div>' +
+    '<div class="row indent">' +
+      '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
+      ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +
+      ' ศาสนา' + _fld(s.religion || 'พุทธ', 'fld-sm') +
+      ' น้ำหนัก' + _fld(s.weight, 'fld-xs') +
+      ' ส่วนสูง' + _fld(s.height, 'fld-xs') +
+      ' หมู่โลหิต' + _fld(s.bloodType, 'fld-xs') +
+    '</div>' +
+
+    '<div class="row"><span class="b">2. สาขาวิชาที่สมัคร</span></div>' +
+    _branchChecklistHtml(branches, branchName) +
+
+    eduRow +
+    '<div class="row indent">' +
+      'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
+      ' อำเภอ/เขต ' + _fld(addr.district, 'fld-md') +
+      ' จังหวัด ' + _fld(addr.province, 'fld-md') +
+    '</div>' +
+    '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
+    transferRow +
+
+    '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> บ้านเลขที่' + _fld('', 'fld-xs') + ' หมู่' + _fld('', 'fld-xs') + ' ซอย' + _fld('', 'fld-sm') + ' ถนน' + _fld('', 'fld-md') + '</div>' +
+    '<div class="row indent">' +
+      'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
+      ' อำเภอ/เขต ' + _fld(addr.district, 'fld-md') +
+      ' จังหวัด ' + _fld(addr.province, 'fld-md') +
+      ' รหัสไปรษณีย์ ' + _fld(addr.zipcode, 'fld-sm') +
+    '</div>' +
+    '<div class="row indent">โทรศัพท์ ' + _fld(s.phone, 'fld-lg') + '</div>' +
+
+    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+
+    '<div class="row">&#8211; ชื่อบิดา นาย ' + _fld(father.firstName, 'fld-md') + ' นามสกุล ' + _fld(father.lastName, 'fld-md') + ' อาชีพ ' + _fld(father.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(father.phone, 'fld-md') + '</div>' +
+    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+
+    '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _fld(mother.firstName, 'fld-md') + ' นามสกุล ' + _fld(mother.lastName, 'fld-md') + ' อาชีพ ' + _fld(mother.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(mother.phone, 'fld-md') + '</div>' +
+    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
+
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
+
+    '<div class="row" style="font-size:0.85rem;margin-top:8px">' +
+      '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +
+    '</div>' +
+
+    '<div class="sig-grid">' +
+      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div><div class="sig-line"></div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+    '</div>' +
+
+    '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
+    '<div class="finance-line"></div><div class="finance-line"></div><div class="finance-line"></div>' +
+  '</div>';
+}
+
+// ============================================================
+// หน้าเอกสารแนบ (สำเนาถูกต้อง)
+// ============================================================
+function _docPages(docs, studentName) {
+  var labels = {
     id_card_front: 'สำเนาบัตรประจำตัวประชาชน (ด้านหน้า)',
     id_card_back:  'สำเนาบัตรประจำตัวประชาชน (ด้านหลัง)',
     house_reg:     'สำเนาทะเบียนบ้าน',
@@ -152,274 +474,56 @@ function _buildPvchPDF(s, enroll, prog, addr, parents, guardian, docs, studyRoun
     edu_cert:      'สำเนาวุฒิการศึกษา',
     payment_slip:  'หลักฐานการชำระเงิน',
   };
-
-  var docsHtml = docs.map(function(doc) {
-    var label  = docLabels[doc.type] || doc.type;
-    var imgUrl = doc.driveUrl || '';
+  return docs.map(function(doc) {
+    var label = labels[doc.type] || doc.type;
+    var img = doc.driveUrl
+      ? '<img src="' + doc.driveUrl + '" class="doc-img" alt="' + _esc(label) + '">'
+      : '<div class="doc-placeholder">(ไม่มีรูปเอกสาร)</div>';
     return '<div class="page doc-page">' +
-      '<h3>' + label + '</h3>' +
-      (imgUrl
-        ? '<img src="' + imgUrl + '" class="doc-img" alt="' + label + '">'
-        : '<div class="doc-placeholder">📄 ไม่มีรูปเอกสาร</div>') +
-      '<br><div class="stamp">สำเนาถูกต้อง</div>' +
-      '<div class="sig-name">' +
-        '<div class="sig-name-line"></div>' +
-        '<div>(' + fullName + ')</div>' +
-        '<div style="font-size:11px;color:#666">ผู้สมัคร</div>' +
-      '</div></div>';
-  }).join('\n');
-
-  var gName = (guardian.prefix||'') + ' ' + (guardian.firstName||'') + ' ' + (guardian.lastName||'');
-
-  return '<!DOCTYPE html>\n<html lang="th">\n<head>\n' +
-'<meta charset="UTF-8">\n' +
-'<title>ใบสมัคร ปวช. — ' + (s.applicationNo||'') + '</title>\n' +
-'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">\n' +
-'<style>\n' +
-'  @page { size: A4 portrait; margin: 8mm 10mm; }\n' +
-'  *, *::before, *::after { box-sizing: border-box; }\n' +
-'  body { font-family: \'Sarabun\', sans-serif; font-size: 13px; color: #000; margin: 0; background: #fff; }\n' +
-'  .page { width: 100%; page-break-after: always; }\n' +
-'  .page:last-child { page-break-after: avoid; }\n' +
-  /* กล่องเลขบัตร */
-'  .idbox { display: inline-block; width: 19px; height: 19px; border: 1.5px solid #000;\n' +
-'    text-align: center; line-height: 17px; font-size: 11px; font-weight: 700; margin: 0 1px; vertical-align: middle; }\n' +
-  /* checkbox */
-'  .cb { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #000;\n' +
-'    text-align: center; line-height: 12px; font-size: 10px; font-weight: 700; vertical-align: middle; margin: 0 1px; }\n' +
-'  .cb.checked::after { content: "✓"; }\n' +
-  /* field underline */
-'  .f  { display: inline-block; border-bottom: 1px solid #000; padding: 0 4px; vertical-align: bottom; min-width: 80px; }\n' +
-'  .fsm { min-width: 50px; } .fmd { min-width: 130px; } .flg { min-width: 190px; } .fxl { min-width: 280px; }\n' +
-'  .row { margin: 5px 0; line-height: 1.9; }\n' +
-'  .indent { padding-left: 18px; }\n' +
-'  .section-hd { font-weight: 700; font-size: 13.5px; margin: 10px 0 4px; border-bottom: 1.5px solid #000; padding-bottom: 2px; }\n' +
-'  .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-top: 24px; }\n' +
-'  .sig-box { text-align: center; font-size: 12px; }\n' +
-'  .sig-line { border-bottom: 1px solid #000; margin: 40px 12px 4px; }\n' +
-'  .chk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 12px; margin-top: 6px; }\n' +
-'  .cover-hd { display: flex; align-items: flex-start; gap: 12px; margin: 10px 0 8px; }\n' +
-'  .cover-center { flex: 1; text-align: center; }\n' +
-'  .cover-center h1 { font-size: 21px; font-weight: 700; margin: 6px 0 4px; line-height: 1.35; }\n' +
-'  .cover-center p { font-size: 11px; color: #444; margin: 0; }\n' +
-'  .photo-box { width: 90px; height: 110px; flex-shrink: 0; border: 1.5px solid #000;\n' +
-'    display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; text-align: center; line-height: 1.4; }\n' +
-'  .doc-page { text-align: center; padding: 16px 0; }\n' +
-'  .doc-page h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }\n' +
-'  .doc-img { max-width: 88%; max-height: 190mm; border: 1px solid #ccc; display: block; margin: 0 auto; }\n' +
-'  .doc-placeholder { width: 88%; height: 110mm; margin: 0 auto; border: 1px dashed #bbb;\n' +
-'    display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 13px; }\n' +
-'  .stamp { display: inline-block; border: 3px solid #cc0000; border-radius: 8px;\n' +
-'    padding: 5px 18px; color: #cc0000; font-weight: 700; font-size: 14px; margin-top: 12px; }\n' +
-'  .sig-name { margin-top: 8px; }\n' +
-'  .sig-name-line { border-bottom: 1px solid #000; width: 260px; margin: 40px auto 5px; }\n' +
-'  @media print { .no-print { display: none !important; } }\n' +
-'</style>\n</head>\n<body>\n\n' +
-
-'<button class="no-print" onclick="window.print()"\n' +
-'  style="position:fixed;top:10px;right:10px;padding:8px 18px;background:#009900;color:#fff;\n' +
-'  border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;z-index:9999;\n' +
-'  box-shadow:0 2px 8px rgba(0,0,0,0.3)">🖨️ พิมพ์ / บันทึก PDF</button>\n\n' +
-
-// ---- หน้า 1: ปก ----
-'<div class="page" style="padding:6px 0">\n' +
-'  <div style="text-align:right;font-size:12px;line-height:1.8">\n' +
-'    นาย/น.ส./นาง <span class="f flg">' + fullName + '</span>\n' +
-'    &nbsp;&nbsp;ห้อง <span class="f fsm"></span>\n' +
-'    &nbsp;&nbsp;รอบ <span class="f fsm">' + (prog.round||'') + '</span><br>\n' +
-'    รหัสประจำตัว ' + idBoxes(s.idCard) + '<br>\n' +
-'    <span class="cb"></span> บันทึก DATA &nbsp;\n' +
-'    <span class="cb"></span> บันทึก SISA &nbsp;\n' +
-'    <span class="cb"></span> กรอกประวัติ\n' +
-'  </div>\n' +
-
-'  <div class="cover-hd">\n' +
-'    <div class="cover-center">\n' +
-'      <div style="font-size:48px;line-height:1;margin-bottom:4px">🏫</div>\n' +
-'      <h1>ใบสมัคร ปวช.<br>วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</h1>\n' +
-'      <p>Charansanitwong Technological College<br>\n' +
-'      18 ก.จรัญสนิทวงศ์ ซอย 41 แขวงอรุณอมรินทร์ เขตบางกอกน้อย กทม. 10700<br>\n' +
-'      โทร. 0-2434-6155-7 &nbsp;โทรสาร. 0-2433-3647</p>\n' +
-'    </div>\n' +
-'    <div class="photo-box">รูปถ่าย<br>1" หรือ 2"</div>\n' +
-'  </div>\n' +
-'  <hr style="margin:6px 0;border:none;border-top:1.5px solid #000">\n' +
-
-'  <div style="font-size:12px;font-weight:700;margin-bottom:4px">หลักฐานการสมัครเรียน</div>\n' +
-'  <div class="chk-grid">\n' +
-'    <div><span class="cb"></span> 1. รูปถ่าย 1" หรือ 2" จำนวน 1 ใบ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('id_card_back')?'checked':'') + '"></span> 6. สำเนาบัตร ปชช. ของมารดา 1 ฉบับ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('edu_cert_front')?'checked':'') + '"></span> 2. วุฒิการศึกษาฉบับจริง</div>\n' +
-'    <div><span class="cb ' + (hasDoc('id_card_front')?'checked':'') + '"></span> 7. สำเนาบัตร ปชช. ของผู้ปกครอง 1 ฉบับ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('edu_cert_front')?'checked':'') + '"></span> 3. สำเนาวุฒิการศึกษา 2 ฉบับ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('house_reg')?'checked':'') + '"></span> 8. สำเนาทะเบียนบ้านของตนเอง 1 ฉบับ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('id_card_front')?'checked':'') + '"></span> 4. สำเนาบัตร ปชช. ของตนเอง 1 ฉบับ</div>\n' +
-'    <div><span class="cb"></span> 9. สำเนาสูติบัตร 1 ฉบับ</div>\n' +
-'    <div><span class="cb ' + (hasDoc('id_card_front')?'checked':'') + '"></span> 5. สำเนาบัตร ปชช. ของบิดา 1 ฉบับ</div>\n' +
-'    <div><span class="cb"></span> 10. กรณี โอนหน่วยกิต</div>\n' +
-'  </div>\n' +
-'</div>\n\n' +
-
-// ---- หน้า 2: ฟอร์มกรอก ----
-'<div class="page" style="padding:4px 0">\n' +
-'  <div style="text-align:center;font-size:14px;font-weight:700;margin-bottom:8px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>\n' +
-
-'  <div class="row">\n' +
-'    <b>วันที่สมัคร</b> <span class="f fmd">' + thDate(s.applyDate) + '</span>\n' +
-'    &nbsp;&nbsp;<b>ระดับที่สมัคร ปวช.</b> – รอบ\n' +
-'    &nbsp;' + cbRound('morning') + ' เช้า\n' +
-'    &nbsp;' + cbRound('afternoon') + ' บ่าย\n' +
-'    &nbsp;' + cbRound('dual') + ' ทวิภาคี\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    <b>1.</b> นาย/นางสาว/นาง <span class="f flg">' + (s.firstName||'') + '</span>\n' +
-'    &nbsp;นามสกุล <span class="f flg">' + (s.lastName||'') + '</span>\n' +
-'    &nbsp;วัน/เดือน/ปีเกิด <span class="f fmd">' + thDate(s.birthDate) + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    Mr./Miss./Mrs. <span class="f fxl"></span>\n' +
-'    &nbsp;เลขประจำตัวประชาชน ' + idBoxes(s.idCard) + '\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    สัญชาติ <span class="f fsm">' + (s.nationality||'ไทย') + '</span>&nbsp;\n' +
-'    เชื้อชาติ <span class="f fsm">' + (s.ethnicity||'ไทย') + '</span>&nbsp;\n' +
-'    ศาสนา <span class="f fsm">' + (s.religion||'พุทธ') + '</span>&nbsp;\n' +
-'    น้ำหนัก <span class="f fsm">' + (s.weight||'') + '</span> กก.&nbsp;\n' +
-'    ส่วนสูง <span class="f fsm">' + (s.height||'') + '</span> ซม.&nbsp;\n' +
-'    หมู่โลหิต <span class="f fsm">' + (s.bloodType||'') + '</span>\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    <b>2.</b> สาขาวิชาที่สมัคร\n' +
-'    &nbsp;' + cbBranch('การบัญชี') + ' การบัญชี\n' +
-'    &nbsp;' + cbBranch('การตลาด') + ' การตลาด\n' +
-'    &nbsp;' + cbBranch('เทคโนโลยีธุรกิจดิจิทัล') + ' เทคโนโลยีธุรกิจดิจิทัล\n' +
-'    &nbsp;' + cbBranch('เทคโนโลยีสารสนเทศ') + ' เทคโนโลยีสารสนเทศ\n' +
-'    &nbsp;' + cbBranch('ดิจิทัลกราฟิก') + ' ดิจิทัลกราฟิก\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    ' + cbBranch('ธุรกิจค้าปลีก') + ' ธุรกิจค้าปลีก\n' +
-'    &nbsp;' + cbBranch('ภาษาต่างประเทศ') + ' ภาษาต่างประเทศธุรกิจบริการ\n' +
-'    &nbsp;' + cbBranch('การท่องเที่ยว') + ' การท่องเที่ยว\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    <b>3.</b> จบการศึกษา\n' +
-'    <span class="cb ' + ((s.education||'').indexOf('ม.3')!==-1?'checked':'') + '"></span> ม.3\n' +
-'    &nbsp;โรงเรียน <span class="f fxl">' + (s.oldSchool||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    ตำบล/แขวง <span class="f fmd">' + addr.subDistrict + '</span>&nbsp;\n' +
-'    อำเภอ/เขต <span class="f fmd">' + addr.district + '</span>&nbsp;\n' +
-'    จังหวัด <span class="f fmd">' + addr.province + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    – กรณีโอนมา จากวิทยาลัย <span class="f flg"></span> &nbsp;สาขาวิชา <span class="f flg"></span>\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    <b>4.</b> ที่อยู่ปัจจุบัน <span class="f fxl">' + (addr.detail||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    ตำบล/แขวง <span class="f fmd">' + addr.subDistrict + '</span>&nbsp;\n' +
-'    อำเภอ/เขต <span class="f fmd">' + addr.district + '</span>&nbsp;\n' +
-'    จังหวัด <span class="f fmd">' + addr.province + '</span>&nbsp;\n' +
-'    รหัสไปรษณีย์ <span class="f fsm">' + addr.zipcode + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">โทรศัพท์ <span class="f fmd">' + (s.phone||'') + '</span></div>\n' +
-
-'  <div class="section-hd">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>\n' +
-
-'  <div class="row">\n' +
-'    – ชื่อบิดา นาย <span class="f flg">' + (father.firstName||'') + '</span>\n' +
-'    &nbsp;นามสกุล <span class="f flg">' + (father.lastName||'') + '</span>\n' +
-'    &nbsp;อาชีพ <span class="f fmd">' + (father.occupation||'') + '</span>\n' +
-'    &nbsp;โทรศัพท์ <span class="f fmd">' + (father.phone||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    ชื่อบิดา (อังกฤษ) Mr. <span class="f fxl"></span>\n' +
-'    &nbsp;เลขประจำตัวประชาชน ' + idBoxes(father.idCard) + '\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    – ชื่อมารดา น.ส./นาง <span class="f flg">' + (mother.firstName||'') + '</span>\n' +
-'    &nbsp;นามสกุล <span class="f flg">' + (mother.lastName||'') + '</span>\n' +
-'    &nbsp;อาชีพ <span class="f fmd">' + (mother.occupation||'') + '</span>\n' +
-'    &nbsp;โทรศัพท์ <span class="f fmd">' + (mother.phone||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    ชื่อมารดา (อังกฤษ) Miss./Mrs. <span class="f fxl"></span>\n' +
-'    &nbsp;เลขประจำตัวประชาชน ' + idBoxes(mother.idCard) + '\n' +
-'  </div>\n' +
-
-'  <div class="row">\n' +
-'    – ชื่อผู้ปกครอง (กรณีที่ไม่ได้อยู่กับบิดา มารดา)\n' +
-'    &nbsp;นาย/นางสาว/นาง <span class="f fxl">' + gName + '</span>\n' +
-'    &nbsp;อาชีพ <span class="f fmd">' + (guardian.occupation||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row indent">\n' +
-'    เกี่ยวข้องเป็น <span class="f fsm">' + (guardian.relation||'') + '</span>\n' +
-'    &nbsp;โทรศัพท์ <span class="f fmd">' + (guardian.phone||'') + '</span>\n' +
-'    &nbsp;ที่อยู่ <span class="f fxl">' + (guardian.address||'') + '</span>\n' +
-'  </div>\n' +
-'  <div class="row" style="font-size:12px;margin-top:6px">\n' +
-'    &emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ\n' +
-'    และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์\n' +
-'  </div>\n' +
-
-'  <div class="sig-grid">\n' +
-'    <div class="sig-box"><div class="sig-line"></div>\n' +
-'      <div>ลงชื่อ..........................ผู้สมัคร</div>\n' +
-'      <div>(' + fullName + ')</div>\n' +
-'      <div>......./......./.........</div></div>\n' +
-'    <div class="sig-box"><div class="sig-line"></div>\n' +
-'      <div>ลงชื่อ..........................ผู้ปกครอง</div>\n' +
-'      <div>(' + gName + ')</div>\n' +
-'      <div>......./......./.........</div></div>\n' +
-'    <div class="sig-box"><div class="sig-line"></div>\n' +
-'      <div>ลงชื่อ..........................ผู้รับสมัคร</div>\n' +
-'      <div>(................................)</div>\n' +
-'      <div>......./......./.........</div></div>\n' +
-'    <div class="sig-box"><div class="sig-line"></div>\n' +
-'      <div>ลงชื่อ..........................ฝ่ายการเงิน</div>\n' +
-'      <div>(................................)</div>\n' +
-'      <div>......./......./.........</div></div>\n' +
-'  </div>\n' +
-'  <div style="margin-top:10px;font-size:12px;font-weight:700">บันทึกฝ่ายการเงิน</div>\n' +
-'  <div style="border-bottom:1px solid #999;margin:5px 0 4px;height:20px"></div>\n' +
-'  <div style="border-bottom:1px solid #999;margin:4px 0;height:20px"></div>\n' +
-'</div>\n\n' +
-
-docsHtml + '\n\n' +
-'</body>\n</html>';
+      '<div class="doc-title">' + _esc(label) + '</div>' +
+      img +
+      '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
+      '<div class="doc-sig"><div class="sig-line" style="width:260px;margin:30px auto 4px"></div>(' + _esc(studentName) + ')<br><span style="font-size:0.8rem;color:#555">ผู้สมัคร</span></div>' +
+    '</div>';
+  }).join('');
 }
 
-// ---- ปวส.: ใช้โครงเดียวกัน เปลี่ยนชื่อ ----
+// ============================================================
+// ██████ ปวช. ██████
+// ============================================================
+function _buildPvchPDF(s, enroll, prog, addr, parents, guardian, docs, studyRound) {
+  var father = parents.find(function(p) { return p.type === 'father'; }) || {};
+  var mother = parents.find(function(p) { return p.type === 'mother'; }) || {};
+  var fullName = (s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '');
+  var branchName = prog.branch || enroll.branchId || '';
+  var roundLabel = { morning: 'เช้า', afternoon: 'บ่าย', dual: 'ทวิภาคี' }[studyRound] || '';
+  var hasDoc = function(t) { return docs.some(function(d) { return d.type === t; }); };
+
+  var extraRow = _chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้ยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md');
+
+  var page1 = _coverPage('ปวช.', fullName, roundLabel, s, _checklistItems('pvch', hasDoc), extraRow);
+  var page2 = _fillPage('pvch', s, addr, father, mother, guardian, studyRound, branchName);
+  var docPages = _docPages(docs, fullName);
+
+  return _wrapHtml('ใบสมัคร ปวช. — ' + (s.applicationNo || ''), page1 + page2 + docPages);
+}
+
+// ============================================================
+// ██████ ปวส. ██████
+// ============================================================
 function _buildPvsPDF(s, enroll, prog, addr, parents, guardian, docs, studyRound) {
-  return _buildPvchPDF(s, enroll, prog, addr, parents, guardian, docs, studyRound)
-    .replace(/ใบสมัคร ปวช\./g, 'ใบสมัคร ปวส.')
-    .replace('ระดับที่สมัคร ปวช.', 'ระดับที่สมัคร ปวส.');
-}
+  var father = parents.find(function(p) { return p.type === 'father'; }) || {};
+  var mother = parents.find(function(p) { return p.type === 'mother'; }) || {};
+  var fullName = (s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '');
+  var branchName = prog.branch || enroll.branchId || '';
+  var roundLabel = { morning: 'เช้า', afternoon: 'บ่าย', dual: 'ทวิภาคี' }[studyRound] || '';
+  var hasDoc = function(t) { return docs.some(function(d) { return d.type === t; }); };
 
-// ---- Branch checkboxes (ใช้ใน AdminPage.gs legacy เผื่อเรียกใช้) ----
-function _branchCheckboxesPvch(branch) {
-  var opts = ['การบัญชี','การตลาด','ภาษาต่างประเทศธุรกิจบริการ','ธุรกิจค้าปลีก',
-              'เทคโนโลยีธุรกิจดิจิทัล','เทคโนโลยีสารสนเทศ','ดิจิทัลกราฟิก','การท่องเที่ยว'];
-  return opts.map(function(o){
-    return '<span class="cb' + (branch.indexOf(o)!==-1?' checked':'') + '"></span> ' + o + ' ';
-  }).join('&nbsp;');
-}
+  var extraRow = _chk(false) + ' กู้ยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md');
 
-function _branchCheckboxesPvs(branch) {
-  var opts = ['การบัญชี','การตลาด','เทคโนโลยีธุรกิจดิจิทัล','เทคโนโลยีสารสนเทศ',
-              'ดิจิทัลกราฟิก','ภาษาและการจัดการธุรกิจระหว่างประเทศ',
-              'การท่องเที่ยว','การจัดการดูแลผู้สูงอายุ'];
-  return opts.map(function(o){
-    return '<span class="cb' + (branch.indexOf(o)!==-1?' checked':'') + '"></span> ' + o + ' ';
-  }).join('&nbsp;');
-}
+  var page1 = _coverPage('ปวส.', fullName, roundLabel, s, _checklistItems('pvs', hasDoc), extraRow);
+  var page2 = _fillPage('pvs', s, addr, father, mother, guardian, studyRound, branchName);
+  var docPages = _docPages(docs, fullName);
 
-function _roundThai(r) {
-  return {morning:'เช้า', afternoon:'บ่าย', dual:'ทวิภาคี'}[r] || r || '';
+  return _wrapHtml('ใบสมัคร ปวส. — ' + (s.applicationNo || ''), page1 + page2 + docPages);
 }

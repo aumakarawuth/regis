@@ -58,7 +58,13 @@ function printApplication(params) {
     ? _buildPvsPDF(s, enroll, prog, addr, parentList, guardian, docs, studyRound)
     : _buildPvchPDF(s, enroll, prog, addr, parentList, guardian, docs, studyRound);
 
-  return ContentService.createTextOutput(html).setMimeType(ContentService.MimeType.HTML);
+  // หมายเหตุ: ContentService.MimeType ไม่มีค่า HTML (มีแค่ TEXT/CSV/XML/JSON ฯลฯ)
+  // ต้องใช้ HtmlService ถึงจะ serve เป็นหน้าเว็บที่ browser render จริง — ของเดิมใช้
+  // ContentService ผิด ทำให้ browser โชว์ source code แทนที่จะ render หน้าเว็บ
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('ใบสมัคร ' + (isPvs ? 'ปวส.' : 'ปวช.') + ' — ' + (s.applicationNo || ''))
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // ============================================================

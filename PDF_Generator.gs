@@ -175,9 +175,9 @@ function _formCSS() {
     '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
     '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
 
-    '.idwrap{display:inline-flex;align-items:center;vertical-align:middle}',
-    '.idbox{display:inline-flex;align-items:center;justify-content:center;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px}',
-    '.idgap{width:4px}',
+    '.idwrap{display:inline-block;vertical-align:middle}',
+    '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
+    '.idgap{display:inline-block;width:4px}',
 
     '.row{margin:4px 0}',
     '.indent{padding-left:20px}',
@@ -190,32 +190,36 @@ function _formCSS() {
     '.cover-wrap{margin:8px 0;position:relative}',
     '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
     '.cover-center{text-align:center}',
-    '.seal{width:117mm;height:auto;display:block;margin:0 auto}',
-    '.cover-center h1{font-size:2.04rem;margin:2px 0 0}',
-    '.cover-center h2{font-size:1.38rem;margin:2px 0}',
-    '.cover-center .en{font-size:1.02rem}',
-    '.cover-center .addr{font-size:0.96rem;color:#222;margin-top:3px;line-height:1.4}',
+    '.seal{width:81.9mm;height:auto;display:block;margin:0 auto}',
+    '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
+    '.cover-center h2{font-size:1.932rem;margin:2px 0}',
+    '.cover-center .en{font-size:1.428rem}',
+    '.cover-center .addr{font-size:1.344rem;color:#222;margin-top:3px;line-height:1.4}',
     '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
 
     '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
-    '.checklist{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:4px}',
-    '.checklist>div{display:flex;gap:4px;align-items:baseline;white-space:nowrap}',
+    '.checklist{margin-top:4px}',
+    '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-    '.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:22px;text-align:center}',
+    '.sig-grid{margin-top:22px;text-align:center}',
+    '.sig-grid>div{display:inline-block;width:48%;vertical-align:top}',
     '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
     '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
 
     '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 
-    '.doc-page{text-align:center;padding:10px 0;min-height:273mm;display:flex;flex-direction:column;align-items:center;justify-content:center}',
+    '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
+    '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
+    '.doc-page-content{display:inline-block;text-align:center}',
     '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
     '.doc-img{max-width:94%;max-height:210mm;width:auto;height:auto;border:1px solid #ccc;display:block;margin:0 auto}',
-    '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa}',
-    '.idcard-stack{display:flex;flex-direction:column;align-items:center;gap:8mm}',
-    '.idcard-item{display:flex;flex-direction:column;align-items:center;gap:2mm}',
-    '.idcard-img{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #ccc;display:block;background:#fff}',
-    '.idcard-placeholder{width:85.6mm;height:54mm;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.75rem;text-align:center}',
-    '.idcard-cap{font-size:0.75rem;color:#555}',
+    '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;color:#aaa;line-height:150mm}',
+    '.idcard-stack{}',
+    '.idcard-item{margin-bottom:8mm}',
+    '.idcard-item:last-child{margin-bottom:0}',
+    '.idcard-img{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #ccc;display:block;margin:0 auto;background:#fff}',
+    '.idcard-placeholder{width:85.6mm;height:54mm;border:1px dashed #bbb;color:#aaa;font-size:0.75rem;line-height:54mm;margin:0 auto}',
+    '.idcard-cap{font-size:0.75rem;color:#555;margin-top:2mm}',
     '.stamp-wrap{text-align:right;padding-right:24px;margin-top:14px}',
     '.stamp{display:inline-block;border:2.5px solid #CC0000;border-radius:8px;padding:5px 18px;color:#CC0000;font-weight:700}',
     '.doc-sig{margin-top:8px}',
@@ -468,7 +472,7 @@ function _docPages(docs, studentName) {
   var back  = docs.filter(function(d) { return d.type === 'id_card_back'; })[0];
   var idCardPage = '';
   if (front || back) {
-    idCardPage = '<div class="page doc-page">' +
+    idCardPage = '<div class="page doc-page"><div class="doc-page-inner"><div class="doc-page-content">' +
       '<div class="doc-title">สำเนาบัตรประจำตัวประชาชน</div>' +
       '<div class="idcard-stack">' +
         idCardBlock(front, 'ด้านหน้า') +
@@ -476,7 +480,7 @@ function _docPages(docs, studentName) {
       '</div>' +
       '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
       sigBlock +
-    '</div>';
+    '</div></div></div>';
   }
 
   var restPages = docs.filter(function(d) {
@@ -486,12 +490,12 @@ function _docPages(docs, studentName) {
     var img = doc.driveUrl
       ? '<img src="' + doc.driveUrl + '" class="doc-img" alt="' + _esc(label) + '">'
       : '<div class="doc-placeholder">(ไม่มีรูปเอกสาร)</div>';
-    return '<div class="page doc-page">' +
+    return '<div class="page doc-page"><div class="doc-page-inner"><div class="doc-page-content">' +
       '<div class="doc-title">' + _esc(label) + '</div>' +
       img +
       '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
       sigBlock +
-    '</div>';
+    '</div></div></div>';
   }).join('');
 
   return idCardPage + restPages;

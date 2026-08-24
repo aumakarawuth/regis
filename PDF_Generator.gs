@@ -163,8 +163,8 @@ function _formCSS() {
   return [
     '@page { size: A4 portrait; margin: 10mm 12mm; }',
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
-    'html{font-size:13px}',
-    'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.95}',
+    'html{font-size:11.5px}',
+    'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
     '.page{width:100%;padding:3mm 1mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
     '@media print{.no-print{display:none!important}}',
@@ -179,29 +179,29 @@ function _formCSS() {
     '.idbox{display:inline-flex;align-items:center;justify-content:center;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px}',
     '.idgap{width:4px}',
 
-    '.row{margin:5px 0}',
+    '.row{margin:4px 0}',
     '.indent{padding-left:20px}',
     '.b{font-weight:700}',
     '.center{text-align:center}',
-    '.branch-row{font-size:0.86rem;line-height:2}',
+    '.branch-row{}',
     '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
 
-    '.top-row{font-size:0.9rem}',
+    '.top-row{}',
     '.cover-wrap{margin:8px 0;overflow:hidden}',
-    '.photo-box{width:86px;height:104px;border:1px solid #000;float:right;margin-left:10px;display:flex;align-items:center;justify-content:center;font-size:0.66rem;text-align:center;color:#555}',
+    '.photo-box{width:86px;height:104px;border:1px solid #000;float:right;margin-left:10px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
     '.cover-center{text-align:center}',
     '.seal{width:130px;height:auto;display:block;margin:0 auto}',
-    '.cover-center h1{font-size:1.55rem;margin:2px 0 0}',
-    '.cover-center h2{font-size:1.05rem;margin:2px 0}',
-    '.cover-center .en{font-size:0.8rem}',
-    '.cover-center .addr{font-size:0.76rem;color:#222;margin-top:3px;line-height:1.55}',
+    '.cover-center h1{font-size:1.7rem;margin:2px 0 0}',
+    '.cover-center h2{font-size:1.15rem;margin:2px 0}',
+    '.cover-center .en{font-size:0.85rem}',
+    '.cover-center .addr{font-size:0.8rem;color:#222;margin-top:3px;line-height:1.4}',
     '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px;clear:both}',
 
-    '.section-title{font-weight:700;margin:4px 0;font-size:0.96rem}',
-    '.checklist{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:0.8rem;margin-top:4px}',
+    '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
+    '.checklist{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:4px}',
     '.checklist>div{display:flex;gap:4px;align-items:baseline;white-space:nowrap}',
 
-    '.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:22px;text-align:center;font-size:0.85rem}',
+    '.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:22px;text-align:center}',
     '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
     '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
 
@@ -307,8 +307,8 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row" style="font-size:0.85rem">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
-    '<div class="row" style="font-size:0.85rem">' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' กรอกประวัติ' + _fld('', 'fld-md') +
@@ -421,7 +421,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
 
-    '<div class="row" style="font-size:0.85rem;margin-top:8px">' +
+    '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +
     '</div>' +
 

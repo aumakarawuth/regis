@@ -187,7 +187,7 @@ function _formCSS() {
     '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
 
     '.top-row{}',
-    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:34mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
     '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
     '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
     '.cover-center{text-align:center}',

@@ -174,6 +174,9 @@ function _formCSS() {
     '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
     '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
     '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
+    '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
+    '.fill-form .fld{flex:1 1 40px}',
+    '.fill-form .fld-date,.fill-form .fld-date2{flex:0 0 auto}',
 
     '.idwrap{display:inline-block;vertical-align:middle}',
     '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
@@ -202,7 +205,7 @@ function _formCSS() {
     '.checklist{margin-top:4px;font-size:0.833rem}',
     '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-    '.sig-grid{margin-top:10px;text-align:center}',
+    '.sig-grid{margin-top:6px;text-align:center}',
     '.sig-grid>div{display:inline-block;width:48%;vertical-align:top}',
     '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
     '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
@@ -372,7 +375,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
-  return '<div class="page" style="padding:10mm">' +
+  return '<div class="page fill-form" style="padding:8mm">' +
     '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">' +

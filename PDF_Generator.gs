@@ -211,6 +211,11 @@ function _formCSS() {
     '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
     '.doc-img{max-width:94%;max-height:210mm;width:auto;height:auto;border:1px solid #ccc;display:block;margin:0 auto}',
     '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa}',
+    '.idcard-stack{display:flex;flex-direction:column;align-items:center;gap:8mm}',
+    '.idcard-item{display:flex;flex-direction:column;align-items:center;gap:2mm}',
+    '.idcard-img{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #ccc;display:block;background:#fff}',
+    '.idcard-placeholder{width:85.6mm;height:54mm;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.75rem;text-align:center}',
+    '.idcard-cap{font-size:0.75rem;color:#555}',
     '.stamp-wrap{text-align:right;padding-right:24px;margin-top:14px}',
     '.stamp{display:inline-block;border:2.5px solid #CC0000;border-radius:8px;padding:5px 18px;color:#CC0000;font-weight:700}',
     '.doc-sig{margin-top:8px}',
@@ -450,7 +455,33 @@ function _docPages(docs, studentName) {
     edu_cert:      'สำเนาวุฒิการศึกษา',
     payment_slip:  'หลักฐานการชำระเงิน',
   };
-  return docs.map(function(doc) {
+  var sigBlock = '<div class="doc-sig"><div class="sig-line" style="width:260px;margin:30px auto 4px"></div>(' + _esc(studentName) + ')<br><span style="font-size:0.8rem;color:#555">ผู้สมัคร</span></div>';
+
+  var idCardBlock = function(doc, sideLabel) {
+    var img = doc && doc.driveUrl
+      ? '<img src="' + doc.driveUrl + '" class="idcard-img" alt="' + _esc(sideLabel) + '">'
+      : '<div class="idcard-placeholder">(ไม่มีรูป' + _esc(sideLabel) + ')</div>';
+    return '<div class="idcard-item">' + img + '<div class="idcard-cap">' + _esc(sideLabel) + '</div></div>';
+  };
+
+  var front = docs.filter(function(d) { return d.type === 'id_card_front'; })[0];
+  var back  = docs.filter(function(d) { return d.type === 'id_card_back'; })[0];
+  var idCardPage = '';
+  if (front || back) {
+    idCardPage = '<div class="page doc-page">' +
+      '<div class="doc-title">สำเนาบัตรประจำตัวประชาชน</div>' +
+      '<div class="idcard-stack">' +
+        idCardBlock(front, 'ด้านหน้า') +
+        idCardBlock(back, 'ด้านหลัง') +
+      '</div>' +
+      '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
+      sigBlock +
+    '</div>';
+  }
+
+  var restPages = docs.filter(function(d) {
+    return d.type !== 'id_card_front' && d.type !== 'id_card_back';
+  }).map(function(doc) {
     var label = labels[doc.type] || doc.type;
     var img = doc.driveUrl
       ? '<img src="' + doc.driveUrl + '" class="doc-img" alt="' + _esc(label) + '">'
@@ -459,9 +490,11 @@ function _docPages(docs, studentName) {
       '<div class="doc-title">' + _esc(label) + '</div>' +
       img +
       '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
-      '<div class="doc-sig"><div class="sig-line" style="width:260px;margin:30px auto 4px"></div>(' + _esc(studentName) + ')<br><span style="font-size:0.8rem;color:#555">ผู้สมัคร</span></div>' +
+      sigBlock +
     '</div>';
   }).join('');
+
+  return idCardPage + restPages;
 }
 
 // ============================================================

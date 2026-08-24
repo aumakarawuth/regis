@@ -207,9 +207,9 @@ function _formCSS() {
 
     '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 
-    '.doc-page{text-align:center;padding:10px 0}',
+    '.doc-page{text-align:center;padding:10px 0;min-height:273mm;display:flex;flex-direction:column;align-items:center;justify-content:center}',
     '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
-    '.doc-img{max-width:88%;max-height:190mm;border:1px solid #ccc;display:block;margin:0 auto}',
+    '.doc-img{max-width:94%;max-height:210mm;width:auto;height:auto;border:1px solid #ccc;display:block;margin:0 auto}',
     '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#aaa}',
     '.stamp-wrap{text-align:right;padding-right:24px;margin-top:14px}',
     '.stamp{display:inline-block;border:2.5px solid #CC0000;border-radius:8px;padding:5px 18px;color:#CC0000;font-weight:700}',

@@ -188,10 +188,10 @@ function _formCSS() {
 
     '.top-row{}',
     '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-    '.seal-wrap{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center}',
+    '.seal-wrap{position:absolute;top:38%;left:0;right:0;transform:translateY(-50%);text-align:center}',
     '.bottom-block{position:absolute;bottom:0;left:0;right:0}',
     '.cover-center{text-align:center}',
-    '.seal{width:81.9mm;height:auto;display:block;margin:0 auto}',
+    '.seal{width:130mm;height:auto;display:block;margin:0 auto}',
     '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
     '.cover-center h2{font-size:1.932rem;margin:2px 0}',
     '.cover-center .en{font-size:1.428rem}',

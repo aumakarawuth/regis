@@ -168,7 +168,7 @@ function _formCSS() {
     '.page{width:100%;padding:3mm 1mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
     '@media print{.no-print{display:none!important}}',
-    '@media screen{body{background:#ddd}.page{background:#fff;max-width:194mm;margin:0 auto 18px;padding:8mm 10mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+    '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:10mm 12mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
 
     '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
     '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',

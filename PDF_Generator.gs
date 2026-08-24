@@ -233,7 +233,8 @@ function _wrapHtml(title, bodyHtml) {
     '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">' +
     '<style>' + _formCSS() + '</style>' +
     '</head><body>' +
-    '<button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    '<button class="print-btn no-print" onclick="_printDoc()">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    '<script>function _printDoc(){try{var w=window.open(window.location.href,"_blank");if(!w){window.print();return;}w.onload=function(){w.focus();w.print();};}catch(e){window.print();}}</script>' +
     bodyHtml +
     '</body></html>';
 }

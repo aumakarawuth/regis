@@ -161,14 +161,14 @@ function _collegeSeal() {
 // ============================================================
 function _formCSS() {
   return [
-    '@page { size: A4 portrait; margin: 10mm 12mm; }',
+    '@page { size: A4 portrait; margin: 0; }',
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
     'html{font-size:11.5px}',
     'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-    '.page{position:relative;width:100%;min-height:273mm;padding:3mm 1mm;page-break-after:always}',
+    '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
     '@media print{.no-print{display:none!important}}',
-    '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:10mm 12mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+    '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
 
     '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
     '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
@@ -187,9 +187,9 @@ function _formCSS() {
     '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
 
     '.top-row{}',
-    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:1mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-    '.seal-wrap{position:absolute;top:38%;left:1mm;right:1mm;transform:translateY(-50%);text-align:center}',
-    '.bottom-block{position:absolute;bottom:3mm;left:1mm;right:1mm}',
+    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+    '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+    '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
     '.cover-center{text-align:center}',
     '.seal{width:130mm;height:auto;display:block;margin:0 auto}',
     '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
@@ -318,7 +318,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes('') + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +

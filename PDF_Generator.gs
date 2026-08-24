@@ -163,7 +163,7 @@ function _formCSS() {
   return [
     '@page { size: A4 portrait; margin: 0; }',
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
-    'html{font-size:11.5px}',
+    'html{font-size:13.8px}',
     'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
     '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
@@ -199,10 +199,10 @@ function _formCSS() {
     '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
 
     '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
-    '.checklist{margin-top:4px}',
+    '.checklist{margin-top:4px;font-size:0.833rem}',
     '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-    '.sig-grid{margin-top:22px;text-align:center}',
+    '.sig-grid{margin-top:10px;text-align:center}',
     '.sig-grid>div{display:inline-block;width:48%;vertical-align:top}',
     '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
     '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
@@ -372,7 +372,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
-  return '<div class="page">' +
+  return '<div class="page" style="padding:10mm">' +
     '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">' +
@@ -383,15 +383,14 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       _chk(studyRound === 'dual') + ' ทวิภาคี' +
     '</div>' +
 
-    '<div class="row">' +
-      '<span class="b">1.</span> นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
+    '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
+    '<div class="row indent">' +
+      'นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
       ' นามสกุล ' + _fld(s.lastName, 'fld-lg') +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
-    '<div class="row indent">' +
-      'Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') +
-      ' เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) +
-    '</div>' +
+    '<div class="row indent">Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
       '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
       ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +
@@ -422,13 +421,15 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
     '<div class="row indent">โทรศัพท์ ' + _fld(s.phone, 'fld-lg') + '</div>' +
 
-    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">&#8211; ชื่อบิดา นาย ' + _fld(father.firstName, 'fld-md') + ' นามสกุล ' + _fld(father.lastName, 'fld-md') + ' อาชีพ ' + _fld(father.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(father.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
 
     '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _fld(mother.firstName, 'fld-md') + ' นามสกุล ' + _fld(mother.lastName, 'fld-md') + ' อาชีพ ' + _fld(mother.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(mother.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
+    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
     '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +

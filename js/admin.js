@@ -11,6 +11,11 @@ const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_AN
 
 const REQUIRED_DOC_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back'];
 
+// The only round names apply.html's branch picker actually matches against
+// (see supabase/seed.sql) — the round dropdown is restricted to these on
+// purpose so a typo here can't silently make a branch unselectable again.
+const ROUND_LABELS = ['เช้า', 'บ่าย', 'ทวิภาคี'];
+
 const Admin = {
   students: [],
   filtered: [],
@@ -19,6 +24,9 @@ const Admin = {
   page: 1,
   pageSize: 15,
   searchTimeout: null,
+  programLevels: [],
+  programBranches: [],
+  catalogLoaded: false,
 
   async init() {
     document.getElementById('topbar-date').textContent =
@@ -347,17 +355,169 @@ const Admin = {
     window.open(`print.html?studentId=${this.currentStudent.id}`, '_blank');
   },
 
+  // ---------- Programs (education_levels / branches / program_rounds) ----------
+  async _loadCatalog() {
+    const [{ data: levels }, { data: branches }, { data: rounds }] = await Promise.all([
+      _sb.from('education_levels').select('id, code, name').order('code'),
+      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open').order('code'),
+      _sb.from('program_rounds').select('id, branch_id, round_label, is_open'),
+    ]);
+    this.programLevels = levels || [];
+    this.programBranches = (branches || []).map(b => ({
+      ...b,
+      rounds: (rounds || []).filter(r => r.branch_id === b.id),
+    }));
+    this._renderProgramsPage();
+  },
+
+  _renderProgramsPage() {
+    const chipsEl = document.getElementById('level-chips');
+    chipsEl.innerHTML = this.programLevels.length
+      ? this.programLevels.map(l => `<span class="badge badge-gray">${l.code} — ${l.name}</span>`).join('')
+      : '<span style="color:var(--muted);font-size:0.875rem">ยังไม่มีระดับการศึกษา</span>';
+
+    const levelSel = document.getElementById('new-branch-level');
+    const curLevel = levelSel.value;
+    levelSel.innerHTML = this.programLevels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+    if (curLevel) levelSel.value = curLevel;
+
+    const levelName = id => this.programLevels.find(l => l.id === id)?.name || '—';
+
+    const tbody = document.getElementById('branch-tbody');
+    if (!this.programBranches.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีสาขา — เพิ่มจากฟอร์มด้านบน</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = this.programBranches.map(b => `
+      <tr data-branch-id="${b.id}">
+        <td class="td-name">${b.name}</td>
+        <td>${levelName(b.level_id)}</td>
+        <td><input class="form-control branch-fee" type="number" value="${b.fee}" style="width:90px"></td>
+        <td><input class="form-control branch-max" type="number" value="${b.max_students}" style="width:80px"></td>
+        <td>${ROUND_LABELS.map(r => {
+          const isOpen = b.rounds.some(x => x.round_label === r && x.is_open);
+          return `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:0.8125rem">
+            <input type="checkbox" class="round-check" data-round="${r}" ${isOpen ? 'checked' : ''}> ${r}
+          </label>`;
+        }).join('')}</td>
+        <td><input type="checkbox" class="branch-open" ${b.is_open ? 'checked' : ''}></td>
+        <td><button class="btn btn-ghost btn-sm branch-delete" style="color:var(--danger)">ลบ</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('tr').forEach(row => {
+      const branchId = row.dataset.branchId;
+      row.querySelector('.branch-fee').addEventListener('change', e => this._updateBranch(branchId, { fee: Number(e.target.value) || 0 }));
+      row.querySelector('.branch-max').addEventListener('change', e => this._updateBranch(branchId, { max_students: Number(e.target.value) || 0 }));
+      row.querySelector('.branch-open').addEventListener('change', e => this._updateBranch(branchId, { is_open: e.target.checked }));
+      row.querySelectorAll('.round-check').forEach(cb => {
+        cb.addEventListener('change', e => this._toggleRound(branchId, e.target.dataset.round, e.target.checked));
+      });
+      row.querySelector('.branch-delete').addEventListener('click', () => this._deleteBranch(branchId));
+    });
+  },
+
+  async _addLevel() {
+    const code = document.getElementById('new-level-code').value.trim();
+    const name = document.getElementById('new-level-name').value.trim();
+    if (!code || !name) return showToast('กรอกรหัสและชื่อระดับให้ครบ', 'error');
+
+    const { error } = await _sb.from('education_levels').insert({ code, name });
+    if (error) return showToast('เพิ่มระดับล้มเหลว: ' + error.message, 'error');
+
+    document.getElementById('new-level-code').value = '';
+    document.getElementById('new-level-name').value = '';
+    showToast('เพิ่มระดับแล้ว', 'success');
+    await this._loadCatalog();
+  },
+
+  async _addBranch() {
+    const levelId = document.getElementById('new-branch-level').value;
+    const code = document.getElementById('new-branch-code').value.trim();
+    const name = document.getElementById('new-branch-name').value.trim();
+    const fee = Number(document.getElementById('new-branch-fee').value) || 0;
+    const maxStudents = Number(document.getElementById('new-branch-max').value) || 0;
+    if (!levelId || !code || !name) return showToast('กรอกระดับ/รหัส/ชื่อสาขาให้ครบ', 'error');
+
+    const { error } = await _sb.from('branches').insert({
+      level_id: levelId, code, name, fee, max_students: maxStudents, is_open: true,
+    });
+    if (error) return showToast('เพิ่มสาขาล้มเหลว: ' + error.message, 'error');
+
+    document.getElementById('new-branch-code').value = '';
+    document.getElementById('new-branch-name').value = '';
+    showToast('เพิ่มสาขาแล้ว', 'success');
+    await this._loadCatalog();
+  },
+
+  async _updateBranch(branchId, patch) {
+    const { error } = await _sb.from('branches').update(patch).eq('id', branchId);
+    if (error) return showToast('บันทึกล้มเหลว: ' + error.message, 'error');
+
+    const b = this.programBranches.find(x => x.id === branchId);
+    if (b) Object.assign(b, patch);
+    showToast('บันทึกแล้ว', 'success', 1500);
+  },
+
+  async _toggleRound(branchId, roundLabel, checked) {
+    const b = this.programBranches.find(x => x.id === branchId);
+    const existing = b?.rounds.find(r => r.round_label === roundLabel);
+
+    if (checked) {
+      if (existing) {
+        const { error } = await _sb.from('program_rounds').update({ is_open: true }).eq('id', existing.id);
+        if (error) return showToast('เปิดรอบล้มเหลว: ' + error.message, 'error');
+        existing.is_open = true;
+      } else {
+        const { data, error } = await _sb.from('program_rounds')
+          .insert({ branch_id: branchId, round_label: roundLabel, is_open: true })
+          .select().single();
+        if (error) return showToast('เพิ่มรอบล้มเหลว: ' + error.message, 'error');
+        b.rounds.push(data);
+      }
+    } else if (existing) {
+      const { error } = await _sb.from('program_rounds').update({ is_open: false }).eq('id', existing.id);
+      if (error) return showToast('ปิดรอบล้มเหลว: ' + error.message, 'error');
+      existing.is_open = false;
+    }
+    showToast('บันทึกแล้ว', 'success', 1500);
+  },
+
+  async _deleteBranch(branchId) {
+    const b = this.programBranches.find(x => x.id === branchId);
+    if (!confirm(`ลบสาขา "${b?.name || ''}"? รอบเรียนทั้งหมดของสาขานี้จะถูกลบด้วย (ถ้ามีนักเรียนสมัครในรอบนั้นแล้วจะลบไม่ได้)`)) return;
+
+    if (b?.rounds.length) {
+      const { error: rErr } = await _sb.from('program_rounds').delete().in('id', b.rounds.map(r => r.id));
+      if (rErr) return showToast('ลบไม่ได้: มีนักเรียนสมัครในรอบของสาขานี้แล้ว', 'error');
+    }
+    const { error } = await _sb.from('branches').delete().eq('id', branchId);
+    if (error) return showToast('ลบสาขาล้มเหลว: ' + error.message, 'error');
+
+    showToast('ลบสาขาแล้ว', 'success');
+    await this._loadCatalog();
+  },
+
   _bindEvents() {
+    const pageTitles = { overview: 'ภาพรวม', students: 'รายชื่อผู้สมัคร', programs: 'จัดการหลักสูตร' };
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
       item.onclick = () => {
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         item.classList.add('active');
         const page = item.dataset.page;
-        document.getElementById('page-overview').classList.toggle('hidden', page !== 'overview');
-        document.getElementById('page-students').classList.toggle('hidden', page !== 'students');
-        document.getElementById('topbar-title').textContent = page === 'overview' ? 'ภาพรวม' : 'รายชื่อผู้สมัคร';
+        Object.keys(pageTitles).forEach(p => {
+          document.getElementById('page-' + p).classList.toggle('hidden', p !== page);
+        });
+        document.getElementById('topbar-title').textContent = pageTitles[page] || '';
+        if (page === 'programs' && !this.catalogLoaded) {
+          this.catalogLoaded = true;
+          this._loadCatalog();
+        }
       };
     });
+    document.getElementById('btn-add-level').onclick = () => this._addLevel();
+    document.getElementById('btn-add-branch').onclick = () => this._addBranch();
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));

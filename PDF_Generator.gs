@@ -163,8 +163,9 @@ function _formCSS() {
   return [
     '@page { size: A4 portrait; margin: 0; }',
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
-    'html{font-size:13.8px}',
+    'html{font-size:11.5px}',
     'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
+    '.fill-form{font-size:1.2rem}',
     '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
     '@media print{.no-print{display:none!important}}',
@@ -175,8 +176,9 @@ function _formCSS() {
     '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
     '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
     '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
-    '.fill-form .fld{flex:1 1 40px}',
-    '.fill-form .fld-date,.fill-form .fld-date2{flex:0 0 auto}',
+    '.fill-form .fld{flex:1 1 40px;min-width:0}',
+    '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
+    '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
 
     '.idwrap{display:inline-block;vertical-align:middle}',
     '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
@@ -201,8 +203,8 @@ function _formCSS() {
     '.cover-center .addr{font-size:1.344rem;color:#222;margin-top:3px;line-height:1.4}',
     '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
 
-    '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
-    '.checklist{margin-top:4px;font-size:0.833rem}',
+    '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08em}',
+    '.checklist{margin-top:4px}',
     '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
     '.sig-grid{margin-top:6px;text-align:center}',
@@ -376,7 +378,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
   return '<div class="page fill-form" style="padding:8mm">' +
-    '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+    '<div class="center b" style="font-size:1.05em;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">' +
       '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
@@ -434,7 +436,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
 
     '<div class="row" style="margin-top:8px">' +

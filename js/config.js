@@ -8,8 +8,8 @@ const CONFIG = {
   LIFF_ID: '2010038922-8oEBPiap',         // ได้จาก LINE Developers Console
 
   // Supabase (Project Settings -> API)
-  SUPABASE_URL: 'https://xxxxxxxxxxxx.supabase.co',
-  SUPABASE_ANON_KEY: 'eyJ...',            // anon/public key — ปลอดภัยที่ใช้ฝั่ง client (RLS คุมสิทธิ์)
+  SUPABASE_URL: 'https://bfkklmixuqpwkjzglbpf.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma2tsbWl4dXFwd2tqemdsYnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDYyNTksImV4cCI6MjEwMzIyMjI1OX0.KrvgkzeBAd2ASIizubx6tpOwwPG7iSfzNBRd8ABPZyo', // anon/public key — ปลอดภัยที่ใช้ฝั่ง client (RLS คุมสิทธิ์)
 
   // PromptPay
   PROMPTPAY_NUMBER: '0812345678',        // เบอร์หรือเลขบัตรประชาชน

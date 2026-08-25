@@ -7,6 +7,7 @@
   <title>สมัครเรียน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --clr-primary:#00B900; --clr-primary-dark:#009900; --clr-primary-light:#E8F9E8;
@@ -558,7 +559,8 @@
 // ============================================================
 const CONFIG = {
   LIFF_ID: '2010038922-8oEBPiap',
-  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyaeKOOtAxBLnbS2i1mKCFB-8sAExUWLy4sqM8uZvAFPRkNQ-gB6ISLF6EskaJlcf-dww/exec',
+  SUPABASE_URL: 'https://bfkklmixuqpwkjzglbpf.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma2tsbWl4dXFwd2tqemdsYnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDYyNTksImV4cCI6MjEwMzIyMjI1OX0.KrvgkzeBAd2ASIizubx6tpOwwPG7iSfzNBRd8ABPZyo',
   PROMPTPAY_NUMBER: '0812345678',
   APPLICATION_FEE: 300,
   SCHOOL_NAME: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์',
@@ -688,28 +690,116 @@ function _setBar(percent, detail) {
 }
 
 // ============================================================
-// API
+// API — Supabase
 // ============================================================
+const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+function _base64ToBlob(base64, mimeType) {
+  const byteChars = atob(base64);
+  const bytes = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
+}
+
 const API = {
-  baseUrl: CONFIG.API_BASE_URL,
-  async get(action, params={}) {
-    const url = new URL(this.baseUrl);
-    url.searchParams.set('action', action);
-    Object.entries(params).forEach(([k,v]) => { if(v!==undefined&&v!==null) url.searchParams.set(k,v); });
-    const res = await fetch(url.toString(), { method:'GET' });
-    if(!res.ok) throw new Error('GET '+action+' failed: HTTP '+res.status);
-    return JSON.parse(await res.text());
+  // Shape matches the old Programs.gs getPrograms(): { levels, branches }
+  // where each branch has .programs = [{ programId, round }].
+  async getPrograms() {
+    const { data: branches, error } = await _sb
+      .from('branches')
+      .select('code, name, is_open, education_levels(code, name), program_rounds(id, round_label, is_open)')
+      .eq('is_open', true);
+    if (error) throw error;
+
+    const levels = [];
+    const seenLevels = new Set();
+    const branchList = (branches || []).map(b => {
+      const level = b.education_levels;
+      if (level && !seenLevels.has(level.code)) {
+        seenLevels.add(level.code);
+        levels.push({ id: level.code, name: level.name });
+      }
+      return {
+        id: b.code,
+        name: b.name,
+        levelId: level ? level.code : '',
+        isOpen: b.is_open,
+        programs: (b.program_rounds || [])
+          .filter(r => r.is_open)
+          .map(r => ({ programId: r.id, round: r.round_label })),
+      };
+    });
+
+    return { success: true, data: { levels, branches: branchList } };
   },
-  async post(action, body={}) {
-    const url = new URL(this.baseUrl);
-    url.searchParams.set('action', action);
-    const payload = { ...body, action };
-    const res = await fetch(url.toString(), { method:'POST', body: JSON.stringify(payload) });
-    if(!res.ok) throw new Error('POST '+action+' failed: HTTP '+res.status);
-    return JSON.parse(await res.text());
+
+  // payload is the same shape Students.gs's submitApplication(body) used
+  // to take. The RPC handles student/address/parents/guardian/enrollment
+  // atomically; documents + payment slip are uploaded here afterwards.
+  async submitApplication(payload) {
+    const { data: rpcResult, error: rpcError } = await _sb.rpc('submit_application', {
+      payload: {
+        lineUserId: payload.lineUserId,
+        displayName: payload.displayName,
+        program: payload.program,
+        personal: payload.personal,
+        address: payload.address,
+        parents: payload.parents,
+        guardian: payload.guardian,
+      },
+    });
+    if (rpcError) throw rpcError;
+    if (!rpcResult.success) return rpcResult;
+
+    const studentId = rpcResult.studentId;
+    const docResults = [];
+
+    for (const doc of payload.documents || []) {
+      try {
+        const blob = _base64ToBlob(doc.base64Data, doc.mimeType || 'image/jpeg');
+        const storagePath = `${studentId}/${doc.type}.jpg`;
+        const { error: upErr } = await _sb.storage.from('documents').upload(storagePath, blob, {
+          contentType: doc.mimeType || 'image/jpeg',
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+
+        const { error: dbErr } = await _sb.from('documents').insert({
+          student_id: studentId,
+          doc_type: doc.type,
+          storage_path: storagePath,
+        });
+        if (dbErr) throw dbErr;
+        docResults.push({ type: doc.type, success: true });
+      } catch (err) {
+        docResults.push({ type: doc.type, success: false, error: err.message });
+      }
+    }
+
+    if (payload.payment && payload.payment.slipBase64) {
+      try {
+        const blob = _base64ToBlob(payload.payment.slipBase64, 'image/jpeg');
+        const storagePath = `${studentId}/slip.jpg`;
+        const { error: upErr } = await _sb.storage.from('payment-slips').upload(storagePath, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+
+        const { error: dbErr } = await _sb.from('payments').insert({
+          student_id: studentId,
+          amount: payload.payment.amount || 0,
+          method: 'promptpay',
+          storage_path: storagePath,
+        });
+        if (dbErr) throw dbErr;
+      } catch (err) {
+        console.error('Payment slip upload error:', err);
+      }
+    }
+
+    return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults };
   },
-  async getPrograms()           { return this.get('getPrograms'); },
-  async submitApplication(data) { return this.post('submitApplication', data); },
 };
 
 // ============================================================
@@ -1044,7 +1134,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,roundId:this.data.branchId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){hideLoading();this._showSuccess(res.applicationNo);}
       else throw new Error(res.message||'เกิดข้อผิดพลาด');

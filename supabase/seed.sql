@@ -1,0 +1,35 @@
+-- ============================================================
+-- seed.sql — sample program catalog, mirrors the example rows
+-- Programs.gs used to insert into the "programs" sheet on first
+-- run (setupProgramsSheet). For local dev / staging only.
+-- ============================================================
+
+insert into education_levels (code, name) values
+  ('LV1', 'ปวช.'),
+  ('LV2', 'ปวส.')
+on conflict (code) do nothing;
+
+insert into branches (level_id, code, name, max_students, fee, is_open)
+select l.id, v.code, v.name, v.max_students, v.fee, v.is_open
+from (values
+  ('LV1', 'BR1', 'ช่างยนต์',             30, 300, true),
+  ('LV1', 'BR2', 'ช่างไฟฟ้า',            30, 300, true),
+  ('LV1', 'BR3', 'การบัญชี',             25, 300, true),
+  ('LV1', 'BR4', 'คอมพิวเตอร์ธุรกิจ',    20, 300, true),
+  ('LV2', 'BR5', 'ช่างยนต์',             20, 300, false),
+  ('LV2', 'BR6', 'เทคโนโลยีสารสนเทศ',    25, 300, true)
+) as v(level_code, code, name, max_students, fee, is_open)
+join education_levels l on l.code = v.level_code
+on conflict (level_id, code) do nothing;
+
+insert into program_rounds (branch_id, round_label, is_open)
+select b.id, v.round_label, true
+from (values
+  ('BR1', 'รอบที่ 1 (มี.ค. - เม.ย.)'),
+  ('BR1', 'รอบที่ 2 (พ.ค. - มิ.ย.)'),
+  ('BR2', 'รอบที่ 1 (มี.ค. - เม.ย.)'),
+  ('BR3', 'รอบที่ 1 (มี.ค. - เม.ย.)'),
+  ('BR4', 'รอบที่ 1'),
+  ('BR6', 'รอบที่ 1')
+) as v(branch_code, round_label)
+join branches b on b.code = v.branch_code;

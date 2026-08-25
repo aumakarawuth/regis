@@ -148,6 +148,16 @@ function _idCardBoxes(idCard) {
   return html + '</span>';
 }
 
+// กล่องเลขติดกันไม่มีช่องว่างคั่นกลุ่ม — ใช้กับรหัสประจำตัวนักศึกษา (ไม่ใช่เลขบัตรประชาชน)
+function _plainBoxes(count, value) {
+  var digits = String(value || '').replace(/\D/g, '');
+  var html = '<span class="idwrap">';
+  for (var i = 0; i < count; i++) {
+    html += '<span class="idbox">' + (digits[i] || '') + '</span>';
+  }
+  return html + '</span>';
+}
+
 // ============================================================
 // ตราวิทยาลัย (SVG จำลอง — ถ้ามีไฟล์โลโก้จริงค่อยเปลี่ยนเป็น <img> ทีหลัง)
 // ============================================================
@@ -161,19 +171,24 @@ function _collegeSeal() {
 // ============================================================
 function _formCSS() {
   return [
-    '@page { size: A4 portrait; margin: 10mm 12mm; }',
+    '@page { size: A4 portrait; margin: 0; }',
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
     'html{font-size:11.5px}',
     'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-    '.page{position:relative;width:100%;min-height:273mm;padding:3mm 1mm;page-break-after:always}',
+    '.fill-form{font-size:1.2rem}',
+    '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
     '.page:last-child{page-break-after:avoid}',
     '@media print{.no-print{display:none!important}}',
-    '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:10mm 12mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+    '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
 
     '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
     '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
     '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
     '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
+    '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
+    '.fill-form .fld{flex:1 1 40px;min-width:0}',
+    '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
+    '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
 
     '.idwrap{display:inline-block;vertical-align:middle}',
     '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
@@ -187,9 +202,9 @@ function _formCSS() {
     '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
 
     '.top-row{}',
-    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-    '.seal-wrap{position:absolute;top:38%;left:0;right:0;transform:translateY(-50%);text-align:center}',
-    '.bottom-block{position:absolute;bottom:0;left:0;right:0}',
+    '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:34mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+    '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+    '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
     '.cover-center{text-align:center}',
     '.seal{width:130mm;height:auto;display:block;margin:0 auto}',
     '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
@@ -198,11 +213,11 @@ function _formCSS() {
     '.cover-center .addr{font-size:1.344rem;color:#222;margin-top:3px;line-height:1.4}',
     '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
 
-    '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
+    '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08em}',
     '.checklist{margin-top:4px}',
     '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-    '.sig-grid{margin-top:22px;text-align:center}',
+    '.sig-grid{margin-top:6px;text-align:center}',
     '.sig-grid>div{display:inline-block;width:48%;vertical-align:top}',
     '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
     '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
@@ -318,7 +333,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +
@@ -372,8 +387,8 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
-  return '<div class="page">' +
-    '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+  return '<div class="page fill-form" style="padding:8mm">' +
+    '<div class="center b" style="font-size:1.05em;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">' +
       '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
@@ -383,15 +398,14 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       _chk(studyRound === 'dual') + ' ทวิภาคี' +
     '</div>' +
 
-    '<div class="row">' +
-      '<span class="b">1.</span> นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
+    '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
+    '<div class="row indent">' +
+      'นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
       ' นามสกุล ' + _fld(s.lastName, 'fld-lg') +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
-    '<div class="row indent">' +
-      'Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') +
-      ' เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) +
-    '</div>' +
+    '<div class="row indent">Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
       '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
       ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +
@@ -422,15 +436,17 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
     '<div class="row indent">โทรศัพท์ ' + _fld(s.phone, 'fld-lg') + '</div>' +
 
-    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">&#8211; ชื่อบิดา นาย ' + _fld(father.firstName, 'fld-md') + ' นามสกุล ' + _fld(father.lastName, 'fld-md') + ' อาชีพ ' + _fld(father.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(father.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
 
     '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _fld(mother.firstName, 'fld-md') + ' นามสกุล ' + _fld(mother.lastName, 'fld-md') + ' อาชีพ ' + _fld(mother.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(mother.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
+    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
@@ -438,10 +454,10 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +

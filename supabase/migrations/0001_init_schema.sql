@@ -150,6 +150,14 @@ create table addresses (
   province_id    uuid references provinces(id),
   district_id    uuid references districts(id),
   subdistrict_id uuid references subdistricts(id),
+  -- Raw legacy text, kept regardless of whether province/district/subdistrict_id
+  -- resolved: the old "addresses" sheet stored free-typed names, not ids, and
+  -- the provinces/districts/subdistricts reference sheets were often left
+  -- unpopulated (see Documents.gs's empty-array fallback), so FK matching
+  -- during migration is lossy — these columns are the safety net.
+  province_text    text,
+  district_text    text,
+  subdistrict_text text,
   zipcode        text,
   detail         text
 );

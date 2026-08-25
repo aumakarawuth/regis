@@ -1,0 +1,18 @@
+{
+  "name": "regis-migrate-to-supabase",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate:reference": "node 01-reference-data.js",
+    "migrate:programs": "node 02-programs.js",
+    "migrate:students": "node 03-students.js",
+    "migrate:files": "node 04-files.js",
+    "migrate:all": "node run-all.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0"
+  }
+}

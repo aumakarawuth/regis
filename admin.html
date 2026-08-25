@@ -172,6 +172,7 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
       <div class="nav-section">เมนูหลัก</div>
       <div class="nav-item active" data-page="overview"><span>📊</span> ภาพรวม</div>
       <div class="nav-item" data-page="students"><span>👥</span> ผู้สมัคร <span class="nav-badge" id="nav-pending-badge">0</span></div>
+      <div class="nav-item" data-page="programs"><span>🎓</span> หลักสูตร</div>
       <div class="nav-section">เครื่องมือ</div>
       <div class="nav-item" id="nav-export"><span>📥</span> Export CSV</div>
       <div class="nav-item" id="nav-refresh"><span>🔄</span> รีเฟรชข้อมูล</div>
@@ -234,6 +235,43 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
             </table>
           </div>
           <div class="pagination"><span id="page-info">— รายการ</span><div class="page-btns" id="page-btns"></div></div>
+        </div>
+      </div>
+      <!-- Programs Page -->
+      <div id="page-programs" class="hidden">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>ระดับการศึกษา</h3></div>
+          <div class="card-body">
+            <div id="level-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+              <div><label class="form-label">รหัส</label><input class="form-control" id="new-level-code" style="width:100px" placeholder="LV3"></div>
+              <div><label class="form-label">ชื่อระดับ</label><input class="form-control" id="new-level-name" style="width:200px" placeholder="เช่น ปวส. เทียบโอน"></div>
+              <button class="btn btn-outline btn-sm" id="btn-add-level">+ เพิ่มระดับ</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>สาขาวิชา</h3></div>
+          <div class="card-body">
+            <div class="card" style="background:var(--bg);border:1px dashed var(--border);margin-bottom:16px">
+              <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div><label class="form-label">ระดับ</label><select class="form-control" id="new-branch-level" style="width:150px"></select></div>
+                <div><label class="form-label">รหัสสาขา</label><input class="form-control" id="new-branch-code" style="width:90px" placeholder="BR7"></div>
+                <div><label class="form-label">ชื่อสาขา</label><input class="form-control" id="new-branch-name" style="width:200px" placeholder="เช่น การบัญชี"></div>
+                <div><label class="form-label">ค่าสมัคร</label><input class="form-control" id="new-branch-fee" type="number" style="width:100px" value="300"></div>
+                <div><label class="form-label">จำนวนรับ</label><input class="form-control" id="new-branch-max" type="number" style="width:90px" value="30"></div>
+                <button class="btn btn-primary btn-sm" id="btn-add-branch">+ เพิ่มสาขา</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr>
+                  <th>สาขา</th><th>ระดับ</th><th>ค่าสมัคร</th><th>จำนวนรับ</th><th>รอบที่เปิด</th><th>เปิดรับสมัคร</th><th></th>
+                </tr></thead>
+                <tbody id="branch-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>

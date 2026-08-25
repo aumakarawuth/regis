@@ -7,7 +7,6 @@
   <title>สมัครเรียน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --clr-primary:#00B900; --clr-primary-dark:#009900; --clr-primary-light:#E8F9E8;
@@ -553,6 +552,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ============================================================
 // CONFIG
@@ -638,7 +638,10 @@ function showLoading(msg, mode) {
       { pct: 75, msg: 'กำลังโหลดข้อมูลที่อยู่...',       detail: 'โหลดจังหวัด/อำเภอ' },
       { pct: 88, msg: 'เกือบเสร็จแล้ว...',               detail: 'เตรียมฟอร์มสมัคร' },
     ];
-    var delays = [300, 600, 700, 700, 700, 600];
+    // Short pacing — this is just a visual placeholder while the real
+    // fetch runs in parallel; hideLoading() cuts it off the moment data
+    // actually arrives, so these only bound the worst case.
+    var delays = [80, 120, 120, 120, 120, 80];
     var idx = 0;
     function nextStep() {
       if (idx >= steps.length) return;
@@ -648,7 +651,7 @@ function showLoading(msg, mode) {
       idx++;
       if (idx < steps.length) _loTimer = setTimeout(nextStep, delays[idx - 1]);
     }
-    _loTimer = setTimeout(nextStep, 250);
+    _loTimer = setTimeout(nextStep, 60);
   }
 }
 
@@ -675,8 +678,8 @@ function hideLoading() {
         if (doneMsg)    doneMsg.style.display = 'none';
         document.getElementById('lo-scene').classList.remove('hidden');
         document.getElementById('lo-progress').classList.remove('hidden');
-      }, 600);
-    }, 400);
+      }, 200);
+    }, 120);
   }
 }
 

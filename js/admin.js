@@ -343,9 +343,8 @@ const Admin = {
   },
 
   _printStudent() {
-    // PDF generation (PDF_Generator.gs) hasn't been migrated off Apps
-    // Script yet — this is a placeholder until that follow-up lands.
-    showToast('ระบบพิมพ์ใบสมัคร (PDF) ยังไม่ได้ย้ายมา Supabase', 'warning');
+    if (!this.currentStudent) return;
+    window.open(`print.html?studentId=${this.currentStudent.id}`, '_blank');
   },
 
   _bindEvents() {

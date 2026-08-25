@@ -442,10 +442,10 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +

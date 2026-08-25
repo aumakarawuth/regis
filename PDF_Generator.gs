@@ -148,6 +148,16 @@ function _idCardBoxes(idCard) {
   return html + '</span>';
 }
 
+// กล่องเลขติดกันไม่มีช่องว่างคั่นกลุ่ม — ใช้กับรหัสประจำตัวนักศึกษา (ไม่ใช่เลขบัตรประชาชน)
+function _plainBoxes(count, value) {
+  var digits = String(value || '').replace(/\D/g, '');
+  var html = '<span class="idwrap">';
+  for (var i = 0; i < count; i++) {
+    html += '<span class="idbox">' + (digits[i] || '') + '</span>';
+  }
+  return html + '</span>';
+}
+
 // ============================================================
 // ตราวิทยาลัย (SVG จำลอง — ถ้ามีไฟล์โลโก้จริงค่อยเปลี่ยนเป็น <img> ทีหลัง)
 // ============================================================
@@ -323,7 +333,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes('') + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +

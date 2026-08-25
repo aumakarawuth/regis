@@ -1,104 +1,162 @@
 // ============================================
-// api.js — GAS API Client (แก้ 400 Bad Request)
+// api.js — Supabase API Client
 // ============================================
-// ปัญหา: GAS Web App ไม่รองรับ CORS preflight (OPTIONS)
-// วิธีแก้:
-//   GET  → fetch ปกติ (ไม่มี preflight)
-//   POST → ส่ง body เป็น text/plain หรือ no-cors
-//          แต่ no-cors อ่าน response ไม่ได้
-//          → ใช้ GET + query string แทน POST สำหรับข้อมูลเล็ก
-//          → ใช้ POST + mode:'cors' + Content-Type ไม่ใส่ (ให้เป็น text/plain auto)
+// Replaces the old GAS Web App client. Same method names/shapes as
+// before (getPrograms/submitApplication/getApplicationStatus) so
+// js/form.js and apply.html's own inline copy don't need to change.
+
+const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+const _STATUS_LABELS = { pending: 'รอตรวจสอบ', verified: 'ผ่านการตรวจสอบ', rejected: 'ไม่ผ่าน' };
+
+function _base64ToBlob(base64, mimeType) {
+  const byteChars = atob(base64);
+  const bytes = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
+}
 
 const API = {
-  baseUrl: CONFIG.API_BASE_URL,
-
-  // ---- GET request ----
-  async get(action, params = {}) {
-    const url = new URL(this.baseUrl);
-    url.searchParams.set('action', action);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) url.searchParams.set(k, v);
-    });
-
-    const res = await fetch(url.toString(), { method: 'GET' });
-    if (!res.ok) throw new Error('GET ' + action + ' failed: HTTP ' + res.status);
-    const text = await res.text();
-    return JSON.parse(text);
-  },
-
-  // ---- POST request ----
-  // GAS รับ POST ได้แต่ต้องไม่ส่ง Content-Type: application/json (ทำให้เกิด preflight)
-  // วิธีที่ได้ผลสุด: ใส่ action ใน query string, ส่ง body เป็น JSON string ธรรมดา
-  async post(action, body = {}) {
-    const url = new URL(this.baseUrl);
-    url.searchParams.set('action', action);
-
-    // ใส่ action ใน body ด้วยเพื่อความมั่นใจ
-    const payload = { ...body, action };
-
-    const res = await fetch(url.toString(), {
-      method: 'POST',
-      // ไม่ใส่ Content-Type header → browser ใช้ text/plain อัตโนมัติ → ไม่มี preflight
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) throw new Error('POST ' + action + ' failed: HTTP ' + res.status);
-    const text = await res.text();
-    return JSON.parse(text);
-  },
-
   // ---------- Programs ----------
+  // Shape matches the old Programs.gs getPrograms(): { levels, branches }
+  // where each branch has .programs = [{ programId, round }].
   async getPrograms() {
-    return this.get('getPrograms');
-  },
+    const { data: branches, error } = await _sb
+      .from('branches')
+      .select('code, name, is_open, education_levels(code, name), program_rounds(id, round_label, is_open)')
+      .eq('is_open', true);
+    if (error) throw error;
 
-  // ---------- Address ----------
-  async getProvinces() {
-    return this.get('getProvinces');
-  },
+    const levels = [];
+    const seenLevels = new Set();
+    const branchList = (branches || []).map(b => {
+      const level = b.education_levels;
+      if (level && !seenLevels.has(level.code)) {
+        seenLevels.add(level.code);
+        levels.push({ id: level.code, name: level.name });
+      }
+      return {
+        id: b.code,
+        name: b.name,
+        levelId: level ? level.code : '',
+        isOpen: b.is_open,
+        programs: (b.program_rounds || [])
+          .filter(r => r.is_open)
+          .map(r => ({ programId: r.id, round: r.round_label })),
+      };
+    });
 
-  async getDistricts(provinceId) {
-    return this.get('getDistricts', { provinceId });
-  },
-
-  async getSubDistricts(districtId) {
-    return this.get('getSubDistricts', { districtId });
+    return { success: true, data: { levels, branches: branchList } };
   },
 
   // ---------- Application ----------
-  async submitApplication(data) {
-    return this.post('submitApplication', data);
+  // payload is the same shape Students.gs's submitApplication(body) used
+  // to take. The RPC handles student/address/parents/guardian/enrollment
+  // atomically; documents + payment slip are uploaded here afterwards.
+  async submitApplication(payload) {
+    const { data: rpcResult, error: rpcError } = await _sb.rpc('submit_application', {
+      payload: {
+        lineUserId: payload.lineUserId,
+        displayName: payload.displayName,
+        program: payload.program,
+        personal: payload.personal,
+        address: payload.address,
+        parents: payload.parents,
+        guardian: payload.guardian,
+      },
+    });
+    if (rpcError) throw rpcError;
+    if (!rpcResult.success) return rpcResult;
+
+    const studentId = rpcResult.studentId;
+    const docResults = [];
+
+    for (const doc of payload.documents || []) {
+      try {
+        const blob = _base64ToBlob(doc.base64Data, doc.mimeType || 'image/jpeg');
+        const storagePath = `${studentId}/${doc.type}.jpg`;
+        const { error: upErr } = await _sb.storage.from('documents').upload(storagePath, blob, {
+          contentType: doc.mimeType || 'image/jpeg',
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+
+        const { error: dbErr } = await _sb.from('documents').insert({
+          student_id: studentId,
+          doc_type: doc.type,
+          storage_path: storagePath,
+        });
+        if (dbErr) throw dbErr;
+        docResults.push({ type: doc.type, success: true });
+      } catch (err) {
+        docResults.push({ type: doc.type, success: false, error: err.message });
+      }
+    }
+
+    if (payload.payment && payload.payment.slipBase64) {
+      try {
+        const blob = _base64ToBlob(payload.payment.slipBase64, 'image/jpeg');
+        const storagePath = `${studentId}/slip.jpg`;
+        const { error: upErr } = await _sb.storage.from('payment-slips').upload(storagePath, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+
+        const { error: dbErr } = await _sb.from('payments').insert({
+          student_id: studentId,
+          amount: payload.payment.amount || 0,
+          method: 'promptpay',
+          storage_path: storagePath,
+        });
+        if (dbErr) throw dbErr;
+      } catch (err) {
+        console.error('Payment slip upload error:', err);
+      }
+    }
+
+    return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults };
   },
 
   async getApplicationStatus(lineUserId) {
-    return this.get('getApplicationStatus', { lineUserId });
+    if (!lineUserId) return { success: true, applied: false };
+
+    const { data, error } = await _sb.rpc('get_application_status', { p_line_user_id: lineUserId });
+    if (error) throw error;
+    const row = data && data[0];
+    if (!row) return { success: true, applied: false };
+
+    return {
+      success: true,
+      applied: true,
+      applicationNo: row.application_no,
+      status: row.status,
+      statusLabel: _STATUS_LABELS[row.status] || row.status,
+      branchName: row.branch_name,
+      applyDate: row.applied_at ? new Date(row.applied_at).toLocaleDateString('th-TH') : '',
+    };
   },
 
-  // ---------- Document Upload ----------
-  async uploadDocument(payload) {
-    return this.post('uploadDocument', payload);
-  },
+  // ---------- Document Upload (standalone) ----------
+  async uploadDocument({ studentId, docType, base64Data, mimeType }) {
+    if (!studentId || !base64Data) return { success: false, message: 'Missing required fields' };
 
-  // ---------- Admin ----------
-  async adminGetStats(token) {
-    return this.get('adminGetStats', { token });
-  },
+    const blob = _base64ToBlob(base64Data, mimeType || 'image/jpeg');
+    const storagePath = `${studentId}/${docType}.jpg`;
+    const { error: upErr } = await _sb.storage.from('documents').upload(storagePath, blob, {
+      contentType: mimeType || 'image/jpeg',
+      upsert: true,
+    });
+    if (upErr) throw upErr;
 
-  async adminGetStudents(token, params = {}) {
-    return this.get('adminGetStudents', { token, ...params });
-  },
+    const { error: dbErr } = await _sb.from('documents').insert({
+      student_id: studentId,
+      doc_type: docType,
+      storage_path: storagePath,
+    });
+    if (dbErr) throw dbErr;
 
-  async adminVerifyDoc(token, docId, verified) {
-    return this.post('adminVerifyDoc', { token, docId, verified });
-  },
-
-  async adminUpdateStatus(token, studentId, status) {
-    return this.post('adminUpdateStatus', { token, studentId, status });
-  },
-
-  // ---------- Health Check ----------
-  async ping() {
-    return this.get('ping');
+    return { success: true, storagePath };
   },
 };
 

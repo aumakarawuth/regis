@@ -7,19 +7,13 @@ const CONFIG = {
   // LINE LIFF
   LIFF_ID: '2010038922-8oEBPiap',         // ได้จาก LINE Developers Console
 
-  // Google Apps Script Web App URL
-  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyaeKOOtAxBLnbS2i1mKCFB-8sAExUWLy4sqM8uZvAFPRkNQ-gB6ISLF6EskaJlcf-dww/exec',  // Publish > Deploy as web app
+  // Supabase (Project Settings -> API)
+  SUPABASE_URL: 'https://xxxxxxxxxxxx.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJ...',            // anon/public key — ปลอดภัยที่ใช้ฝั่ง client (RLS คุมสิทธิ์)
 
   // PromptPay
   PROMPTPAY_NUMBER: '0812345678',        // เบอร์หรือเลขบัตรประชาชน
   APPLICATION_FEE: 300,                  // ค่าสมัคร (บาท)
-
-  // Google Drive Folder IDs (สร้างแล้วแชร์สิทธิ์กับ Service Account)
-  DRIVE_FOLDER: {
-    ROOT: '1njmYVDNAI-IQZ4dGN_PqV_eb0Ut8p2m-',
-    DOCS: '1IATeVqM2ciw2BcZWP7OBQEl4hRsnvb50',
-    PAYMENTS: '11eeTv6Jua1t5Q3x__oTlhgBfaJgAy92C',
-  },
 
   // School Info
   SCHOOL_NAME: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์',

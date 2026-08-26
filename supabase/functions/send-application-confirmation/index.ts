@@ -43,6 +43,7 @@ function json(body: unknown, status = 200) {
 const SCHOOL_NAME = 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์';
 const SCHOOL_PHONE = '02-4346155';
 const SCHOOL_LINE = '@ctc.bangkok';
+const MASCOT_IMAGE_URL = 'https://regis-aumakarawuths-projects.vercel.app/assets/mascot-students.jpg';
 
 const PRIMARY = '#0EA5E9';
 const PRIMARY_DARK = '#0284C7';
@@ -79,34 +80,43 @@ function buildFlex(opts: {
     altText: `ใบยืนยันการสมัครเรียน — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
-      header: {
-        type: 'box', layout: 'vertical', backgroundColor: PRIMARY, paddingAll: '20px', spacing: 'xs',
-        contents: [
-          { type: 'text', text: SCHOOL_NAME, color: '#E0F2FE', size: 'xs', weight: 'bold' },
-          { type: 'text', text: 'ใบยืนยันการสมัครเรียน', color: '#ffffff', weight: 'bold', size: 'lg', margin: 'sm' },
-        ],
+      hero: {
+        type: 'image', url: MASCOT_IMAGE_URL, size: 'full',
+        aspectRatio: '20:13', aspectMode: 'cover',
       },
       body: {
-        type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px',
+        type: 'box', layout: 'vertical', paddingAll: '0px',
         contents: [
-          { type: 'text', text: 'เลขที่ใบสมัคร', color: '#6B7280', size: 'xs' },
-          { type: 'text', text: applicationNo, weight: 'bold', size: 'xl', color: PRIMARY_DARK },
-          { type: 'separator', margin: 'md' },
           {
-            type: 'box', layout: 'vertical', spacing: 'sm', margin: 'md',
+            type: 'box', layout: 'vertical', backgroundColor: PRIMARY, paddingAll: '20px', spacing: 'xs',
             contents: [
-              row('ผู้สมัคร', applicantName),
-              row('ระดับ', levelName),
-              row('สาขาวิชา', branchName),
-              row('รอบ/เวลาเรียน', roundName),
-              row('วันที่สมัคร', thaiDate(appliedAt)),
-              row('สถานะ', 'รอตรวจสอบเอกสาร'),
+              { type: 'text', text: SCHOOL_NAME, color: '#E0F2FE', size: 'xs', weight: 'bold' },
+              { type: 'text', text: 'ใบยืนยันการสมัครเรียน', color: '#ffffff', weight: 'bold', size: 'lg', margin: 'sm' },
             ],
           },
-          { type: 'separator', margin: 'md' },
           {
-            type: 'text', margin: 'md', wrap: true, size: 'xs', color: '#6B7280',
-            text: 'เจ้าหน้าที่จะตรวจสอบเอกสารและติดต่อกลับภายใน 1–2 วันทำการ กรุณาติดตามสถานะผ่านปุ่มด้านล่าง',
+            type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px',
+            contents: [
+              { type: 'text', text: 'เลขที่ใบสมัคร', color: '#6B7280', size: 'xs' },
+              { type: 'text', text: applicationNo, weight: 'bold', size: 'xl', color: PRIMARY_DARK },
+              { type: 'separator', margin: 'md' },
+              {
+                type: 'box', layout: 'vertical', spacing: 'sm', margin: 'md',
+                contents: [
+                  row('ผู้สมัคร', applicantName),
+                  row('ระดับ', levelName),
+                  row('สาขาวิชา', branchName),
+                  row('รอบ/เวลาเรียน', roundName),
+                  row('วันที่สมัคร', thaiDate(appliedAt)),
+                  row('สถานะ', 'รอตรวจสอบเอกสาร'),
+                ],
+              },
+              { type: 'separator', margin: 'md' },
+              {
+                type: 'text', margin: 'md', wrap: true, size: 'xs', color: '#6B7280',
+                text: 'เจ้าหน้าที่จะตรวจสอบเอกสารและติดต่อกลับภายใน 1–2 วันทำการ กรุณาติดตามสถานะผ่านปุ่มด้านล่าง',
+              },
+            ],
           },
         ],
       },

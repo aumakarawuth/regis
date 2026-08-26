@@ -40,45 +40,87 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const SCHOOL_NAME = 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์';
+const SCHOOL_PHONE = '02-4346155';
+const SCHOOL_LINE = '@ctc.bangkok';
+
+const PRIMARY = '#0EA5E9';
+const PRIMARY_DARK = '#0284C7';
+
 function row(label: string, value: string) {
   return {
     type: 'box', layout: 'baseline', spacing: 'sm',
     contents: [
       { type: 'text', text: label, color: '#6B7280', size: 'sm', flex: 2 },
-      { type: 'text', text: value, wrap: true, size: 'sm', flex: 4, weight: 'bold' },
+      { type: 'text', text: value, wrap: true, size: 'sm', flex: 5, weight: 'bold' },
     ],
   };
 }
 
-function buildFlex(applicationNo: string, branchName: string, roundName: string) {
+function thaiDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return iso;
+  }
+}
+
+function buildFlex(opts: {
+  applicationNo: string;
+  applicantName: string;
+  levelName: string;
+  branchName: string;
+  roundName: string;
+  appliedAt: string;
+}) {
+  const { applicationNo, applicantName, levelName, branchName, roundName, appliedAt } = opts;
   return {
     type: 'flex',
-    altText: `สมัครเรียนสำเร็จ — เลขที่ใบสมัคร ${applicationNo}`,
+    altText: `ใบยืนยันการสมัครเรียน — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
       header: {
-        type: 'box', layout: 'vertical', backgroundColor: '#00B900', paddingAll: '20px',
+        type: 'box', layout: 'vertical', backgroundColor: PRIMARY, paddingAll: '20px', spacing: 'xs',
         contents: [
-          { type: 'text', text: '✅ สมัครเรียนสำเร็จ', color: '#ffffff', weight: 'bold', size: 'lg' },
+          { type: 'text', text: SCHOOL_NAME, color: '#E0F2FE', size: 'xs', weight: 'bold' },
+          { type: 'text', text: 'ใบยืนยันการสมัครเรียน', color: '#ffffff', weight: 'bold', size: 'lg', margin: 'sm' },
         ],
       },
       body: {
         type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px',
         contents: [
           { type: 'text', text: 'เลขที่ใบสมัคร', color: '#6B7280', size: 'xs' },
-          { type: 'text', text: applicationNo, weight: 'bold', size: 'xl', color: '#00B900' },
+          { type: 'text', text: applicationNo, weight: 'bold', size: 'xl', color: PRIMARY_DARK },
           { type: 'separator', margin: 'md' },
-          row('สาขา', branchName),
-          row('รอบ', roundName),
-          row('สถานะ', 'รอตรวจสอบเอกสาร'),
+          {
+            type: 'box', layout: 'vertical', spacing: 'sm', margin: 'md',
+            contents: [
+              row('ผู้สมัคร', applicantName),
+              row('ระดับ', levelName),
+              row('สาขาวิชา', branchName),
+              row('รอบ/เวลาเรียน', roundName),
+              row('วันที่สมัคร', thaiDate(appliedAt)),
+              row('สถานะ', 'รอตรวจสอบเอกสาร'),
+            ],
+          },
+          { type: 'separator', margin: 'md' },
+          {
+            type: 'text', margin: 'md', wrap: true, size: 'xs', color: '#6B7280',
+            text: 'เจ้าหน้าที่จะตรวจสอบเอกสารและติดต่อกลับภายใน 1–2 วันทำการ กรุณาติดตามสถานะผ่านปุ่มด้านล่าง',
+          },
         ],
       },
       footer: {
-        type: 'box', layout: 'vertical', paddingAll: '12px',
+        type: 'box', layout: 'vertical', paddingAll: '12px', spacing: 'sm',
         contents: [
           {
-            type: 'button', style: 'primary', color: '#00B900', height: 'sm',
-            action: { type: 'uri', label: '🔍 ตรวจสอบสถานะ', uri: `https://liff.line.me/${LIFF_ID}` },
+            type: 'button', style: 'primary', color: PRIMARY, height: 'sm',
+            action: { type: 'uri', label: '🔍 ตรวจสอบสถานะการสมัคร', uri: `https://liff.line.me/${LIFF_ID}` },
+          },
+          {
+            type: 'text', align: 'center', size: 'xxs', color: '#9CA3AF',
+            text: `สอบถามเพิ่มเติม โทร. ${SCHOOL_PHONE} หรือ LINE ${SCHOOL_LINE}`,
+            wrap: true,
           },
         ],
       },
@@ -102,7 +144,10 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data: student, error } = await supabase
     .from('students')
-    .select('line_user_id, application_no, enrollments(program_rounds(round_label, branches(name)))')
+    .select(`
+      line_user_id, application_no, prefix, first_name, last_name, applied_at,
+      enrollments(program_rounds(round_label, branches(name, education_levels(name))))
+    `)
     .eq('id', studentId)
     .single();
 
@@ -110,7 +155,10 @@ Deno.serve(async (req) => {
   if (!student.line_user_id) return json({ success: true, skipped: true, message: 'no lineUserId on this application' });
 
   const enroll = Array.isArray(student.enrollments) ? student.enrollments[0] : student.enrollments;
-  const branchName = enroll?.program_rounds?.branches?.name || '-';
+  const branch = enroll?.program_rounds?.branches;
+  const applicantName = `${student.prefix || ''}${student.first_name || ''} ${student.last_name || ''}`.trim();
+  const levelName = branch?.education_levels?.name || '-';
+  const branchName = branch?.name || '-';
   const roundName = enroll?.program_rounds?.round_label || '-';
 
   const lineRes = await fetch('https://api.line.me/v2/bot/message/push', {
@@ -121,7 +169,12 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       to: student.line_user_id,
-      messages: [buildFlex(student.application_no, branchName, roundName)],
+      messages: [buildFlex({
+        applicationNo: student.application_no,
+        applicantName: applicantName || '-',
+        levelName, branchName, roundName,
+        appliedAt: student.applied_at,
+      })],
     }),
   });
 

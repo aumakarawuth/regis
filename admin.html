@@ -173,6 +173,8 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
       <div class="nav-item active" data-page="overview"><span>📊</span> ภาพรวม</div>
       <div class="nav-item" data-page="students"><span>👥</span> ผู้สมัคร <span class="nav-badge" id="nav-pending-badge">0</span></div>
       <div class="nav-item" data-page="programs"><span>🎓</span> หลักสูตร</div>
+      <div class="nav-item" data-page="reports"><span>📈</span> รายงาน</div>
+      <div class="nav-item" data-page="staff"><span>🧑‍🏫</span> เจ้าหน้าที่</div>
       <div class="nav-section">เครื่องมือ</div>
       <div class="nav-item" id="nav-export"><span>📥</span> Export CSV</div>
       <div class="nav-item" id="nav-refresh"><span>🔄</span> รีเฟรชข้อมูล</div>
@@ -229,7 +231,7 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
             <table>
               <thead><tr>
                 <th>เลขสมัคร</th><th>ชื่อ-นามสกุล</th><th>สาขา / รอบ</th>
-                <th>เบอร์โทร</th><th>วันที่สมัคร</th><th>สถานะ</th><th>เอกสาร</th><th></th>
+                <th>เบอร์โทร</th><th>วันที่สมัคร</th><th>สถานะ</th><th>เอกสาร</th><th>ผู้ดูแล</th><th></th>
               </tr></thead>
               <tbody id="student-tbody"></tbody>
             </table>
@@ -272,6 +274,51 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
               </table>
             </div>
           </div>
+        </div>
+      </div>
+      <!-- Reports Page -->
+      <div id="page-reports" class="hidden">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>รายงานตามสาขา</h3><button class="btn btn-outline btn-sm" id="btn-export-report-branch">📥 Export</button></div>
+          <div class="card-body" style="overflow-x:auto"><table>
+            <thead><tr><th>ระดับ</th><th>สาขา</th><th>ทั้งหมด</th><th>รอตรวจ</th><th>ผ่านแล้ว</th><th>ปฏิเสธ</th></tr></thead>
+            <tbody id="report-branch-tbody"></tbody>
+          </table></div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>รายงานตามโรงเรียนเดิม</h3><button class="btn btn-outline btn-sm" id="btn-export-report-school">📥 Export</button></div>
+          <div class="card-body" style="overflow-x:auto"><table>
+            <thead><tr><th>โรงเรียนเดิม</th><th>จำนวนผู้สมัคร</th></tr></thead>
+            <tbody id="report-school-tbody"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>รายงานตามจังหวัด</h3><button class="btn btn-outline btn-sm" id="btn-export-report-province">📥 Export</button></div>
+          <div class="card-body" style="overflow-x:auto"><table>
+            <thead><tr><th>จังหวัด</th><th>จำนวนผู้สมัคร</th></tr></thead>
+            <tbody id="report-province-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <!-- Staff Page -->
+      <div id="page-staff" class="hidden">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><h3>เพิ่มเจ้าหน้าที่ / ครูแนะแนว</h3></div>
+          <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div><label class="form-label">ชื่อ-นามสกุล</label><input class="form-control" id="new-staff-name" style="width:180px" placeholder="ชื่อ-นามสกุล"></div>
+            <div><label class="form-label">ตำแหน่ง</label><select class="form-control" id="new-staff-role" style="width:140px">
+              <option value="แนะแนว">แนะแนว</option><option value="ธุรการ">ธุรการ</option><option value="การเงิน">การเงิน</option><option value="อื่นๆ">อื่นๆ</option>
+            </select></div>
+            <div><label class="form-label">เบอร์โทร</label><input class="form-control" id="new-staff-phone" style="width:130px" placeholder="08xxxxxxxx"></div>
+            <button class="btn btn-primary btn-sm" id="btn-add-staff">+ เพิ่ม</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>เจ้าหน้าที่ทั้งหมด — สรุปผลงาน (KPI)</h3></div>
+          <div class="card-body" style="overflow-x:auto"><table>
+            <thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>เบอร์โทร</th><th>รับผิดชอบ</th><th>บันทึกติดตาม</th><th>ติดตามล่าสุด</th><th>สถานะทำงาน</th><th></th></tr></thead>
+            <tbody id="staff-tbody"></tbody>
+          </table></div>
         </div>
       </div>
     </div>

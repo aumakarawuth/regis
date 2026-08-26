@@ -1173,7 +1173,16 @@ const Form = {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
       const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
-      if(res.success){hideLoading();this._showSuccess(res.applicationNo);}
+      if(res.success){
+        hideLoading();
+        this._showSuccess(res.applicationNo);
+        // Fire-and-forget — a LINE push failure shouldn't block the
+        // already-successful application from showing as submitted.
+        if(res.studentId){
+          _sb.functions.invoke('send-application-confirmation',{body:{studentId:res.studentId}})
+            .catch(err=>console.warn('send-application-confirmation failed:',err));
+        }
+      }
       else throw new Error(res.message||'เกิดข้อผิดพลาด');
     } catch(err){hideLoading();showToast('ส่งใบสมัครล้มเหลว: '+err.message,'error');}
   },

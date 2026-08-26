@@ -418,7 +418,14 @@
         <div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" id="inp-firstName" type="text" placeholder="ชื่อ"></div>
         <div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" id="inp-lastName" type="text" placeholder="นามสกุล"></div>
       </div>
-      <div class="form-group"><label class="form-label">วันเกิด <span class="required">*</span></label><input class="form-control" id="inp-birthDate" type="date"></div>
+      <div class="form-group">
+        <label class="form-label">วันเกิด <span class="required">*</span></label>
+        <div class="field-row" style="grid-template-columns:1fr 1.4fr 1fr">
+          <select class="form-control" id="inp-birthDay"><option value="">วัน</option></select>
+          <select class="form-control" id="inp-birthMonth"><option value="">เดือน</option></select>
+          <select class="form-control" id="inp-birthYear"><option value="">ปี พ.ศ.</option></select>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label><input class="form-control" id="inp-phone" type="tel" maxlength="10" placeholder="0812345678" inputmode="numeric"></div>
       <div class="form-group"><label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label><select class="form-control" id="inp-education"><option value="">-- เลือก --</option></select></div>
       <div class="form-group"><label class="form-label">โรงเรียน/สถาบันเดิม <span class="required">*</span></label><input class="form-control" id="inp-oldSchool" type="text" placeholder="ชื่อโรงเรียน"></div>
@@ -1035,11 +1042,34 @@ const Form = {
   _roundLabel(round){return{morning:'เช้า',afternoon:'บ่าย',dual:'ทวิภาคี'}[round]||round;},
 
   _initStep2() {
-    ['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    ['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    this._populateBirthDateSelects();
     this._updateEducationOptions();
     document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
     document.getElementById('inp-phone').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,10);});
     this._loadEduProvinces();
+  },
+  // วัน/เดือน/ปี (พ.ศ.) selects — this.data.birthDate stays a plain ISO
+  // date string (Gregorian, YYYY-MM-DD) since that's what the submit
+  // RPC casts to `date`; only the on-screen order/labels are Thai-style.
+  _populateBirthDateSelects() {
+    const THAI_MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const daySel=document.getElementById('inp-birthDay'),monthSel=document.getElementById('inp-birthMonth'),yearSel=document.getElementById('inp-birthYear');
+    if(daySel.options.length<=1){
+      daySel.innerHTML='<option value="">วัน</option>'+Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}">${d}</option>`).join('');
+      monthSel.innerHTML='<option value="">เดือน</option>'+THAI_MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+      const beYear=new Date().getFullYear()+543;
+      yearSel.innerHTML='<option value="">ปี พ.ศ.</option>'+Array.from({length:81},(_,i)=>beYear-i).map(y=>`<option value="${y}">${y}</option>`).join('');
+    }
+    if(this.data.birthDate){
+      const[y,m,d]=this.data.birthDate.split('-').map(Number);
+      daySel.value=String(d);monthSel.value=String(m);yearSel.value=String(y+543);
+    }
+  },
+  _getBirthDateISO(){
+    const d=document.getElementById('inp-birthDay').value,m=document.getElementById('inp-birthMonth').value,yBE=document.getElementById('inp-birthYear').value;
+    if(!d||!m||!yBE)return '';
+    return `${Number(yBE)-543}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   },
   _updateEducationOptions() {
     const sel=document.getElementById('inp-education'),levelName=this.data.levelName.toLowerCase();
@@ -1123,7 +1153,7 @@ const Form = {
   _validate(n) {
     const err=(msg)=>{showToast(msg,'error');return false;};
     if(n===1){if(!this.data.studyRound)return err('กรุณาเลือกรอบเรียน');if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');if(!document.getElementById('sel-branch').value)return err('กรุณาเลือกสาขาวิชา');}
-    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['birthDate','วันเกิด'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');}
+    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===6){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
     return true;
@@ -1131,7 +1161,7 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
-    if(n===2){['idCard','prefix','firstName','lastName','birthDate','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});}
+    if(n===2){['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});this.data.birthDate=this._getBirthDateISO();}
     if(n===3){this.data.addrProvince=document.getElementById('addr-province').value;this.data.addrDistrict=document.getElementById('addr-district').value;this.data.addrSubDistrict=document.getElementById('addr-subdistrict').value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===5){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
   },

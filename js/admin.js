@@ -277,12 +277,7 @@ const Admin = {
       '</div>' +
       '<div class="section-label">ผู้ดูแล / การติดตาม</div>' +
       '<div class="form-group" style="margin-bottom:12px"><select class="form-control" id="dp-assigned-staff"></select></div>' +
-      '<div id="dp-followups" style="margin-bottom:10px"></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:20px">' +
-        '<select class="form-control" id="dp-followup-staff" style="width:130px"></select>' +
-        '<input class="form-control" id="dp-followup-note" placeholder="เช่น โทรแล้ว นัดมาสัมภาษณ์">' +
-        '<button class="btn btn-primary btn-sm" id="dp-btn-add-followup">บันทึก</button>' +
-      '</div>' +
+      '<div id="dp-followups" style="margin-bottom:20px"></div>' +
       '<div class="doc-request-panel">' +
         '<div class="section-label">📋 ขอเอกสารเพิ่มเติมทาง LINE</div>' +
         '<div class="doc-chips">' +
@@ -314,7 +309,6 @@ const Admin = {
     this._populateStaffDropdowns();
     document.getElementById('dp-assigned-staff').value = s.assignedStaffId || '';
     document.getElementById('dp-assigned-staff').onchange = e => this._assignStaff(e.target.value);
-    document.getElementById('dp-btn-add-followup').onclick = () => this._addFollowUp();
     this._loadFollowUps(id);
     document.getElementById('dp-btn-send-doc-request').onclick = () => this._sendDocRequest();
     this._loadDocRequests(id);
@@ -364,22 +358,6 @@ const Admin = {
         </div>`;
         }).join('')
       : '';
-  },
-
-  async _addFollowUp() {
-    if (!this.currentStudent) return;
-    const staffId = document.getElementById('dp-followup-staff').value;
-    const note = document.getElementById('dp-followup-note').value.trim();
-    if (!staffId) return showToast('ยังไม่มีเจ้าหน้าที่ในระบบ — เพิ่มที่เมนู "เจ้าหน้าที่" ก่อน', 'error');
-    if (!note) return showToast('กรอกบันทึกการติดตาม', 'error');
-
-    const { error } = await _sb.from('follow_ups').insert({ student_id: this.currentStudent.id, staff_id: staffId, note });
-    if (error) return showToast('บันทึกล้มเหลว: ' + error.message, 'error');
-
-    document.getElementById('dp-followup-note').value = '';
-    showToast('บันทึกการติดตามแล้ว', 'success');
-    await this._loadFollowUps(this.currentStudent.id);
-    await this._loadStaff();
   },
 
   async _sendDocRequest() {
@@ -652,9 +630,6 @@ const Admin = {
     const curAssigned = assignSel.value;
     assignSel.innerHTML = '<option value="">— ยังไม่มอบหมาย —</option>' + active.map(s => `<option value="${s.id}">${s.name} (${s.role})</option>`).join('');
     assignSel.value = curAssigned;
-
-    const fuSel = document.getElementById('dp-followup-staff');
-    if (fuSel) fuSel.innerHTML = active.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   },
 
   _printStudent() {

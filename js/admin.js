@@ -101,6 +101,7 @@ const Admin = {
   async _loadAll() {
     await Promise.all([this._loadStats(), this._loadStudents()]);
     await this._loadStaff();
+    await this._loadNotifications();
   },
 
   async _refreshAll() {
@@ -216,6 +217,103 @@ const Admin = {
         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { family: 'Sarabun' } } } },
       },
     });
+  },
+
+  // ---- Notifications --------------------------------------------
+  // "New" is per-browser (localStorage, keyed by the logged-in user's
+  // id) — a lightweight "since I last checked" marker, not an audit
+  // trail. "Unhandled" and "duplicate attempts" are read straight from
+  // the database instead, since those need to be the same for every
+  // admin/staff regardless of device.
+  _notifSeenKey(userId) { return `regis_notif_seen_${userId}`; },
+
+  async _loadNotifications() {
+    const { data: { user } } = await _sb.auth.getUser();
+    if (!user) return;
+    this._notifUserId = user.id;
+    const seenRaw = localStorage.getItem(this._notifSeenKey(user.id));
+    const seenAt = seenRaw ? new Date(seenRaw) : new Date(0);
+
+    const newApps = this.students
+      .filter(s => new Date(s.applyDate) > seenAt)
+      .sort((a, b) => new Date(b.applyDate) - new Date(a.applyDate));
+
+    const unhandled = this.students
+      .filter(s => s.status === 'pending' && !s.assignedStaffId)
+      .sort((a, b) => new Date(a.applyDate) - new Date(b.applyDate));
+
+    const { data: dupRows } = await _sb.from('duplicate_attempt_log')
+      .select('id, id_card, attempted_first_name, attempted_last_name, attempted_at, existing_student_id')
+      .eq('is_reviewed', false)
+      .order('attempted_at', { ascending: false });
+
+    this._notif = { newApps, unhandled, duplicates: dupRows || [] };
+    this._renderNotifications();
+  },
+
+  _renderNotifications() {
+    const { newApps, unhandled, duplicates } = this._notif || { newApps: [], unhandled: [], duplicates: [] };
+    const total = newApps.length + unhandled.length + duplicates.length;
+    const badge = document.getElementById('notif-badge');
+    badge.textContent = total > 99 ? '99+' : String(total);
+    badge.classList.toggle('hidden', total === 0);
+
+    const section = (title, items, renderItem, emptyText) => `
+      <div class="notif-section">
+        <div class="notif-section-title">${title} (${items.length})</div>
+        ${items.length ? items.slice(0, 8).map(renderItem).join('') : `<div class="notif-empty">${emptyText}</div>`}
+      </div>`;
+
+    const appItem = s => `
+      <div class="notif-item" data-open-id="${s.id}">
+        <div>
+          <div class="notif-item-title">${s.prefix || ''}${s.firstName || ''} ${s.lastName || ''}</div>
+          <div class="notif-item-sub">${s.applicationNo || '—'} · ${_thDate(s.applyDate)}</div>
+        </div>
+      </div>`;
+
+    document.getElementById('notif-list').innerHTML =
+      section('🆕 ใบสมัครใหม่', newApps, appItem, 'ไม่มีใบสมัครใหม่ตั้งแต่ครั้งล่าสุดที่ดู') +
+      section('⏳ ยังไม่มอบหมายผู้ดูแล', unhandled, appItem, 'ไม่มีรายการค้าง') +
+      section('⚠️ ความพยายามสมัครซ้ำ (เลขบัตร ปชช.)', duplicates, d => `
+        <div class="notif-item notif-item-dup">
+          <div>
+            <div class="notif-item-title">${d.attempted_first_name || ''} ${d.attempted_last_name || ''} <span class="notif-item-sub">(${d.id_card})</span></div>
+            <div class="notif-item-sub">ลองสมัครซ้ำเมื่อ ${_thDate(d.attempted_at)}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            ${d.existing_student_id ? `<button class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:0.75rem" data-open-id="${d.existing_student_id}">ดูใบเดิม</button>` : ''}
+            <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:0.75rem" data-dismiss-dup="${d.id}">รับทราบ</button>
+          </div>
+        </div>`, 'ไม่มีความพยายามสมัครซ้ำ');
+
+    document.getElementById('notif-list').querySelectorAll('[data-open-id]').forEach(el => {
+      el.onclick = e => {
+        e.stopPropagation();
+        document.getElementById('notif-panel').classList.add('hidden');
+        this._openDetail(el.dataset.openId);
+      };
+    });
+    document.getElementById('notif-list').querySelectorAll('[data-dismiss-dup]').forEach(btn => {
+      btn.onclick = async e => {
+        e.stopPropagation();
+        const id = btn.dataset.dismissDup;
+        await _sb.from('duplicate_attempt_log').update({ is_reviewed: true }).eq('id', id);
+        this._notif.duplicates = this._notif.duplicates.filter(d => d.id !== id);
+        this._renderNotifications();
+      };
+    });
+  },
+
+  _toggleNotifPanel() {
+    document.getElementById('notif-panel').classList.toggle('hidden');
+  },
+
+  _markNotificationsSeen() {
+    if (!this._notifUserId) return;
+    localStorage.setItem(this._notifSeenKey(this._notifUserId), new Date().toISOString());
+    if (this._notif) this._notif.newApps = [];
+    this._renderNotifications();
   },
 
   async _loadStudents() {
@@ -420,6 +518,7 @@ const Admin = {
     if (s) s.assignedStaffId = staffId || null;
     showToast('บันทึกผู้ดูแลแล้ว', 'success', 1500);
     this._renderTable();
+    this._loadNotifications();
   },
 
   async _loadFollowUps(studentId) {
@@ -526,6 +625,7 @@ const Admin = {
     this.students = this.students.filter(x => x.id !== s.id);
     this._applyFilter();
     this._loadStats();
+    this._loadNotifications();
   },
 
   async _verifyDoc(docId, verified, btn) {
@@ -965,6 +1065,10 @@ const Admin = {
         }
       };
     });
+    document.getElementById('btn-notif').onclick = e => { e.stopPropagation(); this._toggleNotifPanel(); };
+    document.getElementById('btn-notif-mark-seen').onclick = e => { e.stopPropagation(); this._markNotificationsSeen(); };
+    document.getElementById('notif-panel').onclick = e => e.stopPropagation();
+    document.addEventListener('click', () => document.getElementById('notif-panel').classList.add('hidden'));
     document.getElementById('btn-add-level').onclick = () => this._addLevel();
     document.getElementById('btn-add-branch').onclick = () => this._addBranch();
     document.getElementById('btn-add-staff').onclick = () => this._addStaff();

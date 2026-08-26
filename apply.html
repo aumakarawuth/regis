@@ -430,22 +430,6 @@
       <div class="form-group"><label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label><select class="form-control" id="inp-education"><option value="">-- เลือก --</option></select></div>
       <div class="form-group"><label class="form-label">โรงเรียน/สถาบันเดิม <span class="required">*</span></label><input class="form-control" id="inp-oldSchool" type="text" placeholder="ชื่อโรงเรียน"></div>
       <div class="form-group"><label class="form-label">จังหวัดที่ศึกษา</label><select class="form-control" id="inp-educationProvince"><option value="">-- เลือกจังหวัด --</option></select></div>
-      <div class="field-row">
-        <div class="form-group"><label class="form-label">ชื่อ (ภาษาอังกฤษ)</label><input class="form-control" id="inp-firstNameEn" type="text" placeholder="First name"></div>
-        <div class="form-group"><label class="form-label">นามสกุล (ภาษาอังกฤษ)</label><input class="form-control" id="inp-lastNameEn" type="text" placeholder="Last name"></div>
-      </div>
-      <div class="field-row">
-        <div class="form-group"><label class="form-label">สัญชาติ</label><input class="form-control" id="inp-nationality" type="text" value="ไทย"></div>
-        <div class="form-group"><label class="form-label">เชื้อชาติ</label><input class="form-control" id="inp-ethnicity" type="text" value="ไทย"></div>
-      </div>
-      <div class="field-row">
-        <div class="form-group"><label class="form-label">ศาสนา</label><input class="form-control" id="inp-religion" type="text" value="พุทธ"></div>
-        <div class="form-group"><label class="form-label">กรุ๊ปเลือด</label><input class="form-control" id="inp-bloodType" type="text" placeholder="เช่น O, A, B, AB"></div>
-      </div>
-      <div class="field-row">
-        <div class="form-group"><label class="form-label">น้ำหนัก (กก.)</label><input class="form-control" id="inp-weight" type="tel" inputmode="numeric" placeholder="กก."></div>
-        <div class="form-group"><label class="form-label">ส่วนสูง (ซม.)</label><input class="form-control" id="inp-height" type="tel" inputmode="numeric" placeholder="ซม."></div>
-      </div>
     </div>
   </div>
 
@@ -1150,14 +1134,14 @@ const Form = {
 
   _initStep4() {
     this._renderParents();
-    document.getElementById('btn-add-parent').onclick=()=>{this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false});this._renderParents();};
+    document.getElementById('btn-add-parent').onclick=()=>{this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',phone:'',occupation:'',isDeceased:false});this._renderParents();};
   },
   _renderParents() {
     const container=document.getElementById('parents-container');container.innerHTML='';
     if(!this.data.parents.length){container.innerHTML=`<p class="text-muted text-sm" style="padding:16px;text-align:center">ยังไม่มีข้อมูล — กดปุ่มด้านล่างเพื่อเพิ่ม</p>`;return;}
     this.data.parents.forEach((p,i)=>{
       const card=document.createElement('div');card.className='parent-item';
-      card.innerHTML=`<button class="btn btn-sm btn-danger remove-btn" data-idx="${i}">ลบ</button><div class="field-stack" style="margin-top:8px"><div class="form-group"><label class="form-label">ประเภท</label><select class="form-control" data-field="type" data-idx="${i}"><option value="father" ${p.type==='father'?'selected':''}>บิดา</option><option value="mother" ${p.type==='mother'?'selected':''}>มารดา</option></select></div><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${i}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${i}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${i}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label></div>`;
+      card.innerHTML=`<button class="btn btn-sm btn-danger remove-btn" data-idx="${i}">ลบ</button><div class="field-stack" style="margin-top:8px"><div class="form-group"><label class="form-label">ประเภท</label><select class="form-control" data-field="type" data-idx="${i}"><option value="father" ${p.type==='father'?'selected':''}>บิดา</option><option value="mother" ${p.type==='mother'?'selected':''}>มารดา</option></select></div><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${i}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label></div>`;
       container.appendChild(card);
     });
     container.querySelectorAll('.remove-btn').forEach(btn=>{btn.onclick=()=>{this.data.parents.splice(+btn.dataset.idx,1);this._renderParents();};});
@@ -1187,9 +1171,25 @@ const Form = {
       const card=document.createElement('div');card.className='doc-upload-card';card.dataset.docType=doc.id;
       card.innerHTML=`<div class="doc-icon">${doc.icon}</div><div class="doc-label">${doc.label}${doc.required?' <span style="color:var(--clr-danger)">*</span>':''}</div><div class="doc-sublabel">แตะเพื่อถ่าย/เลือก</div><img class="doc-preview hidden" alt="preview">`;
       if(this.data.documents[doc.id]){card.classList.add('has-file');card.querySelector('.doc-preview').src=this.data.documents[doc.id];card.querySelector('.doc-preview').classList.remove('hidden');card.querySelector('.doc-label').innerHTML='✅ '+doc.label;}
-      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;});
+      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;if(type==='id_card_front')this._ocrIdCard(base64);});
       wrapper.appendChild(card);grid.appendChild(wrapper);
     });
+  },
+
+  // Reads the English name off the ID card photo instead of asking the
+  // applicant to type it — best-effort, never blocks the upload/submit
+  // flow if it fails or comes back empty (student/parent English name
+  // fields on the printed form just stay blank in that case, same as
+  // before this existed).
+  async _ocrIdCard(base64DataUrl) {
+    try {
+      const base64Data=base64DataUrl.split(',')[1];
+      const {data,error}=await _sb.functions.invoke('ocr-id-card',{body:{imageBase64:base64Data,mimeType:'image/jpeg'}});
+      if(error||!data||!data.success)return;
+      this.data.firstNameEn=data.firstNameEn||'';
+      this.data.lastNameEn=data.lastNameEn||'';
+      if(this.data.firstNameEn||this.data.lastNameEn)showToast('อ่านชื่อภาษาอังกฤษจากบัตรแล้ว: '+this.data.firstNameEn+' '+this.data.lastNameEn,'success',2500);
+    } catch(err){console.warn('OCR id card failed:',err);}
   },
 
   _initStep7() {
@@ -1220,7 +1220,7 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
-    if(n===2){['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince','firstNameEn','lastNameEn','nationality','ethnicity','religion','bloodType','weight','height'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});this.data.birthDate=this._getBirthDateISO();}
+    if(n===2){['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});this.data.birthDate=this._getBirthDateISO();}
     if(n===3){this.data.addrProvince=document.getElementById('addr-province').value;this.data.addrDistrict=document.getElementById('addr-district').value;this.data.addrSubDistrict=document.getElementById('addr-subdistrict').value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===5){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
   },
@@ -1230,7 +1230,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn,lastNameEn:this.data.lastNameEn,birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,bloodType:this.data.bloodType,weight:this.data.weight,height:this.data.height},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         hideLoading();

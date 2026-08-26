@@ -67,14 +67,7 @@ const FORM_CSS = [
   '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-  // width intentionally omitted (not 100%) — some browsers' print engines
-  // resolve percentage widths against the full paper size instead of the
-  // @page margin box, which pushed right-anchored absolutely-positioned
-  // elements (.photo-box) and edge content past the printable area. A
-  // block with no explicit width naturally fills the containing block
-  // through the box-model constraint instead of a percentage lookup,
-  // which doesn't have that ambiguity.
-  '.page{position:relative;min-height:273mm;padding:3mm 4mm;page-break-after:always}',
+  '.page{position:relative;width:100%;min-height:273mm;padding:3mm 1mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '@media print{.no-print{display:none!important}}',
   '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:10mm 12mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
@@ -92,7 +85,7 @@ const FORM_CSS = [
   '.branch-row{}',
   '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
   '.top-row{}',
-  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:4mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
   '.seal-wrap{position:absolute;top:38%;left:0;right:0;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:0;left:0;right:0}',
   '.cover-center{text-align:center}',

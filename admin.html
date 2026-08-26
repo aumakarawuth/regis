@@ -94,11 +94,11 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
 .page-btn:hover:not(.active):not(:disabled) { background: var(--bg); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Detail Panel */
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .detail-overlay.open { opacity: 1; pointer-events: all; }
-.detail-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 520px; max-width: 100vw; background: #fff; z-index: 201; box-shadow: -8px 0 40px rgba(0,0,0,0.15); transform: translateX(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
-.detail-panel.open { transform: translateX(0); }
-.detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+.detail-panel { position: fixed; top: 50%; left: 50%; width: 640px; max-width: calc(100vw - 48px); max-height: calc(100vh - 48px); background: #fff; z-index: 201; border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); transform: translate(-50%, -50%) scale(0.96); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; display: flex; flex-direction: column; overflow: hidden; }
+.detail-panel.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
+.detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; border-radius: 16px 16px 0 0; }
 .detail-header h3 { font-size: 1.0625rem; font-weight: 700; }
 .detail-header p { font-size: 0.8125rem; color: var(--muted); margin-top: 2px; }
 .detail-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
@@ -134,7 +134,7 @@ tbody td { padding: 12px 14px; vertical-align: middle; }
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .detail-panel { width: 100vw; }
+  .detail-panel { width: calc(100vw - 24px); max-height: calc(100vh - 24px); border-radius: 12px; }
 }
 </style>
 </head>

@@ -64,6 +64,23 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .topbar { background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0 24px; height: 62px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
 .topbar-title { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
 .page-content { padding: 24px; flex: 1; }
+/* Notifications */
+.notif-wrap { position: relative; }
+.notif-bell { position: relative; font-size: 1.1rem; }
+.notif-badge { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 10px; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 800; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px #fff; }
+.notif-panel { position: absolute; top: calc(100% + 10px); right: 0; width: 360px; max-width: calc(100vw - 32px); max-height: 70vh; overflow-y: auto; background: #fff; border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-lg); z-index: 200; }
+.notif-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; }
+.notif-panel-header h3 { font-size: 0.9375rem; font-weight: 700; }
+.notif-section { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.notif-section:last-child { border-bottom: none; }
+.notif-section-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.notif-item { padding: 8px 8px; border-radius: var(--r-sm); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.notif-item:hover { background: var(--bg); }
+.notif-item-title { font-size: 0.8438rem; font-weight: 600; }
+.notif-item-sub { font-size: 0.75rem; color: var(--muted); }
+.notif-item-dup { cursor: default; flex-wrap: wrap; }
+.notif-item-dup:hover { background: none; }
+.notif-empty { font-size: 0.8125rem; color: var(--muted); padding: 6px 8px; }
 /* Stats */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
 .stat-card { background: #fff; border-radius: var(--r-lg); padding: 20px 22px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 16px; transition: box-shadow 0.15s, transform 0.15s; }
@@ -240,7 +257,19 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
         <button class="btn btn-ghost btn-sm" id="btn-toggle-sidebar" style="display:none">☰</button>
         <div class="topbar-title" id="topbar-title">ภาพรวม</div>
       </div>
-      <span id="topbar-date" style="font-size:0.8125rem;color:var(--muted)"></span>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span id="topbar-date" style="font-size:0.8125rem;color:var(--muted)"></span>
+        <div class="notif-wrap">
+          <button class="btn btn-ghost btn-sm notif-bell" id="btn-notif" title="การแจ้งเตือน">🔔<span class="notif-badge hidden" id="notif-badge">0</span></button>
+          <div class="notif-panel hidden" id="notif-panel">
+            <div class="notif-panel-header">
+              <h3>การแจ้งเตือน</h3>
+              <button class="btn btn-ghost btn-sm" id="btn-notif-mark-seen" style="padding:4px 8px;font-size:0.75rem">ทำเครื่องหมายว่าอ่านแล้ว</button>
+            </div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+      </div>
     </header>
     <div class="page-content">
       <!-- Overview Page -->

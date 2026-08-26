@@ -28,6 +28,9 @@ const Admin = {
   programBranches: [],
   catalogLoaded: false,
   editingBranchId: null,
+  staffList: [],
+  staffLoaded: false,
+  reportsLoaded: false,
 
   async init() {
     document.getElementById('topbar-date').textContent =
@@ -89,6 +92,7 @@ const Admin = {
 
   async _loadAll() {
     await Promise.all([this._loadStats(), this._loadStudents()]);
+    await this._loadStaff();
   },
 
   async _refreshAll() {
@@ -138,8 +142,10 @@ const Admin = {
       .from('students')
       .select(`
         id, application_no, prefix, first_name, last_name, id_card, phone, applied_at, status,
+        old_school, assigned_staff_id,
         enrollments(status, program_rounds(round_label, branches(name, education_levels(name)))),
-        documents(id, doc_type, storage_path, uploaded_at, is_verified)
+        documents(id, doc_type, storage_path, uploaded_at, is_verified),
+        addresses(province_text)
       `)
       .order('applied_at', { ascending: false });
 
@@ -149,11 +155,14 @@ const Admin = {
       const enroll = Array.isArray(s.enrollments) ? s.enrollments[0] : s.enrollments;
       const branch = enroll?.program_rounds?.branches;
       const docs = s.documents || [];
+      const addr = Array.isArray(s.addresses) ? s.addresses[0] : s.addresses;
       return {
         id: s.id,
         applicationNo: s.application_no,
         prefix: s.prefix, firstName: s.first_name, lastName: s.last_name,
         idCard: s.id_card, phone: s.phone, applyDate: s.applied_at, status: s.status,
+        oldSchool: s.old_school || '', province: addr?.province_text || '',
+        assignedStaffId: s.assigned_staff_id,
         branchName: branch?.name || '—',
         roundName: enroll?.program_rounds?.round_label || '—',
         levelName: branch?.education_levels?.name || '—',
@@ -200,10 +209,12 @@ const Admin = {
       `แสดง ${total ? start + 1 : 0}–${Math.min(start + items.length, total)} จาก ${total} รายการ`;
 
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">ไม่พบข้อมูล</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">ไม่พบข้อมูล</td></tr>';
       document.getElementById('page-btns').innerHTML = '';
       return;
     }
+
+    const staffName = id => this.staffList.find(s => s.id === id)?.name || '—';
 
     tbody.innerHTML = items.map(s => `
       <tr data-id="${s.id}">
@@ -215,6 +226,7 @@ const Admin = {
         <td style="white-space:nowrap">${_thDate(s.applyDate)}</td>
         <td><span class="badge ${_statusBadge(s.status)}">${_statusLabel(s.status)}</span></td>
         <td>${s.docsComplete ? '<span class="badge badge-success">ครบ</span>' : '<span class="badge badge-warning">ไม่ครบ</span>'}</td>
+        <td>${s.assignedStaffId ? staffName(s.assignedStaffId) : '<span style="color:var(--muted)">— ยังไม่มอบหมาย —</span>'}</td>
         <td><button class="btn btn-outline btn-sm" data-open-id="${s.id}">ดูรายละเอียด</button></td>
       </tr>
     `).join('');
@@ -260,8 +272,17 @@ const Admin = {
       '<div class="info-grid" style="margin-bottom:20px">' +
       _infoItem('สาขา', s.branchName) + _infoItem('รอบ', s.roundName) +
       _infoItem('เลขบัตร', s.idCard) + _infoItem('เบอร์โทร', s.phone) +
+      _infoItem('โรงเรียนเดิม', s.oldSchool) + _infoItem('จังหวัด', s.province) +
       _infoItem('วันที่สมัคร', _thDate(s.applyDate)) +
       `<div><div class="info-label">สถานะ</div><div class="info-value"><span class="badge ${_statusBadge(s.status)}">${_statusLabel(s.status)}</span></div></div>` +
+      '</div>' +
+      '<div class="section-label">ผู้ดูแล / การติดตาม</div>' +
+      '<div class="form-group" style="margin-bottom:12px"><select class="form-control" id="dp-assigned-staff"></select></div>' +
+      '<div id="dp-followups" style="margin-bottom:10px"></div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:20px">' +
+        '<select class="form-control" id="dp-followup-staff" style="width:130px"></select>' +
+        '<input class="form-control" id="dp-followup-note" placeholder="เช่น โทรแล้ว นัดมาสัมภาษณ์">' +
+        '<button class="btn btn-primary btn-sm" id="dp-btn-add-followup">บันทึก</button>' +
       '</div>' +
       '<div class="section-label">เอกสารแนบ</div>' +
       '<div id="dp-docs">' + (docs.length ? docs.map(d => `
@@ -278,6 +299,12 @@ const Admin = {
       btn.onclick = () => this._verifyDoc(btn.dataset.verifyId, btn.dataset.verifyNext === 'true', btn);
     });
 
+    this._populateStaffDropdowns();
+    document.getElementById('dp-assigned-staff').value = s.assignedStaffId || '';
+    document.getElementById('dp-assigned-staff').onchange = e => this._assignStaff(e.target.value);
+    document.getElementById('dp-btn-add-followup').onclick = () => this._addFollowUp();
+    this._loadFollowUps(id);
+
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-panel').classList.add('open');
 
@@ -291,6 +318,54 @@ const Admin = {
         thumb.onclick = () => window.open(signed.signedUrl, '_blank');
       }
     });
+  },
+
+  async _assignStaff(staffId) {
+    if (!this.currentStudent) return;
+    const { error } = await _sb.from('students').update({ assigned_staff_id: staffId || null }).eq('id', this.currentStudent.id);
+    if (error) return showToast('มอบหมายล้มเหลว: ' + error.message, 'error');
+
+    this.currentStudent.assignedStaffId = staffId || null;
+    const s = this.students.find(x => x.id === this.currentStudent.id);
+    if (s) s.assignedStaffId = staffId || null;
+    showToast('บันทึกผู้ดูแลแล้ว', 'success', 1500);
+    this._renderTable();
+  },
+
+  async _loadFollowUps(studentId) {
+    const el = document.getElementById('dp-followups');
+    const { data, error } = await _sb.from('follow_ups')
+      .select('id, note, created_at, staff!staff_id(name)')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false });
+    if (error) { el.innerHTML = '<p style="color:var(--muted);font-size:0.8125rem">โหลดประวัติการติดตามไม่สำเร็จ</p>'; return; }
+
+    el.innerHTML = (data && data.length)
+      ? data.map(f => {
+          const staff = Array.isArray(f.staff) ? f.staff[0] : f.staff;
+          return `<div style="font-size:0.8125rem;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:700">${staff?.name || 'ไม่ระบุ'}</span>
+          <span style="color:var(--muted)"> · ${_thDate(f.created_at)}</span>
+          <div>${f.note}</div>
+        </div>`;
+        }).join('')
+      : '<p style="color:var(--muted);font-size:0.8125rem">ยังไม่มีการติดตาม</p>';
+  },
+
+  async _addFollowUp() {
+    if (!this.currentStudent) return;
+    const staffId = document.getElementById('dp-followup-staff').value;
+    const note = document.getElementById('dp-followup-note').value.trim();
+    if (!staffId) return showToast('ยังไม่มีเจ้าหน้าที่ในระบบ — เพิ่มที่เมนู "เจ้าหน้าที่" ก่อน', 'error');
+    if (!note) return showToast('กรอกบันทึกการติดตาม', 'error');
+
+    const { error } = await _sb.from('follow_ups').insert({ student_id: this.currentStudent.id, staff_id: staffId, note });
+    if (error) return showToast('บันทึกล้มเหลว: ' + error.message, 'error');
+
+    document.getElementById('dp-followup-note').value = '';
+    showToast('บันทึกการติดตามแล้ว', 'success');
+    await this._loadFollowUps(this.currentStudent.id);
+    await this._loadStaff();
   },
 
   _closeDetail() {
@@ -328,27 +403,185 @@ const Admin = {
     await this._loadAll();
   },
 
-  async _exportCSV() {
-    const rows = [[
-      'เลขสมัคร', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'เลขบัตร', 'เบอร์โทร',
-      'ระดับ', 'สาขา', 'รอบ', 'วันที่สมัคร', 'สถานะ',
-    ]];
-    this.students.forEach(s => {
-      rows.push([
-        s.applicationNo, s.prefix, s.firstName, s.lastName, s.idCard, s.phone,
-        s.levelName, s.branchName, s.roundName,
-        s.applyDate ? new Date(s.applyDate).toLocaleDateString('th-TH') : '',
-        _statusLabel(s.status),
-      ]);
-    });
+  _downloadCSV(rows, filenamePrefix) {
     const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `students-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  _exportCSV() {
+    const staffName = id => this.staffList.find(x => x.id === id)?.name || '';
+    const rows = [[
+      'เลขสมัคร', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'เลขบัตร', 'เบอร์โทร',
+      'ระดับ', 'สาขา', 'รอบ', 'โรงเรียนเดิม', 'จังหวัด', 'ผู้ดูแล', 'วันที่สมัคร', 'สถานะ',
+    ]];
+    this.students.forEach(s => {
+      rows.push([
+        s.applicationNo, s.prefix, s.firstName, s.lastName, s.idCard, s.phone,
+        s.levelName, s.branchName, s.roundName, s.oldSchool, s.province,
+        s.assignedStaffId ? staffName(s.assignedStaffId) : '',
+        s.applyDate ? new Date(s.applyDate).toLocaleDateString('th-TH') : '',
+        _statusLabel(s.status),
+      ]);
+    });
+    this._downloadCSV(rows, 'students');
+  },
+
+  // ---------- Reports ----------
+  _renderReportsPage() {
+    const byBranch = {};
+    this.students.forEach(s => {
+      const key = `${s.levelName}||${s.branchName}`;
+      if (!byBranch[key]) byBranch[key] = { level: s.levelName, branch: s.branchName, total: 0, pending: 0, verified: 0, rejected: 0 };
+      byBranch[key].total++;
+      byBranch[key][s.status] = (byBranch[key][s.status] || 0) + 1;
+    });
+    const branchRows = Object.values(byBranch).sort((a, b) => b.total - a.total);
+    document.getElementById('report-branch-tbody').innerHTML = branchRows.length
+      ? branchRows.map(r => `<tr><td>${r.level}</td><td>${r.branch}</td><td>${r.total}</td><td>${r.pending || 0}</td><td>${r.verified || 0}</td><td>${r.rejected || 0}</td></tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+
+    const bySchool = {};
+    this.students.forEach(s => { const k = s.oldSchool || 'ไม่ระบุ'; bySchool[k] = (bySchool[k] || 0) + 1; });
+    const schoolRows = Object.entries(bySchool).sort((a, b) => b[1] - a[1]);
+    document.getElementById('report-school-tbody').innerHTML = schoolRows.length
+      ? schoolRows.map(([name, count]) => `<tr><td>${name}</td><td>${count}</td></tr>`).join('')
+      : '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+
+    const byProvince = {};
+    this.students.forEach(s => { const k = s.province || 'ไม่ระบุ'; byProvince[k] = (byProvince[k] || 0) + 1; });
+    const provinceRows = Object.entries(byProvince).sort((a, b) => b[1] - a[1]);
+    document.getElementById('report-province-tbody').innerHTML = provinceRows.length
+      ? provinceRows.map(([name, count]) => `<tr><td>${name}</td><td>${count}</td></tr>`).join('')
+      : '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--muted)">ยังไม่มีข้อมูล</td></tr>';
+  },
+
+  _exportReportBranch() {
+    const byBranch = {};
+    this.students.forEach(s => {
+      const key = `${s.levelName}||${s.branchName}`;
+      if (!byBranch[key]) byBranch[key] = { level: s.levelName, branch: s.branchName, total: 0, pending: 0, verified: 0, rejected: 0 };
+      byBranch[key].total++;
+      byBranch[key][s.status] = (byBranch[key][s.status] || 0) + 1;
+    });
+    const rows = [['ระดับ', 'สาขา', 'ทั้งหมด', 'รอตรวจ', 'ผ่านแล้ว', 'ปฏิเสธ']];
+    Object.values(byBranch).forEach(r => rows.push([r.level, r.branch, r.total, r.pending || 0, r.verified || 0, r.rejected || 0]));
+    this._downloadCSV(rows, 'report-branch');
+  },
+  _exportReportSchool() {
+    const bySchool = {};
+    this.students.forEach(s => { const k = s.oldSchool || 'ไม่ระบุ'; bySchool[k] = (bySchool[k] || 0) + 1; });
+    this._downloadCSV([['โรงเรียนเดิม', 'จำนวนผู้สมัคร'], ...Object.entries(bySchool)], 'report-school');
+  },
+  _exportReportProvince() {
+    const byProvince = {};
+    this.students.forEach(s => { const k = s.province || 'ไม่ระบุ'; byProvince[k] = (byProvince[k] || 0) + 1; });
+    this._downloadCSV([['จังหวัด', 'จำนวนผู้สมัคร'], ...Object.entries(byProvince)], 'report-province');
+  },
+
+  // ---------- Staff (ครูแนะแนว / KPI) ----------
+  async _loadStaff() {
+    const [{ data: staff }, { data: followUps }] = await Promise.all([
+      _sb.from('staff').select('id, name, role, phone, email, is_active').order('name'),
+      _sb.from('follow_ups').select('staff_id, created_at'),
+    ]);
+    const assignedCounts = {};
+    this.students.forEach(s => { if (s.assignedStaffId) assignedCounts[s.assignedStaffId] = (assignedCounts[s.assignedStaffId] || 0) + 1; });
+
+    const fuByStaff = {};
+    (followUps || []).forEach(f => {
+      (fuByStaff[f.staff_id] ||= []).push(f.created_at);
+    });
+
+    this.staffList = (staff || []).map(st => {
+      const dates = fuByStaff[st.id] || [];
+      return {
+        ...st,
+        assignedCount: assignedCounts[st.id] || 0,
+        followUpCount: dates.length,
+        lastFollowUp: dates.length ? dates.sort().slice(-1)[0] : null,
+      };
+    });
+  },
+
+  _renderStaffPage() {
+    const tbody = document.getElementById('staff-tbody');
+    if (!this.staffList.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีเจ้าหน้าที่ — เพิ่มจากฟอร์มด้านบน</td></tr>';
+      return;
+    }
+    const STALE_DAYS = 7;
+    const now = Date.now();
+    tbody.innerHTML = this.staffList.map(st => {
+      const daysSince = st.lastFollowUp ? Math.floor((now - new Date(st.lastFollowUp).getTime()) / 86400000) : null;
+      const isActive = st.assignedCount > 0 && daysSince !== null && daysSince <= STALE_DAYS;
+      const statusBadge = st.assignedCount === 0
+        ? '<span class="badge badge-gray">ยังไม่มีงาน</span>'
+        : isActive
+          ? '<span class="badge badge-success">ทำงานอยู่</span>'
+          : '<span class="badge badge-danger">เงียบ / ไม่ติดตาม</span>';
+      return `
+        <tr>
+          <td class="td-name">${st.name}${st.is_active ? '' : ' <span class="badge badge-gray">ปิดใช้งาน</span>'}</td>
+          <td>${st.role}</td>
+          <td>${st.phone || '—'}</td>
+          <td>${st.assignedCount}</td>
+          <td>${st.followUpCount}</td>
+          <td>${st.lastFollowUp ? _thDate(st.lastFollowUp) : '— ยังไม่เคย —'}</td>
+          <td>${statusBadge}</td>
+          <td><button class="btn btn-ghost btn-sm staff-toggle" data-staff-id="${st.id}" data-active="${st.is_active}">${st.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.staff-toggle').forEach(btn => {
+      btn.onclick = () => this._toggleStaffActive(btn.dataset.staffId, btn.dataset.active !== 'true');
+    });
+  },
+
+  async _addStaff() {
+    const name = document.getElementById('new-staff-name').value.trim();
+    const role = document.getElementById('new-staff-role').value;
+    const phone = document.getElementById('new-staff-phone').value.trim();
+    if (!name) return showToast('กรอกชื่อเจ้าหน้าที่', 'error');
+
+    const { error } = await _sb.from('staff').insert({ name, role, phone });
+    if (error) return showToast('เพิ่มเจ้าหน้าที่ล้มเหลว: ' + error.message, 'error');
+
+    document.getElementById('new-staff-name').value = '';
+    document.getElementById('new-staff-phone').value = '';
+    showToast('เพิ่มเจ้าหน้าที่แล้ว', 'success');
+    await this._loadStaff();
+    this._renderStaffPage();
+    this._populateStaffDropdowns();
+  },
+
+  async _toggleStaffActive(staffId, active) {
+    const { error } = await _sb.from('staff').update({ is_active: active }).eq('id', staffId);
+    if (error) return showToast('บันทึกล้มเหลว: ' + error.message, 'error');
+
+    showToast(active ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว', 'success');
+    await this._loadStaff();
+    this._renderStaffPage();
+    this._populateStaffDropdowns();
+  },
+
+  // Refreshes the assign/follow-up staff <select>s inside an open detail panel.
+  _populateStaffDropdowns() {
+    const assignSel = document.getElementById('dp-assigned-staff');
+    if (!assignSel) return;
+    const active = this.staffList.filter(s => s.is_active);
+    const curAssigned = assignSel.value;
+    assignSel.innerHTML = '<option value="">— ยังไม่มอบหมาย —</option>' + active.map(s => `<option value="${s.id}">${s.name} (${s.role})</option>`).join('');
+    assignSel.value = curAssigned;
+
+    const fuSel = document.getElementById('dp-followup-staff');
+    if (fuSel) fuSel.innerHTML = active.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   },
 
   _printStudent() {
@@ -534,9 +767,9 @@ const Admin = {
   },
 
   _bindEvents() {
-    const pageTitles = { overview: 'ภาพรวม', students: 'รายชื่อผู้สมัคร', programs: 'จัดการหลักสูตร' };
+    const pageTitles = { overview: 'ภาพรวม', students: 'รายชื่อผู้สมัคร', programs: 'จัดการหลักสูตร', reports: 'รายงาน', staff: 'เจ้าหน้าที่' };
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-      item.onclick = () => {
+      item.onclick = async () => {
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         item.classList.add('active');
         const page = item.dataset.page;
@@ -547,11 +780,20 @@ const Admin = {
         if (page === 'programs' && !this.catalogLoaded) {
           this.catalogLoaded = true;
           this._loadCatalog();
+        } else if (page === 'reports') {
+          this._renderReportsPage();
+        } else if (page === 'staff') {
+          await this._loadStaff();
+          this._renderStaffPage();
         }
       };
     });
     document.getElementById('btn-add-level').onclick = () => this._addLevel();
     document.getElementById('btn-add-branch').onclick = () => this._addBranch();
+    document.getElementById('btn-add-staff').onclick = () => this._addStaff();
+    document.getElementById('btn-export-report-branch').onclick = () => this._exportReportBranch();
+    document.getElementById('btn-export-report-school').onclick = () => this._exportReportSchool();
+    document.getElementById('btn-export-report-province').onclick = () => this._exportReportProvince();
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));

@@ -1103,7 +1103,14 @@ const Form = {
   _getBirthDateISO(){
     const d=document.getElementById('inp-birthDay').value,m=document.getElementById('inp-birthMonth').value,yBE=document.getElementById('inp-birthYear').value;
     if(!d||!m||!yBE)return '';
-    return `${Number(yBE)-543}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const y=Number(yBE)-543;
+    // Day select always offers 1-31 regardless of month, so e.g. 30 เม.ย.
+    // or 30 ก.พ. is pickable — reject anything that doesn't round-trip
+    // through Date instead of letting it reach Postgres as an invalid
+    // ::date cast (an opaque RPC error instead of a normal field error).
+    const check=new Date(y,Number(m)-1,Number(d));
+    if(check.getFullYear()!==y||check.getMonth()!==Number(m)-1||check.getDate()!==Number(d))return '';
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   },
   _updateEducationOptions() {
     const sel=document.getElementById('inp-education'),levelName=this.data.levelName.toLowerCase();

@@ -88,6 +88,11 @@ const API = {
     if (rpcError) throw rpcError;
     if (!rpcResult.success) return rpcResult;
 
+    // Storage uploads need a real (if anonymous) session — see
+    // _ensureAnonSession above. Without this, every upload below fails
+    // RLS silently while the application record itself still saves.
+    await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, uploads will fail:', err));
+
     const studentId = rpcResult.studentId;
     const docResults = [];
 
@@ -165,8 +170,8 @@ const API = {
     return data || [];
   },
 
-  async resolveDocumentRequest(requestId) {
-    const { error } = await _sb.rpc('resolve_document_request', { p_request_id: requestId });
+  async resolveDocumentRequest(requestId, lineUserId) {
+    const { error } = await _sb.rpc('resolve_document_request', { p_request_id: requestId, p_line_user_id: lineUserId });
     if (error) throw error;
     return { success: true };
   },

@@ -53,6 +53,14 @@
     .review-key { width: 90px; flex-shrink: 0; color: var(--clr-text-muted); font-size: 0.8rem; }
     .review-val { font-weight: 500; flex: 1; }
     .err-box { background: #FEE2E2; border-radius: 10px; padding: 16px; margin: 20px; text-align: center; color: #991B1B; font-size: 0.875rem; }
+    .doc-request-card { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-lg); padding: 16px; margin-top: 16px; }
+    .doc-request-card h3 { font-size: 0.95rem; font-weight: 700; color: #92400E; margin-bottom: 4px; }
+    .doc-request-card .req-note { font-size: 0.8125rem; color: #92400E; margin-bottom: 10px; }
+    .doc-request-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #FDE68A; font-size: 0.875rem; }
+    .doc-request-item:last-of-type { border-bottom: none; }
+    .doc-request-item .doc-status { font-size: 0.75rem; color: var(--clr-success); font-weight: 600; }
+    .doc-request-item .btn-upload-doc { font-size: 0.8125rem; padding: 6px 12px; border-radius: 8px; border: none; background: var(--clr-accent); color: #fff; cursor: pointer; }
+    .doc-request-item .btn-upload-doc:disabled { background: var(--clr-success); }
   </style>
 </head>
 <body>
@@ -98,6 +106,7 @@
       <h3>สถานะใบสมัคร</h3>
       <div id="status-content"></div>
     </div>
+    <div id="doc-request-list"></div>
     <button id="btn-go-apply" class="btn btn-primary btn-full" style="margin-top:16px">
       📝 ไปยังหน้าสมัคร
     </button>
@@ -140,6 +149,94 @@ function showError(msg) {
 function statusBadge(s) {
   var m = { pending:'badge-warning', verified:'badge-success', rejected:'badge-danger' };
   return m[s] || 'badge-gray';
+}
+
+var DOC_LABELS = {
+  id_card_front: 'บัตร ปชช. ด้านหน้า', id_card_back: 'บัตร ปชช. ด้านหลัง',
+  house_reg: 'ทะเบียนบ้าน', edu_cert: 'วุฒิการศึกษา',
+  edu_cert_front: 'วุฒิการศึกษา ด้านหน้า', edu_cert_back: 'วุฒิการศึกษา ด้านหลัง',
+  payment_slip: 'สลิปโอนเงิน',
+};
+function docLabel(t) { return DOC_LABELS[t] || t; }
+
+function fileToBase64(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result.split(',')[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---- ขอเอกสารเพิ่มเติม (จากแอดมิน) ----
+async function renderDocRequests(lineUserId) {
+  var listEl = document.getElementById('doc-request-list');
+  listEl.innerHTML = '';
+  var requests;
+  try {
+    requests = await API.getDocumentRequests(lineUserId);
+  } catch (e) { console.warn('getDocumentRequests failed:', e); return; }
+  if (!requests || !requests.length) return;
+
+  requests.forEach(function(req) {
+    var uploaded = {};
+    var card = document.createElement('div');
+    card.className = 'doc-request-card';
+    card.innerHTML =
+      '<h3>📋 กรุณาอัปโหลดเอกสารเพิ่มเติม</h3>' +
+      (req.note ? '<div class="req-note">"' + req.note + '"</div>' : '') +
+      '<div class="doc-request-items"></div>' +
+      '<button class="btn btn-primary btn-full btn-sm btn-doc-request-done" style="margin-top:12px" disabled>ส่งเอกสารครบแล้ว</button>';
+    var itemsEl = card.querySelector('.doc-request-items');
+    var doneBtn = card.querySelector('.btn-doc-request-done');
+
+    req.doc_types.forEach(function(docType) {
+      var row = document.createElement('div');
+      row.className = 'doc-request-item';
+      row.innerHTML =
+        '<span>' + docLabel(docType) + '</span>' +
+        '<span class="doc-status hidden">✓ อัปโหลดแล้ว</span>' +
+        '<label class="btn-upload-doc">เลือกรูป<input type="file" accept="image/*" capture="environment" class="hidden"></label>';
+      var input = row.querySelector('input[type=file]');
+      var btnLabel = row.querySelector('.btn-upload-doc');
+      var statusEl = row.querySelector('.doc-status');
+      input.onchange = async function() {
+        var file = input.files[0];
+        if (!file) return;
+        btnLabel.textContent = 'กำลังอัปโหลด...';
+        try {
+          var base64Data = await fileToBase64(file);
+          var res = await API.uploadDocument({ studentId: req.student_id, docType: docType, base64Data: base64Data, mimeType: file.type || 'image/jpeg' });
+          if (!res.success) throw new Error(res.message || 'อัปโหลดล้มเหลว');
+          uploaded[docType] = true;
+          btnLabel.classList.add('hidden');
+          statusEl.classList.remove('hidden');
+          if (req.doc_types.every(function(t) { return uploaded[t]; })) doneBtn.disabled = false;
+          showToast('อัปโหลด' + docLabel(docType) + 'สำเร็จ', 'success', 2000);
+        } catch (err) {
+          btnLabel.textContent = 'เลือกรูป';
+          showToast('อัปโหลดล้มเหลว: ' + err.message, 'error');
+        }
+      };
+      itemsEl.appendChild(row);
+    });
+
+    doneBtn.onclick = async function() {
+      doneBtn.disabled = true;
+      doneBtn.textContent = 'กำลังบันทึก...';
+      try {
+        await API.resolveDocumentRequest(req.id);
+        card.remove();
+        showToast('ส่งเอกสารเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ', 'success');
+      } catch (err) {
+        doneBtn.disabled = false;
+        doneBtn.textContent = 'ส่งเอกสารครบแล้ว';
+        showToast('บันทึกล้มเหลว: ' + err.message, 'error');
+      }
+    };
+
+    listEl.appendChild(card);
+  });
 }
 
 // ---- Main ----
@@ -193,6 +290,7 @@ function statusBadge(s) {
       pictureUrl: profile.pictureUrl || ''
     };
     sessionStorage.setItem('lineUser', JSON.stringify(user));
+    _ensureAnonSession().catch(function(err) { console.warn('Anonymous session unavailable:', err); });
   } catch (profileErr) {
     showError('ดึงข้อมูล LINE ไม่สำเร็จ: ' + profileErr.message);
     return;
@@ -217,6 +315,7 @@ function statusBadge(s) {
       document.getElementById('btn-go-apply').onclick = function() {
         location.href = getApplyUrl();
       };
+      renderDocRequests(user.userId);
       return;
     }
   } catch (statusErr) {

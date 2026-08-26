@@ -284,6 +284,18 @@ const Admin = {
         '<input class="form-control" id="dp-followup-note" placeholder="เช่น โทรแล้ว นัดมาสัมภาษณ์">' +
         '<button class="btn btn-primary btn-sm" id="dp-btn-add-followup">บันทึก</button>' +
       '</div>' +
+      '<div class="section-label">ขอเอกสารเพิ่มเติม</div>' +
+      '<div id="dp-doc-request-form" style="margin-bottom:12px">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px">' +
+          _DOC_REQUEST_TYPES.map(t => `
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.8125rem">
+              <input type="checkbox" class="dp-doc-request-check" value="${t}"> ${_docLabel(t)}
+            </label>`).join('') +
+        '</div>' +
+        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี)" style="margin-bottom:8px;min-height:56px"></textarea>' +
+        '<button class="btn btn-primary btn-sm" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+      '</div>' +
+      '<div id="dp-doc-requests" style="margin-bottom:20px"></div>' +
       '<div class="section-label">เอกสารแนบ</div>' +
       '<div id="dp-docs">' + (docs.length ? docs.map(d => `
         <div class="doc-row" data-doc-id="${d.id}">
@@ -304,6 +316,8 @@ const Admin = {
     document.getElementById('dp-assigned-staff').onchange = e => this._assignStaff(e.target.value);
     document.getElementById('dp-btn-add-followup').onclick = () => this._addFollowUp();
     this._loadFollowUps(id);
+    document.getElementById('dp-btn-send-doc-request').onclick = () => this._sendDocRequest();
+    this._loadDocRequests(id);
 
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-panel').classList.add('open');
@@ -366,6 +380,62 @@ const Admin = {
     showToast('บันทึกการติดตามแล้ว', 'success');
     await this._loadFollowUps(this.currentStudent.id);
     await this._loadStaff();
+  },
+
+  async _sendDocRequest() {
+    if (!this.currentStudent) return;
+    const docTypes = Array.from(document.querySelectorAll('.dp-doc-request-check:checked')).map(el => el.value);
+    const note = document.getElementById('dp-doc-request-note').value.trim();
+    if (!docTypes.length) return showToast('เลือกเอกสารที่ต้องการขอก่อน', 'error');
+
+    const btn = document.getElementById('dp-btn-send-doc-request');
+    btn.disabled = true;
+    const { data, error } = await _sb.functions.invoke('send-document-request', {
+      body: { studentId: this.currentStudent.id, docTypes, note },
+    });
+    btn.disabled = false;
+    if (error) return showToast('ส่งคำขอล้มเหลว: ' + error.message, 'error');
+    if (data && data.success === false) return showToast(data.message || 'ส่งคำขอล้มเหลว', 'error');
+
+    document.querySelectorAll('.dp-doc-request-check:checked').forEach(el => el.checked = false);
+    document.getElementById('dp-doc-request-note').value = '';
+    showToast(data && data.skipped ? data.message : 'ส่งคำขอเอกสารทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
+    this._loadDocRequests(this.currentStudent.id);
+  },
+
+  async _loadDocRequests(studentId) {
+    const el = document.getElementById('dp-doc-requests');
+    const { data, error } = await _sb.from('document_requests')
+      .select('id, doc_types, note, status, requested_at, resolved_at')
+      .eq('student_id', studentId)
+      .order('requested_at', { ascending: false });
+    if (error) { el.innerHTML = '<p style="color:var(--muted);font-size:0.8125rem">โหลดประวัติคำขอเอกสารไม่สำเร็จ</p>'; return; }
+
+    el.innerHTML = (data && data.length)
+      ? data.map(r => `
+        <div style="font-size:0.8125rem;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+            <div>
+              <span class="badge ${r.status === 'resolved' ? 'badge-success' : 'badge-warning'}">${r.status === 'resolved' ? 'ครบแล้ว' : 'รอเอกสาร'}</span>
+              <span style="color:var(--muted)"> · ${_thDate(r.requested_at)}</span>
+            </div>
+            ${r.status === 'pending' ? `<button class="btn btn-outline btn-sm" data-resolve-request="${r.id}">ทำเครื่องหมายว่าครบแล้ว</button>` : ''}
+          </div>
+          <div style="margin-top:4px">${r.doc_types.map(t => _docLabel(t)).join(', ')}</div>
+          ${r.note ? `<div style="color:var(--muted);margin-top:2px">"${r.note}"</div>` : ''}
+        </div>`).join('')
+      : '<p style="color:var(--muted);font-size:0.8125rem">ยังไม่มีคำขอเอกสาร</p>';
+
+    el.querySelectorAll('[data-resolve-request]').forEach(btn => {
+      btn.onclick = () => this._resolveDocRequest(btn.dataset.resolveRequest, studentId);
+    });
+  },
+
+  async _resolveDocRequest(requestId, studentId) {
+    const { error } = await _sb.from('document_requests').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', requestId);
+    if (error) return showToast('เกิดข้อผิดพลาด', 'error');
+    showToast('ทำเครื่องหมายว่าครบแล้ว', 'success', 1500);
+    this._loadDocRequests(studentId);
   },
 
   _closeDetail() {
@@ -825,6 +895,7 @@ const Admin = {
 // ---- Helpers ----
 function _statusBadge(s) { return { pending: 'badge-warning', verified: 'badge-success', rejected: 'badge-danger' }[s] || 'badge-gray'; }
 function _statusLabel(s) { return { pending: 'รอตรวจ', verified: 'ผ่านแล้ว', rejected: 'ปฏิเสธ' }[s] || s || '—'; }
+const _DOC_REQUEST_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back', 'payment_slip'];
 function _docLabel(t) {
   return {
     id_card_front: 'บัตร ปชช. ด้านหน้า', id_card_back: 'บัตร ปชช. ด้านหลัง',

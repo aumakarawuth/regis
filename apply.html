@@ -560,6 +560,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/round-labels.js"></script>
 <script>
 // ============================================================
 // CONFIG
@@ -1069,11 +1070,12 @@ const Form = {
     levelSel.onchange=updateBranches;
     if(this.data.levelId)updateBranches();
   },
-  // Must match program_rounds.round_label exactly (see supabase/seed.sql
-  // and the round checkboxes in admin.html) — 'เช้า'/'บ่าย', not
-  // 'รอบเช้า'/'รอบบ่าย'. studyRoundName above is display-only and keeps
-  // the "รอบ" prefix; this one is used to match branches, so it can't.
-  _roundLabel(round){return{morning:'เช้า',afternoon:'บ่าย',dual:'ทวิภาคี'}[round]||round;},
+  // Must match program_rounds.round_label exactly — see js/round-labels.js
+  // (loaded above) for why this comes from a shared map instead of a
+  // second hardcoded copy. studyRoundName above is display-only and
+  // keeps the "รอบ" prefix; this one is used to match branches, so it
+  // can't.
+  _roundLabel(round){return ROUND_CODE_TO_LABEL[round]||round;},
 
   _initStep2() {
     ['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});

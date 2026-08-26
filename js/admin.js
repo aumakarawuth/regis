@@ -11,10 +11,9 @@ const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_AN
 
 const REQUIRED_DOC_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back'];
 
-// The only round names apply.html's branch picker actually matches against
-// (see supabase/seed.sql) — the round dropdown is restricted to these on
-// purpose so a typo here can't silently make a branch unselectable again.
-const ROUND_LABELS = ['เช้า', 'บ่าย', 'ทวิภาคี'];
+// ROUND_LABELS comes from js/round-labels.js (loaded before this file) —
+// the round dropdown is restricted to those exact labels on purpose so a
+// typo here can't silently make a branch unselectable again.
 
 const Admin = {
   students: [],

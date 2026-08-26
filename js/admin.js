@@ -27,6 +27,7 @@ const Admin = {
   programLevels: [],
   programBranches: [],
   catalogLoaded: false,
+  editingBranchId: null,
 
   async init() {
     document.getElementById('topbar-date').textContent =
@@ -389,10 +390,24 @@ const Admin = {
       return;
     }
 
-    tbody.innerHTML = this.programBranches.map(b => `
+    tbody.innerHTML = this.programBranches.map(b => {
+      const isEditing = this.editingBranchId === b.id;
+      const nameCell = isEditing
+        ? `<input class="form-control edit-name" value="${b.name.replace(/"/g, '&quot;')}" style="width:160px">`
+        : `<span class="td-name">${b.name}</span>`;
+      const levelCell = isEditing
+        ? `<select class="form-control edit-level" style="width:130px">${this.programLevels.map(l => `<option value="${l.id}" ${l.id === b.level_id ? 'selected' : ''}>${l.name}</option>`).join('')}</select>`
+        : levelName(b.level_id);
+      const actionsCell = isEditing
+        ? `<button class="btn btn-primary btn-sm branch-save">บันทึก</button>
+           <button class="btn btn-ghost btn-sm branch-cancel">ยกเลิก</button>`
+        : `<button class="btn btn-outline btn-sm branch-edit">แก้ไข</button>
+           <button class="btn btn-ghost btn-sm branch-delete" style="color:var(--danger)">ลบ</button>`;
+
+      return `
       <tr data-branch-id="${b.id}">
-        <td class="td-name">${b.name}</td>
-        <td>${levelName(b.level_id)}</td>
+        <td>${nameCell}</td>
+        <td>${levelCell}</td>
         <td><input class="form-control branch-fee" type="number" value="${b.fee}" style="width:90px"></td>
         <td><input class="form-control branch-max" type="number" value="${b.max_students}" style="width:80px"></td>
         <td>${ROUND_LABELS.map(r => {
@@ -402,9 +417,10 @@ const Admin = {
           </label>`;
         }).join('')}</td>
         <td><input type="checkbox" class="branch-open" ${b.is_open ? 'checked' : ''}></td>
-        <td><button class="btn btn-ghost btn-sm branch-delete" style="color:var(--danger)">ลบ</button></td>
+        <td style="white-space:nowrap">${actionsCell}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     tbody.querySelectorAll('tr').forEach(row => {
       const branchId = row.dataset.branchId;
@@ -414,7 +430,25 @@ const Admin = {
       row.querySelectorAll('.round-check').forEach(cb => {
         cb.addEventListener('change', e => this._toggleRound(branchId, e.target.dataset.round, e.target.checked));
       });
-      row.querySelector('.branch-delete').addEventListener('click', () => this._deleteBranch(branchId));
+
+      const editBtn = row.querySelector('.branch-edit');
+      if (editBtn) editBtn.addEventListener('click', () => { this.editingBranchId = branchId; this._renderProgramsPage(); });
+
+      const cancelBtn = row.querySelector('.branch-cancel');
+      if (cancelBtn) cancelBtn.addEventListener('click', () => { this.editingBranchId = null; this._renderProgramsPage(); });
+
+      const saveBtn = row.querySelector('.branch-save');
+      if (saveBtn) saveBtn.addEventListener('click', async () => {
+        const name = row.querySelector('.edit-name').value.trim();
+        const levelId = row.querySelector('.edit-level').value;
+        if (!name) return showToast('กรอกชื่อสาขา', 'error');
+        await this._updateBranch(branchId, { name, level_id: levelId });
+        this.editingBranchId = null;
+        await this._loadCatalog();
+      });
+
+      const deleteBtn = row.querySelector('.branch-delete');
+      if (deleteBtn) deleteBtn.addEventListener('click', () => this._deleteBranch(branchId));
     });
   },
 

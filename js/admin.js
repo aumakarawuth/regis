@@ -42,17 +42,24 @@ const Admin = {
 
     const { data: { session } } = await _sb.auth.getSession();
     if (session) {
-      const isAdmin = await this._checkIsAdmin();
-      if (isAdmin) { this._showDashboard(); return; }
+      const access = await this._checkAccess();
+      if (access) { this._showDashboard(access); return; }
       await _sb.auth.signOut();
     }
   },
 
-  async _checkIsAdmin() {
+  // Returns 'admin', 'staff', or null. Full admins (admin_users) can do
+  // everything including delete an application; staff (an active row in
+  // `staff` linked via user_id) get read/manage access but never delete
+  // — enforced server-side by RLS regardless of what the UI shows.
+  async _checkAccess() {
     const { data: { user } } = await _sb.auth.getUser();
-    if (!user) return false;
-    const { data, error } = await _sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
-    return !error && !!data;
+    if (!user) return null;
+    const { data: adminRow } = await _sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
+    if (adminRow) return 'admin';
+    const { data: staffRow } = await _sb.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+    if (staffRow) return 'staff';
+    return null;
   },
 
   async _login() {
@@ -71,18 +78,20 @@ const Admin = {
       return;
     }
 
-    const isAdmin = await this._checkIsAdmin();
+    const access = await this._checkAccess();
     hideLoading();
-    if (!isAdmin) {
+    if (!access) {
       await _sb.auth.signOut();
-      errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์แอดมิน';
+      errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานระบบนี้';
       errEl.classList.remove('hidden');
       return;
     }
-    this._showDashboard();
+    this._showDashboard(access);
   },
 
-  _showDashboard() {
+  _showDashboard(access) {
+    this.isFullAdmin = access === 'admin';
+    document.body.classList.toggle('is-staff-user', !this.isFullAdmin);
     document.getElementById('admin-login').classList.add('hidden');
     document.getElementById('admin-dashboard').classList.remove('hidden');
     this._bindEvents();
@@ -498,6 +507,27 @@ const Admin = {
     this.currentStudent = null;
   },
 
+  // Admin-only in the UI (button has .admin-only) — also enforced
+  // server-side: RLS only grants delete on students to is_admin(), a
+  // staff account hitting this would fail the request regardless.
+  async _deleteApplication() {
+    if (!this.currentStudent) return;
+    const s = this.currentStudent;
+    const name = `${s.prefix || ''}${s.firstName || ''} ${s.lastName || ''}`.trim();
+    if (!confirm(`ลบใบสมัครของ "${name}" (เลขที่ ${s.applicationNo || '—'}) ถาวร?\n\nข้อมูลที่อยู่ ผู้ปกครอง เอกสาร และประวัติการติดตามทั้งหมดของใบสมัครนี้จะถูกลบไปด้วย และกู้คืนไม่ได้`)) return;
+
+    showLoading('กำลังลบใบสมัคร...');
+    const { error } = await _sb.from('students').delete().eq('id', s.id);
+    hideLoading();
+    if (error) return showToast('ลบใบสมัครล้มเหลว: ' + error.message, 'error');
+
+    showToast('ลบใบสมัครแล้ว', 'success');
+    this._closeDetail();
+    this.students = this.students.filter(x => x.id !== s.id);
+    this._applyFilter();
+    this._loadStats();
+  },
+
   async _verifyDoc(docId, verified, btn) {
     const { data: { session } } = await _sb.auth.getSession();
     const { error } = await _sb.from('documents').update({
@@ -611,7 +641,7 @@ const Admin = {
   // ---------- Staff (ครูแนะแนว / KPI) ----------
   async _loadStaff() {
     const [{ data: staff }, { data: followUps }] = await Promise.all([
-      _sb.from('staff').select('id, name, role, phone, email, is_active').order('name'),
+      _sb.from('staff').select('id, name, role, phone, email, is_active, user_id').order('name'),
       _sb.from('follow_ups').select('staff_id, created_at'),
     ]);
     const assignedCounts = {};
@@ -658,7 +688,10 @@ const Admin = {
           <td>${st.followUpCount}</td>
           <td>${st.lastFollowUp ? _thDate(st.lastFollowUp) : '— ยังไม่เคย —'}</td>
           <td>${statusBadge}</td>
-          <td><button class="btn btn-ghost btn-sm staff-toggle" data-staff-id="${st.id}" data-active="${st.is_active}">${st.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}</button></td>
+          <td>${st.user_id
+            ? '<span class="badge badge-success">มีบัญชีแล้ว</span>'
+            : `<button class="btn btn-outline btn-sm admin-only staff-create-login" data-staff-id="${st.id}" data-staff-name="${st.name}" data-staff-email="${st.email || ''}">🔑 สร้างบัญชี login</button>`}</td>
+          <td><button class="btn btn-ghost btn-sm staff-toggle admin-only" data-staff-id="${st.id}" data-active="${st.is_active}">${st.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}</button></td>
         </tr>
       `;
     }).join('');
@@ -666,6 +699,29 @@ const Admin = {
     tbody.querySelectorAll('.staff-toggle').forEach(btn => {
       btn.onclick = () => this._toggleStaffActive(btn.dataset.staffId, btn.dataset.active !== 'true');
     });
+    tbody.querySelectorAll('.staff-create-login').forEach(btn => {
+      btn.onclick = () => this._createStaffLogin(btn.dataset.staffId, btn.dataset.staffName, btn.dataset.staffEmail);
+    });
+  },
+
+  async _createStaffLogin(staffId, name, existingEmail) {
+    const email = prompt(`อีเมลสำหรับเข้าสู่ระบบของ "${name}"`, existingEmail || '');
+    if (!email) return;
+    const password = prompt('ตั้งรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)');
+    if (!password) return;
+    if (password.length < 6) return showToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+
+    showLoading('กำลังสร้างบัญชี...');
+    const { data, error } = await _sb.functions.invoke('create-staff-account', {
+      body: { staffId, email, password },
+    });
+    hideLoading();
+    if (error) return showToast('สร้างบัญชีล้มเหลว: ' + error.message, 'error');
+    if (data && data.success === false) return showToast(data.message || 'สร้างบัญชีล้มเหลว', 'error');
+
+    showToast(`สร้างบัญชี login ให้ ${name} แล้ว`, 'success');
+    await this._loadStaff();
+    this._renderStaffPage();
   },
 
   async _addStaff() {
@@ -940,6 +996,7 @@ const Admin = {
     document.getElementById('dp-btn-reject').onclick = () => this._updateStatus('rejected');
     document.getElementById('dp-btn-pending').onclick = () => this._updateStatus('pending');
     document.getElementById('dp-btn-print').onclick = () => this._printStudent();
+    document.getElementById('dp-btn-delete').onclick = () => this._deleteApplication();
   },
 };
 

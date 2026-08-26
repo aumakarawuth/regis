@@ -57,13 +57,17 @@ function _idCardBoxes(idCard) {
   return html + '</span>';
 }
 
-// The cover page's "รหัสประจำตัว" is the school-assigned student code,
-// filled in by hand by staff after enrollment — a different number from
-// the 13-digit citizen ID card (which is what _idCardBoxes above is for,
-// used elsewhere on this form). Always blank, no data ever goes in it.
-function _blankBoxes(count) {
+// Plain boxes with no group gaps — used for the cover page's
+// "รหัสประจำตัว" (school-assigned student code, filled in by hand by
+// staff after enrollment — a different number from the 13-digit
+// citizen ID card that _idCardBoxes above is for). Called with no
+// value on the cover page since it's always blank at print time.
+function _plainBoxes(count, value) {
+  var digits = String(value || '').replace(/\D/g, '');
   var html = '<span class="idwrap">';
-  for (var i = 0; i < count; i++) html += '<span class="idbox"></span>';
+  for (var i = 0; i < count; i++) {
+    html += '<span class="idbox">' + (digits[i] || '') + '</span>';
+  }
   return html + '</span>';
 }
 
@@ -73,31 +77,40 @@ function _collegeSealHtml() {
 
 // ---- CSS ----
 const FORM_CSS = [
-  '@page { size: A4 portrait; margin: 10mm 12mm; }',
+  '@page { size: A4 portrait; margin: 0; }',
   '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-  '.page{position:relative;width:100%;min-height:273mm;padding:3mm 1mm;page-break-after:always}',
+  '.fill-form{font-size:1.2rem}',
+  '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '@media print{.no-print{display:none!important}}',
-  '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:10mm 12mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+  '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+
   '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
   '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
   '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
   '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
+  '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
+  '.fill-form .fld{flex:1 1 40px;min-width:0}',
+  '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
+  '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
+
   '.idwrap{display:inline-block;vertical-align:middle}',
   '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
   '.idgap{display:inline-block;width:4px}',
+
   '.row{margin:4px 0}',
   '.indent{padding-left:20px}',
   '.b{font-weight:700}',
   '.center{text-align:center}',
   '.branch-row{}',
   '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
+
   '.top-row{}',
-  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:28mm;right:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-  '.seal-wrap{position:absolute;top:38%;left:0;right:0;transform:translateY(-50%);text-align:center}',
-  '.bottom-block{position:absolute;bottom:0;left:0;right:0}',
+  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:34mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+  '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+  '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
   '.seal{width:130mm;height:auto;display:block;margin:0 auto}',
   '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
@@ -105,20 +118,25 @@ const FORM_CSS = [
   '.cover-center .en{font-size:1.428rem}',
   '.cover-center .addr{font-size:1.344rem;color:#222;margin-top:3px;line-height:1.4}',
   '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
-  '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08rem}',
+
+  '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08em}',
   '.checklist{margin-top:4px}',
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
-  '.sig-grid{margin-top:22px;text-align:center}',
+
+  '.sig-grid{margin-top:6px;text-align:center}',
   '.sig-grid>div{display:inline-block;width:48%;vertical-align:top}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
   '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
+
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
+
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
   '.doc-page-content{display:inline-block;text-align:center}',
   '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
   '.doc-img{max-width:94%;max-height:210mm;width:auto;height:auto;border:1px solid #ccc;display:block;margin:0 auto}',
   '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;color:#aaa;line-height:150mm}',
+  '.idcard-stack{}',
   '.idcard-item{margin-bottom:8mm}',
   '.idcard-item:last-child{margin-bottom:0}',
   '.idcard-img{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #ccc;display:block;margin:0 auto;background:#fff}',
@@ -196,7 +214,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _blankBoxes(11) + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +
@@ -245,8 +263,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
-  return '<div class="page">' +
-    '<div class="center b" style="font-size:1.05rem;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+  return '<div class="page fill-form" style="padding:8mm">' +
+    '<div class="center b" style="font-size:1.05em;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+
     '<div class="row">' +
       '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
       '&emsp;<span class="b">ระดับที่สมัคร ' + levelTitle + '</span> &#8211; รอบ ' +
@@ -254,25 +273,27 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       _chk(studyRound === 'afternoon') + ' บ่าย ' +
       _chk(studyRound === 'dual') + ' ทวิภาคี' +
     '</div>' +
-    '<div class="row">' +
-      '<span class="b">1.</span> นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
+
+    '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
+    '<div class="row indent">' +
+      'นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
       ' นามสกุล ' + _fld(s.lastName, 'fld-lg') +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
+    '<div class="row indent">Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
-      'Mr./Miss./Mrs. ' + _fld('', 'fld-xl') +
-      ' เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) +
+      '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
+      ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +
+      ' ศาสนา' + _fld(s.religion || 'พุทธ', 'fld-sm') +
+      ' น้ำหนัก' + _fld(s.weight, 'fld-xs') +
+      ' ส่วนสูง' + _fld(s.height, 'fld-xs') +
+      ' หมู่โลหิต' + _fld(s.bloodType, 'fld-xs') +
     '</div>' +
-    '<div class="row indent">' +
-      '&#8211; สัญชาติ' + _fld('ไทย', 'fld-sm') +
-      ' เชื้อชาติ' + _fld('ไทย', 'fld-sm') +
-      ' ศาสนา' + _fld('พุทธ', 'fld-sm') +
-      ' น้ำหนัก' + _fld('', 'fld-xs') +
-      ' ส่วนสูง' + _fld('', 'fld-xs') +
-      ' หมู่โลหิต' + _fld('', 'fld-xs') +
-    '</div>' +
+
     '<div class="row"><span class="b">2. สาขาวิชาที่สมัคร</span></div>' +
     _branchChecklistHtml(branches, branchName) +
+
     eduRow +
     '<div class="row indent">' +
       'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
@@ -281,6 +302,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
     '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
     transferRow +
+
     '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> บ้านเลขที่' + _fld('', 'fld-xs') + ' หมู่' + _fld('', 'fld-xs') + ' ซอย' + _fld('', 'fld-sm') + ' ถนน' + _fld('', 'fld-md') + '</div>' +
     '<div class="row indent">' +
       'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
@@ -289,22 +311,31 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       ' รหัสไปรษณีย์ ' + _fld(addr.zipcode, 'fld-sm') +
     '</div>' +
     '<div class="row indent">โทรศัพท์ ' + _fld(s.phone, 'fld-lg') + '</div>' +
-    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+
+    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
+
     '<div class="row">&#8211; ชื่อบิดา นาย ' + _fld(father.firstName, 'fld-md') + ' นามสกุล ' + _fld(father.lastName, 'fld-md') + ' อาชีพ ' + _fld(father.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(father.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld('', 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+
     '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _fld(mother.firstName, 'fld-md') + ' นามสกุล ' + _fld(mother.lastName, 'fld-md') + ' อาชีพ ' + _fld(mother.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(mother.phone, 'fld-md') + '</div>' +
-    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld('', 'fld-xl') + ' เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8rem">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
+
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
+
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +
     '</div>' +
+
     '<div class="sig-grid">' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
-      '<div><div class="sig-line"></div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
+
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
     '<div class="finance-line"></div><div class="finance-line"></div><div class="finance-line"></div>' +
   '</div>';
@@ -395,9 +426,11 @@ async function _loadStudent(studentId) {
   const { data: s, error } = await _sb
     .from('students')
     .select(`
-      id, application_no, prefix, first_name, last_name, id_card, phone, birth_date, applied_at, education, old_school,
+      id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
+      nationality, ethnicity, religion, weight, height, blood_type,
+      id_card, phone, birth_date, applied_at, education, old_school,
       addresses(province_text, district_text, subdistrict_text, zipcode),
-      parents(type, id_card, prefix, first_name, last_name, phone, occupation),
+      parents(type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
       guardians(id_card, prefix, first_name, last_name, phone, relation),
       enrollments(program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
@@ -406,6 +439,17 @@ async function _loadStudent(studentId) {
     .single();
   if (error) throw error;
   return s;
+}
+
+// Rows above come back snake_case; the page-builder functions
+// (ported straight from PDF_Generator.gs) expect camelCase.
+function _camelPerson(row) {
+  if (!row) return {};
+  return {
+    idCard: row.id_card, prefix: row.prefix, firstName: row.first_name, lastName: row.last_name,
+    firstNameEn: row.first_name_en, lastNameEn: row.last_name_en,
+    phone: row.phone, occupation: row.occupation, relation: row.relation,
+  };
 }
 
 async function _signDocUrls(docs) {
@@ -447,9 +491,9 @@ async function init() {
     province: addrRow?.province_text || '',
     zipcode: addrRow?.zipcode || '',
   };
-  const father = (s.parents || []).find(p => p.type === 'father') || {};
-  const mother = (s.parents || []).find(p => p.type === 'mother') || {};
-  const guardian = Array.isArray(s.guardians) ? (s.guardians[0] || {}) : (s.guardians || {});
+  const father = _camelPerson((s.parents || []).find(p => p.type === 'father'));
+  const mother = _camelPerson((s.parents || []).find(p => p.type === 'mother'));
+  const guardian = _camelPerson(Array.isArray(s.guardians) ? s.guardians[0] : s.guardians);
   const enroll = Array.isArray(s.enrollments) ? s.enrollments[0] : s.enrollments;
   const branch = enroll?.program_rounds?.branches;
   const branchName = branch?.name || '';
@@ -458,6 +502,9 @@ async function init() {
 
   const student = {
     idCard: s.id_card, prefix: s.prefix, firstName: s.first_name, lastName: s.last_name,
+    firstNameEn: s.first_name_en, lastNameEn: s.last_name_en,
+    nationality: s.nationality, ethnicity: s.ethnicity, religion: s.religion,
+    weight: s.weight, height: s.height, bloodType: s.blood_type,
     birthDate: s.birth_date, phone: s.phone, education: s.education, oldSchool: s.old_school,
     applyDate: s.applied_at, applicationNo: s.application_no,
   };

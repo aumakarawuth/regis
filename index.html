@@ -6,61 +6,149 @@
   <meta name="theme-color" content="#00B900">
   <title>สมัครเรียน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
+    body { background: var(--clr-bg); }
+
+    /* ---------- Login screen ---------- */
     .login-page {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 32px 20px;
-      background: linear-gradient(160deg, #f0fdf0 0%, #fff 60%);
+      padding: 40px 20px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(160deg, #f0fdf0 0%, #f5f7fa 55%, #eef4ff 100%);
     }
+    .login-page::before, .login-page::after {
+      content: ''; position: absolute; border-radius: 50%; filter: blur(60px); z-index: 0;
+    }
+    .login-page::before { width: 320px; height: 320px; top: -120px; right: -100px; background: radial-gradient(circle, rgba(0,185,0,0.18), transparent 70%); }
+    .login-page::after  { width: 280px; height: 280px; bottom: -100px; left: -90px; background: radial-gradient(circle, rgba(59,130,246,0.14), transparent 70%); }
+
+    .brand-block { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
     .school-logo {
-      width: 96px; height: 96px;
-      background: var(--clr-primary-light);
-      border-radius: 50%;
+      width: 84px; height: 84px; border-radius: 24px;
+      background: linear-gradient(155deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.75rem;
-      margin-bottom: 20px;
-      border: 3px solid var(--clr-primary);
+      font-size: 2.4rem; margin-bottom: 18px;
+      box-shadow: 0 12px 28px -8px rgba(0,153,0,0.45), 0 2px 6px rgba(0,0,0,0.06);
     }
-    .school-name { font-size: 1.2rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
-    .school-sub  { font-size: 0.875rem; color: var(--clr-text-muted); text-align: center; margin-bottom: 36px; }
+    .school-name { font-size: 1.25rem; font-weight: 800; text-align: center; letter-spacing: -0.01em; }
+    .school-sub {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; font-weight: 600; color: var(--clr-primary-dark);
+      background: var(--clr-primary-light); padding: 5px 14px; border-radius: 999px;
+      margin-top: 10px; letter-spacing: 0.01em;
+    }
+
     .login-card {
-      width: 100%; max-width: 360px;
-      background: #fff; border-radius: 20px;
-      padding: 28px 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+      position: relative; z-index: 1;
+      width: 100%; max-width: 380px;
+      background: var(--clr-surface); border-radius: 24px;
+      padding: 32px 26px 28px;
+      box-shadow: 0 20px 48px -16px rgba(20,30,20,0.18), 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.04);
     }
-    .login-card h2 { font-size: 1.1rem; font-weight: 700; text-align: center; margin-bottom: 6px; }
-    .login-card p  { font-size: 0.875rem; color: var(--clr-text-muted); text-align: center; margin-bottom: 22px; line-height: 1.7; }
+    .login-card .lc-icon {
+      width: 48px; height: 48px; border-radius: 14px; margin: 0 auto 16px;
+      background: var(--clr-primary-light); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    }
+    .login-card h2 { font-size: 1.15rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .login-card p  { font-size: 0.875rem; color: var(--clr-text-muted); text-align: center; margin-bottom: 24px; line-height: 1.7; }
     .btn-line {
-      background: #06C755; color: #fff;
-      font-size: 1rem; font-weight: 700;
-      padding: 14px 20px; border-radius: 50px;
+      background: linear-gradient(155deg, #07d35f 0%, #06C755 55%, #04a548 100%);
+      color: #fff; font-size: 1rem; font-weight: 700;
+      padding: 15px 20px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       width: 100%; border: none; cursor: pointer;
+      box-shadow: 0 10px 24px -8px rgba(6,199,85,0.55);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .btn-line:active { background: #05a548; }
-    .status-card { background: var(--clr-bg); border-radius: var(--r-lg); padding: 20px; }
-    .status-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
-    .review-row { display: flex; gap: 12px; padding: 6px 0; font-size: 0.9rem; border-bottom: 1px solid var(--clr-border); }
+    .btn-line:active { transform: translateY(1px) scale(0.99); box-shadow: 0 6px 16px -6px rgba(6,199,85,0.5); }
+    .btn-line .line-ic { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    .secure-note {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-top: 18px; font-size: 0.75rem; color: var(--clr-text-light); font-weight: 500;
+    }
+
+    /* ---------- Applied / status screen ---------- */
+    #applied-screen { padding: 0 0 28px; }
+    .status-hero {
+      background: linear-gradient(155deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
+      color: #fff; padding: 36px 24px 46px; text-align: center;
+      border-radius: 0 0 32px 32px;
+      box-shadow: 0 10px 30px -14px rgba(0,153,0,0.5);
+    }
+    .status-hero .sh-icon {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: rgba(255,255,255,0.18); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+      margin: 0 auto 12px; border: 1px solid rgba(255,255,255,0.25);
+    }
+    .status-hero h2 { font-size: 1.2rem; font-weight: 800; }
+    .status-hero p { font-size: 0.8125rem; opacity: 0.85; margin-top: 4px; }
+
+    .status-card {
+      background: var(--clr-surface); border-radius: 20px; padding: 4px;
+      margin: -30px 20px 0; position: relative; z-index: 1;
+      box-shadow: 0 16px 40px -18px rgba(20,30,20,0.22), 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .appno-block { text-align: center; padding: 22px 16px 18px; border-bottom: 1px dashed var(--clr-border); }
+    .appno-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--clr-text-light); }
+    .appno-value { font-size: 1.9rem; font-weight: 800; color: var(--clr-primary-dark); letter-spacing: 0.02em; margin-top: 4px; }
+    .status-card h3 { display: none; } /* legacy label, superseded by appno-block */
+
+    .review-row { display: flex; align-items: center; gap: 12px; padding: 13px 18px; font-size: 0.9rem; border-bottom: 1px solid var(--clr-border); }
     .review-row:last-child { border: none; }
-    .review-key { width: 90px; flex-shrink: 0; color: var(--clr-text-muted); font-size: 0.8rem; }
-    .review-val { font-weight: 500; flex: 1; }
-    .err-box { background: #FEE2E2; border-radius: 10px; padding: 16px; margin: 20px; text-align: center; color: #991B1B; font-size: 0.875rem; }
-    .doc-request-card { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-lg); padding: 16px; margin-top: 16px; }
-    .doc-request-card h3 { font-size: 0.95rem; font-weight: 700; color: #92400E; margin-bottom: 4px; }
-    .doc-request-card .req-note { font-size: 0.8125rem; color: #92400E; margin-bottom: 10px; }
-    .doc-request-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #FDE68A; font-size: 0.875rem; }
+    .review-row .ri { width: 30px; height: 30px; border-radius: 9px; background: var(--clr-bg); display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
+    .review-key { color: var(--clr-text-muted); font-size: 0.78rem; }
+    .review-val { font-weight: 600; flex: 1; text-align: right; }
+
+    #btn-go-apply { margin: 20px 20px 0; width: calc(100% - 40px); border-radius: 14px; padding: 15px; font-weight: 700; box-shadow: 0 10px 22px -10px rgba(0,153,0,0.35); }
+
+    /* ---------- Document-request card ---------- */
+    .doc-request-card {
+      background: linear-gradient(160deg, #FFFBEB 0%, #FFF7E0 100%);
+      border: 1px solid #FDE68A; border-radius: 18px;
+      padding: 18px; margin: 18px 20px 0;
+      box-shadow: 0 8px 20px -12px rgba(180,120,0,0.25);
+    }
+    .doc-request-card h3 { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 700; color: #92400E; margin-bottom: 6px; }
+    .doc-request-card .req-note { font-size: 0.8125rem; color: #92400E; background: rgba(255,255,255,0.6); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+    .doc-request-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 4px; border-bottom: 1px solid rgba(253,230,138,0.7); font-size: 0.875rem; font-weight: 500; }
     .doc-request-item:last-of-type { border-bottom: none; }
-    .doc-request-item .doc-status { font-size: 0.75rem; color: var(--clr-success); font-weight: 600; }
-    .doc-request-item .btn-upload-doc { font-size: 0.8125rem; padding: 6px 12px; border-radius: 8px; border: none; background: var(--clr-accent); color: #fff; cursor: pointer; }
-    .doc-request-item .btn-upload-doc:disabled { background: var(--clr-success); }
+    .doc-request-item .doc-status { font-size: 0.75rem; color: var(--clr-success); font-weight: 700; }
+    .doc-request-item .btn-upload-doc { font-size: 0.8125rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; border: none; background: var(--clr-accent); color: #fff; cursor: pointer; box-shadow: 0 4px 10px -4px rgba(255,107,53,0.5); }
+    .doc-request-item .btn-upload-doc:disabled { background: var(--clr-success); box-shadow: none; }
+    .btn-doc-request-done { border-radius: 12px !important; }
+
+    /* ---------- Error box ---------- */
+    .err-box {
+      background: var(--clr-surface); border: 1px solid #FCA5A5; border-radius: 18px;
+      padding: 24px 20px; margin: 20px; text-align: center; color: #991B1B;
+      box-shadow: 0 12px 28px -16px rgba(153,27,27,0.25);
+    }
+    .err-box .eb-icon { width: 52px; height: 52px; border-radius: 50%; background: #FEE2E2; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin: 0 auto 12px; }
+    #error-text { font-size: 0.875rem; line-height: 1.6; white-space: pre-line; }
+    .err-box button {
+      margin-top: 16px; padding: 10px 24px; background: var(--clr-danger); color: #fff;
+      border: none; border-radius: 12px; cursor: pointer; font-size: 0.875rem; font-weight: 700;
+    }
+
+    /* ---------- Loading overlay refresh ---------- */
+    #loading-overlay { background: rgba(245,247,250,0.94); backdrop-filter: blur(2px); }
+    .loading-badge {
+      width: 56px; height: 56px; border-radius: 18px;
+      background: linear-gradient(155deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
+      display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+      margin-bottom: 6px; box-shadow: 0 10px 24px -10px rgba(0,153,0,0.45);
+    }
   </style>
 </head>
 <body>
@@ -68,6 +156,7 @@
 
   <!-- Loading -->
   <div id="loading-overlay">
+    <div class="loading-badge">🏫</div>
     <div class="spinner"></div>
     <p id="loading-text">กำลังเชื่อมต่อ LINE...</p>
   </div>
@@ -77,46 +166,53 @@
 
   <!-- Login Screen (แสดงเมื่อยังไม่ login) -->
   <div id="login-screen" class="login-page hidden">
-    <div class="school-logo">🏫</div>
-    <div class="school-name" id="school-name">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</div>
-    <div class="school-sub">ระบบรับสมัครนักเรียนใหม่ ปีการศึกษา 2569</div>
+    <div class="brand-block">
+      <div class="school-logo">🏫</div>
+      <div class="school-name" id="school-name">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</div>
+      <div class="school-sub">🎓 ระบบรับสมัครนักเรียนใหม่ · ปีการศึกษา 2569</div>
+    </div>
     <div class="login-card">
+      <div class="lc-icon">👋</div>
       <h2>เข้าสู่ระบบเพื่อสมัครเรียน</h2>
-      <p>กรุณาเข้าสู่ระบบด้วย LINE<br>เพื่อเริ่มกรอกใบสมัคร</p>
+      <p>กรุณาเข้าสู่ระบบด้วย LINE<br>เพื่อเริ่มกรอกใบสมัครออนไลน์</p>
       <button id="btn-line-login" class="btn-line">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-          <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-        </svg>
+        <span class="line-ic">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+          </svg>
+        </span>
         เข้าสู่ระบบด้วย LINE
       </button>
-      <p style="margin-top:14px;font-size:0.8rem;color:var(--clr-text-muted);text-align:center">
-        * ต้องเปิดผ่าน LINE Application เท่านั้น
-      </p>
+      <div class="secure-note">🔒 ต้องเปิดผ่าน LINE Application เท่านั้น</div>
     </div>
   </div>
 
   <!-- สมัครแล้ว → แสดงสถานะ -->
-  <div id="applied-screen" class="hidden" style="padding:20px">
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:2.5rem">📋</div>
-      <h2 style="font-size:1.1rem;font-weight:700;margin-top:8px">สมัครเรียนแล้ว</h2>
-      <p style="font-size:0.875rem;color:var(--clr-text-muted);margin-top:4px">ตรวจสอบสถานะด้านล่าง</p>
+  <div id="applied-screen" class="hidden">
+    <div class="status-hero">
+      <div class="sh-icon">✅</div>
+      <h2>สมัครเรียนเรียบร้อยแล้ว</h2>
+      <p>ตรวจสอบสถานะใบสมัครของคุณด้านล่าง</p>
     </div>
     <div class="status-card">
       <h3>สถานะใบสมัคร</h3>
+      <div class="appno-block">
+        <div class="appno-label">เลขที่ใบสมัคร</div>
+        <div class="appno-value" id="appno-display">—</div>
+      </div>
       <div id="status-content"></div>
     </div>
     <div id="doc-request-list"></div>
-    <button id="btn-go-apply" class="btn btn-primary btn-full" style="margin-top:16px">
+    <button id="btn-go-apply" class="btn btn-primary btn-full">
       📝 ไปยังหน้าสมัคร
     </button>
   </div>
 
   <!-- Error Box -->
   <div id="error-box" class="err-box hidden">
-    <div style="font-size:1.5rem;margin-bottom:8px">⚠️</div>
+    <div class="eb-icon">⚠️</div>
     <div id="error-text">เกิดข้อผิดพลาด</div>
-    <button onclick="location.reload()" style="margin-top:12px;padding:6px 16px;background:#991B1B;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.875rem">ลองใหม่</button>
+    <button onclick="location.reload()">ลองใหม่อีกครั้ง</button>
   </div>
 
 </div>
@@ -306,11 +402,11 @@ async function renderDocRequests(lineUserId) {
       // สมัครแล้ว → แสดงสถานะ
       hideLoading();
       document.getElementById('applied-screen').classList.remove('hidden');
+      document.getElementById('appno-display').textContent = res.applicationNo || '—';
       document.getElementById('status-content').innerHTML =
-        '<div class="review-row"><span class="review-key">เลขสมัคร</span><span class="review-val" style="font-weight:700;color:var(--clr-primary)">' + res.applicationNo + '</span></div>' +
-        '<div class="review-row"><span class="review-key">สถานะ</span><span class="review-val"><span class="badge ' + statusBadge(res.status) + '">' + (res.statusLabel || res.status) + '</span></span></div>' +
-        '<div class="review-row"><span class="review-key">สาขา</span><span class="review-val">' + (res.branchName || '—') + '</span></div>' +
-        '<div class="review-row"><span class="review-key">วันที่สมัคร</span><span class="review-val">' + (res.applyDate || '—') + '</span></div>';
+        '<div class="review-row"><span class="ri">🎯</span><span class="review-key" style="flex:1">สถานะ</span><span class="review-val"><span class="badge ' + statusBadge(res.status) + '">' + (res.statusLabel || res.status) + '</span></span></div>' +
+        '<div class="review-row"><span class="ri">📚</span><span class="review-key" style="flex:1">สาขา</span><span class="review-val">' + (res.branchName || '—') + '</span></div>' +
+        '<div class="review-row"><span class="ri">📅</span><span class="review-key" style="flex:1">วันที่สมัคร</span><span class="review-val">' + (res.applyDate || '—') + '</span></div>';
 
       document.getElementById('btn-go-apply').onclick = function() {
         location.href = getApplyUrl();

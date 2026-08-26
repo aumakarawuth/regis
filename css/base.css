@@ -3,12 +3,12 @@
    ============================================ */
 
 :root {
-  /* Brand Colors */
-  --clr-primary: #00B900;       /* LINE Green */
-  --clr-primary-dark: #009900;
-  --clr-primary-light: #E8F9E8;
-  --clr-accent: #FF6B35;        /* ส้ม — ปุ่ม CTA */
-  --clr-accent-dark: #E85A24;
+  /* Brand Colors — สีประจำวิทยาลัย (ฟ้า/เหลือง) */
+  --clr-primary: #0EA5E9;
+  --clr-primary-dark: #0284C7;
+  --clr-primary-light: #E0F2FE;
+  --clr-accent: #F5B301;
+  --clr-accent-dark: #D99900;
 
   /* Neutrals */
   --clr-bg: #F5F7FA;

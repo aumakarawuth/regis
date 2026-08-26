@@ -9,6 +9,26 @@ const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_AN
 
 const _STATUS_LABELS = { pending: 'รอตรวจสอบ', verified: 'ผ่านการตรวจสอบ', rejected: 'ไม่ผ่าน' };
 
+// Storage RLS scopes uploads to the uploader's own auth.uid() (see
+// supabase/migrations/0005_storage_owner_scoped.sql) — a plain anon-key
+// request has no auth.uid(), so uploads need a real (if anonymous)
+// Supabase Auth session first. Doesn't cache a failed attempt, since
+// this is a long-lived page (index.html) that could sit open from
+// before "Allow anonymous sign-ins" was enabled.
+let _anonSessionPromise = null;
+function _ensureAnonSession() {
+  if (!_anonSessionPromise) {
+    _anonSessionPromise = _sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) return session;
+      return _sb.auth.signInAnonymously().then(({ data, error }) => {
+        if (error) throw error;
+        return data.session;
+      });
+    }).catch(err => { _anonSessionPromise = null; throw err; });
+  }
+  return _anonSessionPromise;
+}
+
 function _base64ToBlob(base64, mimeType) {
   const byteChars = atob(base64);
   const bytes = new Uint8Array(byteChars.length);
@@ -137,9 +157,25 @@ const API = {
     };
   },
 
+  // ---------- Document Requests (admin asking for missing/incomplete docs) ----------
+  async getDocumentRequests(lineUserId) {
+    if (!lineUserId) return [];
+    const { data, error } = await _sb.rpc('get_document_requests', { p_line_user_id: lineUserId });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async resolveDocumentRequest(requestId) {
+    const { error } = await _sb.rpc('resolve_document_request', { p_request_id: requestId });
+    if (error) throw error;
+    return { success: true };
+  },
+
   // ---------- Document Upload (standalone) ----------
   async uploadDocument({ studentId, docType, base64Data, mimeType }) {
     if (!studentId || !base64Data) return { success: false, message: 'Missing required fields' };
+
+    await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, upload will fail:', err));
 
     const blob = _base64ToBlob(base64Data, mimeType || 'image/jpeg');
     const storagePath = `${studentId}/${docType}.jpg`;

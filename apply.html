@@ -704,6 +704,26 @@ function _setBar(percent, detail) {
 // ============================================================
 const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
+// Storage RLS scopes document/payment-slip uploads to the uploader's own
+// auth.uid() (see supabase/migrations/0005_storage_owner_scoped.sql) — a
+// plain anon-key request has no auth.uid() at all, so uploads need a real
+// (if anonymous) Supabase Auth session first. Kicked off at Form.init()
+// so it's already resolved by the time the user reaches document upload;
+// submitApplication() awaits this same promise as a safety net.
+let _anonSessionPromise = null;
+function _ensureAnonSession() {
+  if (!_anonSessionPromise) {
+    _anonSessionPromise = _sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) return session;
+      return _sb.auth.signInAnonymously().then(({ data, error }) => {
+        if (error) throw error;
+        return data.session;
+      });
+    });
+  }
+  return _anonSessionPromise;
+}
+
 function _base64ToBlob(base64, mimeType) {
   const byteChars = atob(base64);
   const bytes = new Uint8Array(byteChars.length);
@@ -760,6 +780,11 @@ const API = {
     });
     if (rpcError) throw rpcError;
     if (!rpcResult.success) return rpcResult;
+
+    // Safety net — normally already resolved from Form.init(). Storage
+    // uploads need this session; the application record itself doesn't,
+    // so a failure here still leaves the submission successful overall.
+    await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, uploads will fail:', err));
 
     const studentId = rpcResult.studentId;
     const docResults = [];
@@ -958,6 +983,7 @@ const Form = {
     const nameEl=document.getElementById('header-name');if(nameEl)nameEl.textContent=user.displayName||'ผู้สมัคร';
     const avatarEl=document.getElementById('header-avatar');if(avatarEl&&user.pictureUrl){avatarEl.src=user.pictureUrl;avatarEl.style.display='block';}
     Camera.init();
+    _ensureAnonSession().catch(err => console.warn('Anonymous sign-in failed (uploads may fail later):', err));
     // โหลดหลักสูตร — mode=program
     await this._loadPrograms();
     this._bindNav();

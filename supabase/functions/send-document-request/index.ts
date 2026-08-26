@@ -71,9 +71,10 @@ function buildFlex(applicationNo: string, docTypes: string[], note: string | nul
     contents: {
       type: 'bubble',
       header: {
-        type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: '20px',
+        type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: '20px', spacing: 'xs',
         contents: [
-          { type: 'text', text: '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg' },
+          { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FEF3C7', size: 'xs', weight: 'bold' },
+          { type: 'text', text: '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', margin: 'sm' },
         ],
       },
       body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px', contents: body },

@@ -719,6 +719,14 @@ function _ensureAnonSession() {
         if (error) throw error;
         return data.session;
       });
+    }).catch(err => {
+      // Don't cache a failed attempt for the rest of this page's life —
+      // apply.html never reloads between steps, so a transient failure
+      // (or "anonymous sign-ins" not being enabled yet at page-load time)
+      // would otherwise permanently block uploads for this session even
+      // after the setting is fixed. Clearing lets the next call retry.
+      _anonSessionPromise = null;
+      throw err;
     });
   }
   return _anonSessionPromise;

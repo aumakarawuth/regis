@@ -41,7 +41,7 @@ const DOC_LABELS: Record<string, string> = {
 };
 function docLabel(t: string) { return DOC_LABELS[t] || t; }
 
-const MASCOT_IMAGE_URL = 'https://regis-aumakarawuths-projects.vercel.app/assets/mascot-students.jpg';
+const MASCOT_ICON_URL = 'https://regis-aumakarawuths-projects.vercel.app/assets/mascot-icon.png';
 
 function docRow(label: string) {
   return {
@@ -72,23 +72,23 @@ function buildFlex(applicationNo: string, docTypes: string[], note: string | nul
     altText: `ขอเอกสารเพิ่มเติม — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
-      hero: {
-        type: 'image', url: MASCOT_IMAGE_URL, size: 'full',
-        aspectRatio: '20:13', aspectMode: 'cover',
-      },
-      body: {
-        type: 'box', layout: 'vertical', paddingAll: '0px',
+      header: {
+        type: 'box', layout: 'horizontal', backgroundColor: '#F59E0B', paddingAll: '16px', alignItems: 'center',
         contents: [
           {
-            type: 'box', layout: 'vertical', backgroundColor: '#F59E0B', paddingAll: '20px', spacing: 'xs',
+            type: 'box', layout: 'vertical', spacing: 'xs', flex: 4,
             contents: [
-              { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FEF3C7', size: 'xs', weight: 'bold' },
-              { type: 'text', text: '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', margin: 'sm' },
+              { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FEF3C7', size: 'xs', weight: 'bold', wrap: true },
+              { type: 'text', text: '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
             ],
           },
-          { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px', contents: body },
+          {
+            type: 'image', url: MASCOT_ICON_URL, flex: 2, size: 'full',
+            aspectRatio: '393:276', aspectMode: 'fit', gravity: 'bottom',
+          },
         ],
       },
+      body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px', contents: body },
       footer: {
         type: 'box', layout: 'vertical', paddingAll: '12px',
         contents: [

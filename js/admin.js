@@ -284,18 +284,19 @@ const Admin = {
         '<input class="form-control" id="dp-followup-note" placeholder="เช่น โทรแล้ว นัดมาสัมภาษณ์">' +
         '<button class="btn btn-primary btn-sm" id="dp-btn-add-followup">บันทึก</button>' +
       '</div>' +
-      '<div class="section-label">ขอเอกสารเพิ่มเติม</div>' +
-      '<div id="dp-doc-request-form" style="margin-bottom:12px">' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px">' +
+      '<div class="doc-request-panel">' +
+        '<div class="section-label">📋 ขอเอกสารเพิ่มเติมทาง LINE</div>' +
+        '<div class="doc-chips">' +
           _DOC_REQUEST_TYPES.map(t => `
-            <label style="display:flex;align-items:center;gap:5px;font-size:0.8125rem">
-              <input type="checkbox" class="dp-doc-request-check" value="${t}"> ${_docLabel(t)}
+            <label class="doc-chip">
+              <input type="checkbox" class="dp-doc-request-check" value="${t}">
+              <span>${_docLabel(t)}</span>
             </label>`).join('') +
         '</div>' +
-        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี)" style="margin-bottom:8px;min-height:56px"></textarea>' +
-        '<button class="btn btn-primary btn-sm" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี) เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด"></textarea>' +
+        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+        '<div class="doc-request-history" id="dp-doc-requests"></div>' +
       '</div>' +
-      '<div id="dp-doc-requests" style="margin-bottom:20px"></div>' +
       '<div class="section-label">เอกสารแนบ</div>' +
       '<div id="dp-docs">' + (docs.length ? docs.map(d => `
         <div class="doc-row" data-doc-id="${d.id}">
@@ -389,11 +390,14 @@ const Admin = {
     if (!docTypes.length) return showToast('เลือกเอกสารที่ต้องการขอก่อน', 'error');
 
     const btn = document.getElementById('dp-btn-send-doc-request');
+    const originalLabel = btn.textContent;
     btn.disabled = true;
+    btn.textContent = 'กำลังส่ง...';
     const { data, error } = await _sb.functions.invoke('send-document-request', {
       body: { studentId: this.currentStudent.id, docTypes, note },
     });
     btn.disabled = false;
+    btn.textContent = originalLabel;
     if (error) return showToast('ส่งคำขอล้มเหลว: ' + error.message, 'error');
     if (data && data.success === false) return showToast(data.message || 'ส่งคำขอล้มเหลว', 'error');
 
@@ -409,22 +413,22 @@ const Admin = {
       .select('id, doc_types, note, status, requested_at, resolved_at')
       .eq('student_id', studentId)
       .order('requested_at', { ascending: false });
-    if (error) { el.innerHTML = '<p style="color:var(--muted);font-size:0.8125rem">โหลดประวัติคำขอเอกสารไม่สำเร็จ</p>'; return; }
+    if (error) { el.innerHTML = '<p class="doc-request-history-empty">โหลดประวัติคำขอเอกสารไม่สำเร็จ</p>'; return; }
 
     el.innerHTML = (data && data.length)
       ? data.map(r => `
-        <div style="font-size:0.8125rem;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-            <div>
-              <span class="badge ${r.status === 'resolved' ? 'badge-success' : 'badge-warning'}">${r.status === 'resolved' ? 'ครบแล้ว' : 'รอเอกสาร'}</span>
-              <span style="color:var(--muted)"> · ${_thDate(r.requested_at)}</span>
-            </div>
+        <div class="doc-request-item">
+          <div class="doc-request-item-top">
+            <span class="doc-request-item-meta">
+              <span class="badge ${r.status === 'resolved' ? 'badge-success' : 'badge-warning'}">${r.status === 'resolved' ? '✓ ครบแล้ว' : '⏳ รอเอกสาร'}</span>
+              · ${_thDate(r.requested_at)}
+            </span>
             ${r.status === 'pending' ? `<button class="btn btn-outline btn-sm" data-resolve-request="${r.id}">ทำเครื่องหมายว่าครบแล้ว</button>` : ''}
           </div>
-          <div style="margin-top:4px">${r.doc_types.map(t => _docLabel(t)).join(', ')}</div>
-          ${r.note ? `<div style="color:var(--muted);margin-top:2px">"${r.note}"</div>` : ''}
+          <div class="doc-request-item-docs">${r.doc_types.map(t => `<span>${_docLabel(t)}</span>`).join('')}</div>
+          ${r.note ? `<div class="doc-request-item-note">"${r.note}"</div>` : ''}
         </div>`).join('')
-      : '<p style="color:var(--muted);font-size:0.8125rem">ยังไม่มีคำขอเอกสาร</p>';
+      : '<p class="doc-request-history-empty">ยังไม่มีคำขอเอกสาร</p>';
 
     el.querySelectorAll('[data-resolve-request]').forEach(btn => {
       btn.onclick = () => this._resolveDocRequest(btn.dataset.resolveRequest, studentId);

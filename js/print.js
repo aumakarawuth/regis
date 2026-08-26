@@ -57,6 +57,16 @@ function _idCardBoxes(idCard) {
   return html + '</span>';
 }
 
+// The cover page's "รหัสประจำตัว" is the school-assigned student code,
+// filled in by hand by staff after enrollment — a different number from
+// the 13-digit citizen ID card (which is what _idCardBoxes above is for,
+// used elsewhere on this form). Always blank, no data ever goes in it.
+function _blankBoxes(count) {
+  var html = '<span class="idwrap">';
+  for (var i = 0; i < count; i++) html += '<span class="idbox"></span>';
+  return html + '</span>';
+}
+
 function _collegeSealHtml() {
   return COLLEGE_SEAL_SVG;
 }
@@ -186,7 +196,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _blankBoxes(11) + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +

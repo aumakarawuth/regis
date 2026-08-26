@@ -364,7 +364,7 @@ const Admin = {
           <div>${f.note}</div>
         </div>`;
         }).join('')
-      : '<p style="color:var(--muted);font-size:0.8125rem">ยังไม่มีการติดตาม</p>';
+      : '';
   },
 
   async _addFollowUp() {

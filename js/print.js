@@ -388,7 +388,7 @@ async function _loadStudent(studentId) {
       id, application_no, prefix, first_name, last_name, id_card, phone, birth_date, applied_at, education, old_school,
       addresses(province_text, district_text, subdistrict_text, zipcode),
       parents(type, id_card, prefix, first_name, last_name, phone, occupation),
-      guardians(id_card, prefix, first_name, last_name, phone, relation, occupation),
+      guardians(id_card, prefix, first_name, last_name, phone, relation),
       enrollments(program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
     `)

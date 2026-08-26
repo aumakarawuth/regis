@@ -81,6 +81,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
 /* Charts */
 .charts-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-wrap { position: relative; height: 260px; }
 /* Card */
 .card { background: #fff; border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
@@ -256,11 +257,11 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
         <div class="charts-row">
           <div class="card">
             <div class="card-header"><h3>ยอดสมัครรายวัน (14 วันล่าสุด)</h3></div>
-            <div class="card-body"><canvas id="chart-trend" height="180"></canvas></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-trend"></canvas></div></div>
           </div>
           <div class="card">
             <div class="card-header"><h3>สัดส่วนสถานะผู้สมัคร</h3></div>
-            <div class="card-body"><canvas id="chart-status" height="180"></canvas></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-status"></canvas></div></div>
           </div>
         </div>
         <div class="card">

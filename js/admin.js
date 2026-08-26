@@ -109,6 +109,11 @@ const Admin = {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const { count: today } = await _sb.from('students').select('*', { count: 'exact', head: true }).gte('applied_at', todayStart.toISOString());
 
+    const trendStart = new Date(todayStart); trendStart.setDate(trendStart.getDate() - 13);
+    const { data: trendRows } = await _sb.from('students').select('applied_at').gte('applied_at', trendStart.toISOString());
+    this._renderTrendChart(trendRows || [], trendStart);
+    this._renderStatusChart({ pending, verified, rejected });
+
     const { data: enrollments } = await _sb.from('enrollments').select('program_rounds(branches(name))');
     const branchCount = {};
     (enrollments || []).forEach(e => {
@@ -134,6 +139,72 @@ const Admin = {
     } else {
       branchEl.innerHTML = '<p style="color:var(--muted);text-align:center;padding:8px">ยังไม่มีข้อมูล</p>';
     }
+  },
+
+  _renderTrendChart(rows, startDate) {
+    const canvas = document.getElementById('chart-trend');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const days = [];
+    const counts = {};
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(startDate); d.setDate(d.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      days.push(key);
+      counts[key] = 0;
+    }
+    rows.forEach(r => {
+      const key = String(r.applied_at || '').slice(0, 10);
+      if (key in counts) counts[key]++;
+    });
+    const labels = days.map(d => new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
+    const data = days.map(d => counts[d]);
+
+    if (this._trendChart) this._trendChart.destroy();
+    this._trendChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'จำนวนผู้สมัคร',
+          data,
+          borderColor: '#0EA5E9',
+          backgroundColor: 'rgba(14,165,233,0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: '#0EA5E9',
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+    });
+  },
+
+  _renderStatusChart({ pending, verified, rejected }) {
+    const canvas = document.getElementById('chart-status');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    if (this._statusChart) this._statusChart.destroy();
+    this._statusChart = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['รอตรวจ', 'ผ่านแล้ว', 'ปฏิเสธ'],
+        datasets: [{
+          data: [pending || 0, verified || 0, rejected || 0],
+          backgroundColor: ['#F5B301', '#10B981', '#EF4444'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        cutout: '68%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { family: 'Sarabun' } } } },
+      },
+    });
   },
 
   async _loadStudents() {

@@ -225,7 +225,7 @@ async function renderDocRequests(lineUserId) {
       doneBtn.disabled = true;
       doneBtn.textContent = 'กำลังบันทึก...';
       try {
-        await API.resolveDocumentRequest(req.id);
+        await API.resolveDocumentRequest(req.id, lineUserId);
         card.remove();
         showToast('ส่งเอกสารเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ', 'success');
       } catch (err) {

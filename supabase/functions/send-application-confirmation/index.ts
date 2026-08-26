@@ -27,8 +27,17 @@ const LIFF_ID = Deno.env.get('LIFF_ID') ?? '2010194460-OF1oXCTY';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
 }
 
 function row(label: string, value: string) {
@@ -78,6 +87,12 @@ function buildFlex(applicationNo: string, branchName: string, roundName: string)
 }
 
 Deno.serve(async (req) => {
+  // Browsers preflight cross-origin POSTs with an OPTIONS request first;
+  // apply.html calls this from *.vercel.app, so without an explicit 2xx +
+  // CORS headers here, the preflight fails and the browser never sends
+  // the real POST at all (this is why the function had zero invocations
+  // despite the client-side invoke() call being correct).
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS });
   if (req.method !== 'POST') return json({ success: false, message: 'Method not allowed' }, 405);
   if (!LINE_CHANNEL_ACCESS_TOKEN) return json({ success: false, message: 'LINE_CHANNEL_ACCESS_TOKEN not configured' }, 500);
 

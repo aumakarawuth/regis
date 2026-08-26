@@ -256,6 +256,20 @@
   </style>
 </head>
 <body>
+<script>
+// Redirect before any of #app's markup paints if there's no LINE session
+// yet (e.g. this link was opened directly, skipping index.html's login
+// flow) — without this, step-1 ("เลือกหลักสูตร") is visible in the raw
+// HTML and flashes on screen before the DOMContentLoaded check below
+// sends the user back to index.html.
+(function () {
+  try {
+    if (!sessionStorage.getItem('lineUser')) location.replace('index.html');
+  } catch (e) {
+    location.replace('index.html');
+  }
+})();
+</script>
 <div id="app">
 
   <!-- ============================================================

@@ -81,7 +81,9 @@ const FORM_CSS = [
   '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-  '.fill-form{font-size:1.08rem}',
+  '.fill-form{font-size:1.08rem;height:280mm;display:flex;flex-direction:column;overflow:hidden}',
+  '.fill-main{flex:0 0 auto}',
+  '.finance-fill{flex:1 1 auto;margin-top:6px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 23px,#888 23px 24px)}',
   '.page{box-sizing:border-box;position:relative;width:100%;min-height:280mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '.cover-page{height:280mm}',
@@ -124,10 +126,10 @@ const FORM_CSS = [
   '.checklist{margin-top:4px}',
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-  '.sig-grid{margin-top:14px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:12px;padding-top:10px;line-height:1.6}',
+  '.sig-grid{margin-top:16px;text-align:center}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
+  '.sig-blank{display:inline-block;width:180px;border-bottom:1px solid #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 
@@ -265,6 +267,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
   var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
 
   return '<div class="page fill-form" style="padding:8mm">' +
+    '<div class="fill-main">' +
     '<div class="center b" style="font-size:1.05em;margin-bottom:6px">(โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">' +
@@ -331,14 +334,15 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div>ลงชื่อ..............................................ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ..............................................ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ..............................................ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ..............................................ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
-    '<div class="finance-line"></div><div class="finance-line"></div>' +
+    '</div>' +
+    '<div class="finance-fill"></div>' +
   '</div>';
 }
 

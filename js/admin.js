@@ -55,9 +55,10 @@ const Admin = {
   async _checkAccess() {
     const { data: { user } } = await _sb.auth.getUser();
     if (!user) return null;
+    const { data: staffRow } = await _sb.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+    this.currentStaffId = staffRow?.id || null;
     const { data: adminRow } = await _sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
     if (adminRow) return 'admin';
-    const { data: staffRow } = await _sb.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
     if (staffRow) return 'staff';
     return null;
   },
@@ -557,6 +558,27 @@ const Admin = {
     this._loadNotifications();
   },
 
+  // Auto-assigns the logged-in staff as the application's caretaker the
+  // moment they act on it (print the form, or chase documents) — whoever
+  // touches an application first becomes its owner without needing a
+  // separate manual assignment step. Admin-only logins have no `staff`
+  // row (currentStaffId is null), so this is a no-op for them.
+  async _autoAssignSelf(studentId) {
+    if (!this.currentStaffId) return;
+    const s = this.students.find(x => x.id === studentId);
+    if (!s || s.assignedStaffId === this.currentStaffId) return;
+
+    const { error } = await _sb.from('students').update({ assigned_staff_id: this.currentStaffId }).eq('id', studentId);
+    if (error) return;
+
+    s.assignedStaffId = this.currentStaffId;
+    if (this.currentStudent && this.currentStudent.id === studentId) this.currentStudent.assignedStaffId = this.currentStaffId;
+    const select = document.getElementById('dp-assigned-staff');
+    if (select && this.currentStudent && this.currentStudent.id === studentId) select.value = this.currentStaffId;
+    this._renderTable();
+    this._loadNotifications();
+  },
+
   async _loadFollowUps(studentId) {
     const el = document.getElementById('dp-followups');
     const { data, error } = await _sb.from('follow_ups')
@@ -599,6 +621,7 @@ const Admin = {
     document.getElementById('dp-doc-request-note').value = '';
     showToast(data && data.skipped ? data.message : 'ส่งคำขอเอกสารทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
     this._loadDocRequests(this.currentStudent.id);
+    this._autoAssignSelf(this.currentStudent.id);
   },
 
   async _loadDocRequests(studentId) {
@@ -634,6 +657,7 @@ const Admin = {
     if (error) return showToast('เกิดข้อผิดพลาด', 'error');
     showToast('ทำเครื่องหมายว่าครบแล้ว', 'success', 1500);
     this._loadDocRequests(studentId);
+    this._autoAssignSelf(studentId);
   },
 
   _closeDetail() {
@@ -896,6 +920,7 @@ const Admin = {
   _printStudent() {
     if (!this.currentStudent) return;
     window.open(`print.html?studentId=${this.currentStudent.id}`, '_blank');
+    this._autoAssignSelf(this.currentStudent.id);
   },
 
   // ---------- Programs (education_levels / branches / program_rounds) ----------

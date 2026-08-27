@@ -514,7 +514,7 @@ async function init() {
 
   document.title = 'ใบสมัคร ' + (isPvs ? 'ปวส.' : 'ปวช.') + ' — ' + (student.applicationNo || '');
   const style = document.createElement('style');
-  style.textContent = FORM_CSS;
+  style.textContent = FORM_CSS.join('\n');
   document.head.appendChild(style);
 
   root.innerHTML =

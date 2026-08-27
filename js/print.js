@@ -78,7 +78,7 @@ function _collegeSealHtml() {
 // ---- CSS ----
 const FORM_CSS = [
   '@page { size: A4 portrait; margin: 0; }',
-  '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
+  '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
   '.fill-form{font-size:1.08rem;height:280mm;display:flex;flex-direction:column;overflow:hidden}',

@@ -129,7 +129,7 @@ const FORM_CSS = [
   '.sig-grid{margin-top:16px;text-align:center}',
   '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.sig-blank{display:inline-block;width:180px;border-bottom:1px solid #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
+  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 

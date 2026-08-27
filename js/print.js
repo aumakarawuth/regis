@@ -81,7 +81,7 @@ const FORM_CSS = [
   '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
-  '.fill-form{font-size:1.2rem}',
+  '.fill-form{font-size:1.08rem}',
   '.page{box-sizing:border-box;position:relative;width:100%;min-height:280mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '.cover-page{height:280mm}',
@@ -124,8 +124,8 @@ const FORM_CSS = [
   '.checklist{margin-top:4px}',
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-  '.sig-grid{margin-top:20px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:18px;padding-top:14px;line-height:1.8}',
+  '.sig-grid{margin-top:14px;text-align:center}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:12px;padding-top:10px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
   '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
 

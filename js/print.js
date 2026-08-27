@@ -82,7 +82,7 @@ const FORM_CSS = [
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
   '.fill-form{font-size:1.2rem}',
-  '.page{position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
+  '.page{box-sizing:border-box;position:relative;width:100%;min-height:297mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '@media print{.no-print{display:none!important}}',
   '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
@@ -337,7 +337,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
-    '<div class="finance-line"></div><div class="finance-line"></div><div class="finance-line"></div>' +
+    '<div class="finance-line"></div><div class="finance-line"></div>' +
   '</div>';
 }
 

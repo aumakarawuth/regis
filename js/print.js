@@ -82,10 +82,11 @@ const FORM_CSS = [
   'html{font-size:11.5px}',
   'body{font-family:"Sarabun","TH Sarabun New",sans-serif;color:#000;background:#fff;line-height:1.5}',
   '.fill-form{font-size:1.2rem}',
-  '.page{box-sizing:border-box;position:relative;width:100%;height:296mm;overflow:hidden;padding:15mm;page-break-after:always}',
+  '.page{box-sizing:border-box;position:relative;width:100%;min-height:280mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
+  '.cover-page{height:280mm}',
   '@media print{.no-print{display:none!important}}',
-  '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;height:296mm;overflow:visible;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+  '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
 
   '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
   '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
@@ -212,7 +213,7 @@ function _branchChecklistHtml(branches, branchName) {
 
 // ---- Cover page ----
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
-  return '<div class="page">' +
+  return '<div class="page cover-page">' +
     '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
     '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
     '<div class="row">' +

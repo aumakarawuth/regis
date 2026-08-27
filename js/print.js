@@ -123,9 +123,9 @@ const FORM_CSS = [
   '.checklist{margin-top:4px}',
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
-  '.sig-grid{margin-top:6px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;padding-top:22px}',
-  '.sig-grid>div:nth-child(3),.sig-grid>div:nth-child(4){margin-top:16px}',
+  '.sig-grid{margin-top:20px;text-align:center}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;padding-top:50px}',
+  '.sig-grid>div:nth-child(3),.sig-grid>div:nth-child(4){margin-top:30px}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
   '.finance-line{border-bottom:1px dotted #888;height:16px;margin:4px 0}',
 

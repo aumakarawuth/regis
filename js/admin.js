@@ -397,13 +397,18 @@ const Admin = {
   _applyFilter() {
     const search = (document.getElementById('search-input').value || '').toLowerCase().trim();
     const branch = document.getElementById('filter-branch').value;
+    const dateFrom = document.getElementById('filter-date-from').value;
+    const dateTo = document.getElementById('filter-date-to').value;
     const tab = this.currentTab;
     this.filtered = this.students.filter(s => {
       const matchTab = tab === 'all' || s.status === tab;
       const matchBranch = !branch || s.branchName === branch;
       const matchSearch = !search || [s.firstName, s.lastName, s.idCard, s.applicationNo, s.phone]
         .some(v => v && String(v).toLowerCase().includes(search));
-      return matchTab && matchBranch && matchSearch;
+      const applyDay = s.applyDate ? String(s.applyDate).slice(0, 10) : '';
+      const matchDateFrom = !dateFrom || (applyDay && applyDay >= dateFrom);
+      const matchDateTo = !dateTo || (applyDay && applyDay <= dateTo);
+      return matchTab && matchBranch && matchSearch && matchDateFrom && matchDateTo;
     });
     this.page = 1;
     this._renderTable();
@@ -701,7 +706,7 @@ const Admin = {
       'เลขสมัคร', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'เลขบัตร', 'เบอร์โทร',
       'ระดับ', 'สาขา', 'รอบ', 'โรงเรียนเดิม', 'จังหวัด', 'ผู้ดูแล', 'วันที่สมัคร', 'สถานะ',
     ]];
-    this.students.forEach(s => {
+    this.filtered.forEach(s => {
       rows.push([
         s.applicationNo, s.prefix, s.firstName, s.lastName, s.idCard, s.phone,
         s.levelName, s.branchName, s.roundName, s.oldSchool, s.province,
@@ -1115,6 +1120,13 @@ const Admin = {
       this.searchTimeout = setTimeout(() => this._applyFilter(), 300);
     });
     document.getElementById('filter-branch').addEventListener('change', () => this._applyFilter());
+    document.getElementById('filter-date-from').addEventListener('change', () => this._applyFilter());
+    document.getElementById('filter-date-to').addEventListener('change', () => this._applyFilter());
+    document.getElementById('btn-clear-date-filter').onclick = () => {
+      document.getElementById('filter-date-from').value = '';
+      document.getElementById('filter-date-to').value = '';
+      this._applyFilter();
+    };
     document.getElementById('btn-export-csv').onclick = () => this._exportCSV();
     document.getElementById('nav-export').onclick = () => this._exportCSV();
     document.getElementById('btn-refresh-list').onclick = () => this._refreshAll();

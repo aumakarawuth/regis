@@ -314,6 +314,12 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
               <input class="form-control" id="search-input" type="search" placeholder="ค้นหาชื่อ / เลขบัตร / เลขสมัคร" style="padding-left:34px">
             </div>
             <select class="form-control" id="filter-branch" style="width:180px"><option value="">ทุกสาขา</option></select>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input class="form-control" id="filter-date-from" type="date" style="width:150px" title="วันที่สมัคร ตั้งแต่">
+              <span style="color:var(--muted)">–</span>
+              <input class="form-control" id="filter-date-to" type="date" style="width:150px" title="วันที่สมัคร ถึง">
+              <button class="btn btn-ghost btn-sm" id="btn-clear-date-filter" title="ล้างช่วงวันที่">✕</button>
+            </div>
             <button class="btn btn-outline btn-sm" id="btn-export-csv">📥 Export Excel</button>
             <button class="btn btn-ghost btn-sm" id="btn-refresh-list">🔄</button>
           </div>

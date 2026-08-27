@@ -415,11 +415,15 @@ function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchNa
 }
 
 // ---- Data fetching + page assembly ----
+// Returns true for both full admins (admin_users) and active staff
+// (staff.user_id, is_active = true) — matches admin.js's _checkAccess.
 async function _isAdmin() {
   const { data: { user } } = await _sb.auth.getUser();
   if (!user) return false;
-  const { data } = await _sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
-  return !!data;
+  const { data: adminRow } = await _sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
+  if (adminRow) return true;
+  const { data: staffRow } = await _sb.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+  return !!staffRow;
 }
 
 async function _loadStudent(studentId) {

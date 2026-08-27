@@ -240,7 +240,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
       <div class="nav-item" data-page="reports"><span>📈</span> รายงาน</div>
       <div class="nav-item" data-page="staff"><span>🧑‍🏫</span> เจ้าหน้าที่</div>
       <div class="nav-section">เครื่องมือ</div>
-      <div class="nav-item" id="nav-export"><span>📥</span> Export CSV</div>
+      <div class="nav-item" id="nav-export"><span>📥</span> Export Excel</div>
       <div class="nav-item" id="nav-refresh"><span>🔄</span> รีเฟรชข้อมูล</div>
     </nav>
     <div class="sidebar-footer">
@@ -314,7 +314,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
               <input class="form-control" id="search-input" type="search" placeholder="ค้นหาชื่อ / เลขบัตร / เลขสมัคร" style="padding-left:34px">
             </div>
             <select class="form-control" id="filter-branch" style="width:180px"><option value="">ทุกสาขา</option></select>
-            <button class="btn btn-outline btn-sm" id="btn-export-csv">📥 Export</button>
+            <button class="btn btn-outline btn-sm" id="btn-export-csv">📥 Export Excel</button>
             <button class="btn btn-ghost btn-sm" id="btn-refresh-list">🔄</button>
           </div>
           <div style="overflow-x:auto">
@@ -434,6 +434,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/round-labels.js"></script>
 <script src="js/admin.js"></script>

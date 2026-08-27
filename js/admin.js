@@ -96,6 +96,37 @@ const Admin = {
     document.getElementById('admin-dashboard').classList.remove('hidden');
     this._bindEvents();
     this._loadAll();
+    this._subscribeRealtime();
+  },
+
+  // Realtime: RLS still applies to what these payloads carry, but Chart/
+  // stat refreshes just re-query through the normal RLS-checked client
+  // calls anyway, so a broadened event is never trusted directly.
+  _subscribeRealtime() {
+    if (this._realtimeChannel) return;
+    this._realtimeChannel = _sb.channel('admin-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'students' }, () => {
+        showToast('🆕 มีผู้สมัครใหม่เข้ามา', 'info');
+        this._loadStats();
+        this._loadStudents();
+        this._loadNotifications();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, () => {
+        this._loadStats();
+        this._loadStudents();
+        this._loadNotifications();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'duplicate_attempt_log' }, () => {
+        showToast('⚠️ มีความพยายามสมัครซ้ำ (เลขบัตร ปชช.)', 'warning');
+        this._loadNotifications();
+      })
+      .subscribe();
+  },
+
+  _unsubscribeRealtime() {
+    if (!this._realtimeChannel) return;
+    _sb.removeChannel(this._realtimeChannel);
+    this._realtimeChannel = null;
   },
 
   async _loadAll() {
@@ -657,15 +688,11 @@ const Admin = {
     await this._loadAll();
   },
 
-  _downloadCSV(rows, filenamePrefix) {
-    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  _downloadExcel(rows, filenamePrefix, sheetName = 'ข้อมูล') {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   },
 
   _exportCSV() {
@@ -683,7 +710,7 @@ const Admin = {
         _statusLabel(s.status),
       ]);
     });
-    this._downloadCSV(rows, 'students');
+    this._downloadExcel(rows, 'students');
   },
 
   // ---------- Reports ----------
@@ -725,17 +752,17 @@ const Admin = {
     });
     const rows = [['ระดับ', 'สาขา', 'ทั้งหมด', 'รอตรวจ', 'ผ่านแล้ว', 'ปฏิเสธ']];
     Object.values(byBranch).forEach(r => rows.push([r.level, r.branch, r.total, r.pending || 0, r.verified || 0, r.rejected || 0]));
-    this._downloadCSV(rows, 'report-branch');
+    this._downloadExcel(rows, 'report-branch');
   },
   _exportReportSchool() {
     const bySchool = {};
     this.students.forEach(s => { const k = s.oldSchool || 'ไม่ระบุ'; bySchool[k] = (bySchool[k] || 0) + 1; });
-    this._downloadCSV([['โรงเรียนเดิม', 'จำนวนผู้สมัคร'], ...Object.entries(bySchool)], 'report-school');
+    this._downloadExcel([['โรงเรียนเดิม', 'จำนวนผู้สมัคร'], ...Object.entries(bySchool)], 'report-school');
   },
   _exportReportProvince() {
     const byProvince = {};
     this.students.forEach(s => { const k = s.province || 'ไม่ระบุ'; byProvince[k] = (byProvince[k] || 0) + 1; });
-    this._downloadCSV([['จังหวัด', 'จำนวนผู้สมัคร'], ...Object.entries(byProvince)], 'report-province');
+    this._downloadExcel([['จังหวัด', 'จำนวนผู้สมัคร'], ...Object.entries(byProvince)], 'report-province');
   },
 
   // ---------- Staff (ครูแนะแนว / KPI) ----------
@@ -1092,7 +1119,7 @@ const Admin = {
     document.getElementById('nav-export').onclick = () => this._exportCSV();
     document.getElementById('btn-refresh-list').onclick = () => this._refreshAll();
     document.getElementById('nav-refresh').onclick = () => this._refreshAll();
-    document.getElementById('btn-logout').onclick = async () => { await _sb.auth.signOut(); location.reload(); };
+    document.getElementById('btn-logout').onclick = async () => { this._unsubscribeRealtime(); await _sb.auth.signOut(); location.reload(); };
     document.getElementById('btn-toggle-sidebar').onclick = () => document.querySelector('.sidebar').classList.toggle('open');
     document.getElementById('btn-close-detail').onclick = () => this._closeDetail();
     document.getElementById('detail-overlay').onclick = () => this._closeDetail();

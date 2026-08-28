@@ -440,6 +440,14 @@
           <select class="form-control" id="inp-birthYear"><option value="">ปี พ.ศ.</option></select>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">สัญชาติ / เชื้อชาติ / ศาสนา</label>
+        <div class="field-row" style="grid-template-columns:1fr 1fr 1fr">
+          <select class="form-control" id="inp-nationality"><option value="ไทย">ไทย</option><option value="พม่า">พม่า</option><option value="ลาว">ลาว</option><option value="กัมพูชา">กัมพูชา</option><option value="เวียดนาม">เวียดนาม</option><option value="จีน">จีน</option><option value="อื่นๆ">อื่นๆ</option></select>
+          <select class="form-control" id="inp-ethnicity"><option value="ไทย">ไทย</option><option value="พม่า">พม่า</option><option value="ลาว">ลาว</option><option value="กัมพูชา">กัมพูชา</option><option value="เวียดนาม">เวียดนาม</option><option value="จีน">จีน</option><option value="อื่นๆ">อื่นๆ</option></select>
+          <select class="form-control" id="inp-religion"><option value="พุทธ">พุทธ</option><option value="อิสลาม">อิสลาม</option><option value="คริสต์">คริสต์</option><option value="ฮินดู">ฮินดู</option><option value="ซิกข์">ซิกข์</option><option value="อื่นๆ">อื่นๆ</option></select>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label><input class="form-control" id="inp-phone" type="tel" maxlength="10" placeholder="0812345678" inputmode="numeric"></div>
       <div class="form-group"><label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label><select class="form-control" id="inp-education"><option value="">-- เลือก --</option></select></div>
       <div class="form-group"><label class="form-label">โรงเรียน/สถาบันเดิม <span class="required">*</span></label><input class="form-control" id="inp-oldSchool" type="text" placeholder="ชื่อโรงเรียน"></div>
@@ -999,7 +1007,7 @@ function _handlePhoto(cardEl,preview,label,result,docType,onFile){
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 8;},
 
@@ -1096,7 +1104,7 @@ const Form = {
   _roundLabel(round){return ROUND_CODE_TO_LABEL[round]||round;},
 
   _initStep2() {
-    ['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
     this._populateBirthDateSelects();
     this._updateEducationOptions();
     document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
@@ -1227,7 +1235,7 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
-    if(n===2){['idCard','prefix','firstName','lastName','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
+    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===4){for(const p of this.data.parents){const label=p.type==='father'?'บิดา':'มารดา';if(p.isDeceased||p.unknownInfo)continue;if(!p.idCard||p.idCard.length!==13)return err(`กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);if(!p.firstName.trim()||!p.lastName.trim())return err(`กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);}}
     if(n===5){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
@@ -1238,7 +1246,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         hideLoading();

@@ -339,7 +339,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
     '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
-    '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld('', 'fld-xl') + '</div>' +
+    '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +
@@ -452,7 +452,7 @@ async function _loadStudent(studentId) {
       id_card, phone, birth_date, applied_at, education, old_school,
       addresses(province_text, district_text, subdistrict_text, zipcode),
       parents(type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
-      guardians(id_card, prefix, first_name, last_name, phone, relation),
+      guardians(id_card, prefix, first_name, last_name, phone, relation, address),
       enrollments(program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
     `)
@@ -469,7 +469,7 @@ function _camelPerson(row) {
   return {
     idCard: row.id_card, prefix: row.prefix, firstName: row.first_name, lastName: row.last_name,
     firstNameEn: row.first_name_en, lastNameEn: row.last_name_en,
-    phone: row.phone, occupation: row.occupation, relation: row.relation,
+    phone: row.phone, occupation: row.occupation, relation: row.relation, address: row.address,
   };
 }
 

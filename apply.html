@@ -473,13 +473,20 @@
 
   <!-- STEP 4 -->
   <div class="step-panel" id="step-4">
-    <div class="step-heading"><div class="step-icon">👨‍👩‍👦</div>ข้อมูลบิดา / มารดา</div>
-    <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่มีข้อมูล</p>
-    <div id="parents-container"></div>
+    <div class="step-heading"><div class="step-icon">👨</div>ข้อมูลบิดา</div>
+    <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่ทราบข้อมูล</p>
+    <div id="parent-father-container"></div>
   </div>
 
   <!-- STEP 5 -->
   <div class="step-panel" id="step-5">
+    <div class="step-heading"><div class="step-icon">👩</div>ข้อมูลมารดา</div>
+    <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่ทราบข้อมูล</p>
+    <div id="parent-mother-container"></div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-panel" id="step-6">
     <div class="step-heading"><div class="step-icon">🧑</div>ข้อมูลผู้ปกครอง</div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button id="btn-copy-father" class="btn btn-outline btn-sm" style="flex:1">📋 ดึงข้อมูลบิดา</button>
@@ -501,15 +508,15 @@
     </div>
   </div>
 
-  <!-- STEP 6 -->
-  <div class="step-panel" id="step-6">
+  <!-- STEP 7 -->
+  <div class="step-panel" id="step-7">
     <div class="step-heading"><div class="step-icon">📎</div>อัปโหลดเอกสาร</div>
     <p class="text-sm text-muted" style="margin-bottom:16px">ถ่ายภาพหรือเลือกจากแกลเลอรี่</p>
     <div class="doc-grid" id="doc-grid"></div>
   </div>
 
-  <!-- STEP 7 -->
-  <div class="step-panel" id="step-7">
+  <!-- STEP 8 -->
+  <div class="step-panel" id="step-8">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
     <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
@@ -534,8 +541,8 @@
     </div>
   </div>
 
-  <!-- STEP 8 -->
-  <div class="step-panel" id="step-8">
+  <!-- STEP 9 -->
+  <div class="step-panel" id="step-9">
     <div class="step-heading"><div class="step-icon">✅</div>ตรวจสอบก่อนส่ง</div>
     <div id="review-content"></div>
     <div class="card mt-4" style="background:#FEF3C7">
@@ -1008,7 +1015,7 @@ const Form = {
   currentStep:1, isDual:false,
   data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
-  get totalSteps(){return 8;},
+  get totalSteps(){return 9;},
 
   async init() {
     const user=LIFF&&LIFF.getUser?LIFF.getUser():JSON.parse(sessionStorage.getItem('lineUser')||'null');
@@ -1048,11 +1055,11 @@ const Form = {
     document.getElementById('progress-fill').style.width=pct+'%';
     document.getElementById('step-current').textContent=n;
     document.getElementById('step-total').textContent=this.totalSteps;
-    const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา/มารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
+    const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา','ข้อมูลมารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
     document.getElementById('step-title-text').textContent=titles[n]||'';
     document.getElementById('btn-back').textContent=n===1?'✕ ออก':'← ย้อนกลับ';
     document.getElementById('btn-next').textContent=n===this.totalSteps?'✅ ส่งใบสมัคร':'ถัดไป →';
-    const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8()};
+    const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8(),9:()=>this._initStep9()};
     if(initMap[n])await initMap[n]();
     window.scrollTo({top:0,behavior:'smooth'});
   },
@@ -1157,29 +1164,40 @@ const Form = {
     if(this.data.addrZipcode)document.getElementById('addr-zipcode').value=this.data.addrZipcode;
   },
 
-  _initStep4() {
-    if(!this.data.parents.length){
-      this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false,unknownInfo:false});
-      this.data.parents.push({type:'mother',idCard:'',prefix:'นาง',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false,unknownInfo:false});
+  _initStep4() { this._renderParentCard('father','parent-father-container'); },
+  _initStep5() { this._renderParentCard('mother','parent-mother-container'); },
+  _getOrCreateParent(type) {
+    let p=this.data.parents.find(pp=>pp.type===type);
+    if(!p){
+      p={type,idCard:'',prefix:type==='father'?'นาย':'นาง',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false,unknownInfo:false};
+      this.data.parents.push(p);
     }
-    this._renderParents();
+    return p;
   },
-  _renderParents() {
-    const container=document.getElementById('parents-container');container.innerHTML='';
-    this.data.parents.forEach((p,i)=>{
-      const card=document.createElement('div');card.className='parent-item';
-      const skip=p.isDeceased||p.unknownInfo;
-      card.innerHTML=`<div class="field-stack" style="margin-top:8px"><div class="step-heading" style="font-size:1rem;margin-bottom:4px">${p.type==='father'?'👨 ข้อมูลบิดา':'👩 ข้อมูลมารดา'}</div><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${i}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields${skip?' hidden':''}"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${i}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${i}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${i}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div></div></div>`;
-      container.appendChild(card);
-    });
+  _renderParentCard(type,containerId) {
+    const container=document.getElementById(containerId);container.innerHTML='';
+    const p=this._getOrCreateParent(type);
+    const idx=this.data.parents.indexOf(p);
+    const skip=p.isDeceased||p.unknownInfo;
+    const card=document.createElement('div');card.className='parent-item';
+    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields${skip?' hidden':''}"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${idx}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${idx}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${idx}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${idx}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${idx}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${idx}" value="${p.occupation}"></div></div></div></div>`;
+    container.appendChild(card);
     container.querySelectorAll('[data-field]').forEach(el=>{el.addEventListener('change',()=>{
-      const idx=+el.dataset.idx,field=el.dataset.field;
+      const field=el.dataset.field;
       this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;
-      if(field==='isDeceased'||field==='unknownInfo')this._renderParents();
+      if(field==='isDeceased'||field==='unknownInfo')this._renderParentCard(type,containerId);
     });});
   },
+  _validateParent(type) {
+    const p=this.data.parents.find(pp=>pp.type===type);
+    if(!p||p.isDeceased||p.unknownInfo)return null;
+    const label=type==='father'?'บิดา':'มารดา';
+    if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
+    if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
+    return null;
+  },
 
-  _initStep5() {
+  _initStep6() {
     ['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el&&this.data.guardian[f])el.value=this.data.guardian[f];});
     document.getElementById('btn-copy-father').onclick=()=>this._copyParent('father');
     document.getElementById('btn-copy-mother').onclick=()=>this._copyParent('mother');
@@ -1193,7 +1211,7 @@ const Form = {
     showToast('คัดลอกข้อมูลแล้ว','success');
   },
 
-  _initStep6() {
+  _initStep7() {
     const docTypes=[{id:'id_card_front',label:'บัตร ปชช. ด้านหน้า',icon:'🪪',required:true},{id:'id_card_back',label:'บัตร ปชช. ด้านหลัง',icon:'🪪',required:true},{id:'house_reg',label:'ทะเบียนบ้าน',icon:'🏠',required:true},{id:'edu_cert_front',label:'วุฒิการศึกษา ด้านหน้า',icon:'📜',required:true},{id:'edu_cert_back',label:'วุฒิการศึกษา ด้านหลัง',icon:'📜',required:true}];
     const grid=document.getElementById('doc-grid');grid.innerHTML='';
     docTypes.forEach(doc=>{
@@ -1207,7 +1225,7 @@ const Form = {
     });
   },
 
-  _initStep7() {
+  _initStep8() {
     const amount=CONFIG.APPLICATION_FEE;
     document.getElementById('payment-amount').textContent='฿'+amount.toLocaleString();
     document.getElementById('promptpay-qr').src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
@@ -1219,7 +1237,7 @@ const Form = {
     if(this.data.payment.slipBase64){slipCard.classList.add('has-file');slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;slipCard.querySelector('.doc-preview').classList.remove('hidden');}
   },
 
-  _initStep8() {
+  _initStep9() {
     const d=this.data;
     document.getElementById('review-content').innerHTML=`<div class="review-section"><h3>หลักสูตรที่เลือก</h3><div class="review-row"><span class="review-key">รอบเรียน</span><span class="review-val">${d.studyRoundName}</span></div><div class="review-row"><span class="review-key">ระดับ</span><span class="review-val">${d.levelName}</span></div><div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${d.branchName}</span></div></div><div class="review-section"><h3>ข้อมูลส่วนตัว</h3><div class="review-row"><span class="review-key">ชื่อ-นามสกุล</span><span class="review-val">${d.prefix}${d.firstName} ${d.lastName}</span></div><div class="review-row"><span class="review-key">เลขบัตร ปชช.</span><span class="review-val">${d.idCard}</span></div><div class="review-row"><span class="review-key">วันเกิด</span><span class="review-val">${d.birthDate}</span></div><div class="review-row"><span class="review-key">เบอร์โทร</span><span class="review-val">${d.phone}</span></div><div class="review-row"><span class="review-key">วุฒิการศึกษา</span><span class="review-val">${d.education}</span></div><div class="review-row"><span class="review-key">โรงเรียนเดิม</span><span class="review-val">${d.oldSchool}</span></div></div><div class="review-section"><h3>เอกสาร</h3>${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}${!d.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}${d.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}</div>`;
   },
@@ -1229,7 +1247,9 @@ const Form = {
     if(n===1){if(!this.data.studyRound)return err('กรุณาเลือกรอบเรียน');if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');if(!document.getElementById('sel-branch').value)return err('กรุณาเลือกสาขาวิชา');}
     if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
-    if(n===6){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
+    if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
+    if(n===5){const msg=this._validateParent('mother');if(msg)return err(msg);}
+    if(n===7){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
     return true;
   },
 
@@ -1237,8 +1257,7 @@ const Form = {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
     if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
-    if(n===4){for(const p of this.data.parents){const label=p.type==='father'?'บิดา':'มารดา';if(p.isDeceased||p.unknownInfo)continue;if(!p.idCard||p.idCard.length!==13)return err(`กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);if(!p.firstName.trim()||!p.lastName.trim())return err(`กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);}}
-    if(n===5){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
+    if(n===6){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
   },
 
   async _submit() {

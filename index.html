@@ -187,6 +187,21 @@
     </div>
   </div>
 
+  <!-- ยังไม่ได้เพิ่มเพื่อน OA → เตือนก่อนสมัคร (ไม่งั้นจะไม่ได้รับ Flex Message แจ้งผล) -->
+  <div id="friend-screen" class="login-page hidden">
+    <div class="brand-block">
+      <div class="school-logo">🏫</div>
+      <div class="school-name" id="friend-school-name">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</div>
+    </div>
+    <div class="login-card">
+      <div class="lc-icon">🔔</div>
+      <h2>เพิ่มเพื่อน LINE ก่อนสมัคร</h2>
+      <p>กรุณาเพิ่มเพื่อน LINE Official Account ของวิทยาลัย<br>เพื่อรับใบยืนยันและแจ้งเตือนสถานะการสมัคร<br>(หากไม่เพิ่มเพื่อน ระบบจะไม่สามารถส่งข้อความแจ้งเตือนถึงท่านได้)</p>
+      <button id="btn-add-friend" class="btn-line">➕ เพิ่มเพื่อน LINE</button>
+      <button id="btn-friend-continue" class="btn-line" style="background:#6B7280;margin-top:8px">ดำเนินการต่อ</button>
+    </div>
+  </div>
+
   <!-- สมัครแล้ว → แสดงสถานะ -->
   <div id="applied-screen" class="hidden">
     <div class="status-hero">
@@ -392,6 +407,32 @@ async function renderDocRequests(lineUserId) {
     return;
   }
 
+  // ---- เช็คว่าเพิ่มเพื่อน OA แล้วหรือยัง (ถ้ายัง จะไม่ได้รับ Flex Message แจ้งผล) ----
+  try {
+    var friendship = await liff.getFriendship();
+    if (!friendship.friendFlag) {
+      hideLoading();
+      document.getElementById('friend-school-name').textContent = CONFIG.SCHOOL_NAME || 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์';
+      document.getElementById('friend-screen').classList.remove('hidden');
+      document.getElementById('btn-add-friend').onclick = function() {
+        var lineId = (CONFIG.SCHOOL_LINE || '').replace(/^@/, '');
+        window.open('https://line.me/R/ti/p/@' + lineId, '_blank');
+      };
+      document.getElementById('btn-friend-continue').onclick = function() {
+        document.getElementById('friend-screen').classList.add('hidden');
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        continueAfterFriendCheck();
+      };
+      return;
+    }
+  } catch (friendErr) {
+    console.warn('getFriendship failed:', friendErr);
+  }
+  await continueAfterFriendCheck();
+})();
+
+async function continueAfterFriendCheck() {
+  var loadingText = document.getElementById('loading-text');
   // ---- เช็คสถานะการสมัคร ----
   try {
     loadingText.textContent = 'กำลังตรวจสอบสถานะ...';
@@ -421,8 +462,7 @@ async function renderDocRequests(lineUserId) {
 
   // ---- ยังไม่สมัคร → redirect ไป apply.html ----
   location.href = getApplyUrl();
-
-})();
+}
 </script>
 </body>
 </html>

@@ -402,7 +402,7 @@
         <label class="form-label">รอบเรียน <span class="required">*</span></label>
         <div class="round-cards">
           <label class="round-card"><input type="radio" name="study-round" value="morning"><div class="rc-info"><div class="rc-name">☀️ รอบเช้า</div><div class="rc-sub">เรียน จ–ศ เวลา 08:00–16:30 น.</div></div></label>
-          <label class="round-card"><input type="radio" name="study-round" value="afternoon"><div class="rc-info"><div class="rc-name">🌤️ รอบบ่าย</div><div class="rc-sub">เรียน จ–ศ เวลา 12:00–20:30 น.</div></div></label>
+          <label class="round-card"><input type="radio" name="study-round" value="afternoon"><div class="rc-info"><div class="rc-name">🌤️ รอบบ่าย</div><div class="rc-sub">เรียนวันอาทิตย์ เวลา 08:30–17:00 น.</div></div></label>
           <label class="round-card"><input type="radio" name="study-round" value="dual"><div class="rc-info"><div class="rc-name">🏭 ทวิภาคี</div><div class="rc-sub">เรียนควบคู่กับสถานประกอบการ</div></div></label>
         </div>
       </div>
@@ -438,6 +438,14 @@
           <select class="form-control" id="inp-birthDay"><option value="">วัน</option></select>
           <select class="form-control" id="inp-birthMonth"><option value="">เดือน</option></select>
           <select class="form-control" id="inp-birthYear"><option value="">ปี พ.ศ.</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สัญชาติ / เชื้อชาติ / ศาสนา</label>
+        <div class="field-row" style="grid-template-columns:1fr 1fr 1fr">
+          <select class="form-control" id="inp-nationality"><option value="ไทย">ไทย</option><option value="พม่า">พม่า</option><option value="ลาว">ลาว</option><option value="กัมพูชา">กัมพูชา</option><option value="เวียดนาม">เวียดนาม</option><option value="จีน">จีน</option><option value="อื่นๆ">อื่นๆ</option></select>
+          <select class="form-control" id="inp-ethnicity"><option value="ไทย">ไทย</option><option value="พม่า">พม่า</option><option value="ลาว">ลาว</option><option value="กัมพูชา">กัมพูชา</option><option value="เวียดนาม">เวียดนาม</option><option value="จีน">จีน</option><option value="อื่นๆ">อื่นๆ</option></select>
+          <select class="form-control" id="inp-religion"><option value="พุทธ">พุทธ</option><option value="อิสลาม">อิสลาม</option><option value="คริสต์">คริสต์</option><option value="ฮินดู">ฮินดู</option><option value="ซิกข์">ซิกข์</option><option value="อื่นๆ">อื่นๆ</option></select>
         </div>
       </div>
       <div class="form-group"><label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label><input class="form-control" id="inp-phone" type="tel" maxlength="10" placeholder="0812345678" inputmode="numeric"></div>
@@ -999,7 +1007,7 @@ function _handlePhoto(cardEl,preview,label,result,docType,onFile){
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 8;},
 
@@ -1096,7 +1104,7 @@ const Form = {
   _roundLabel(round){return ROUND_CODE_TO_LABEL[round]||round;},
 
   _initStep2() {
-    ['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
     this._populateBirthDateSelects();
     this._updateEducationOptions();
     document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
@@ -1152,18 +1160,23 @@ const Form = {
 
   _initStep4() {
     this._renderParents();
-    document.getElementById('btn-add-parent').onclick=()=>{this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false});this._renderParents();};
+    document.getElementById('btn-add-parent').onclick=()=>{this.data.parents.push({type:'father',idCard:'',prefix:'นาย',firstName:'',lastName:'',firstNameEn:'',lastNameEn:'',phone:'',occupation:'',isDeceased:false,unknownInfo:false});this._renderParents();};
   },
   _renderParents() {
     const container=document.getElementById('parents-container');container.innerHTML='';
     if(!this.data.parents.length){container.innerHTML=`<p class="text-muted text-sm" style="padding:16px;text-align:center">ยังไม่มีข้อมูล — กดปุ่มด้านล่างเพื่อเพิ่ม</p>`;return;}
     this.data.parents.forEach((p,i)=>{
       const card=document.createElement('div');card.className='parent-item';
-      card.innerHTML=`<button class="btn btn-sm btn-danger remove-btn" data-idx="${i}">ลบ</button><div class="field-stack" style="margin-top:8px"><div class="form-group"><label class="form-label">ประเภท</label><select class="form-control" data-field="type" data-idx="${i}"><option value="father" ${p.type==='father'?'selected':''}>บิดา</option><option value="mother" ${p.type==='mother'?'selected':''}>มารดา</option></select></div><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${i}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${i}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${i}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label></div>`;
+      const skip=p.isDeceased||p.unknownInfo;
+      card.innerHTML=`<button class="btn btn-sm btn-danger remove-btn" data-idx="${i}">ลบ</button><div class="field-stack" style="margin-top:8px"><div class="form-group"><label class="form-label">ประเภท</label><select class="form-control" data-field="type" data-idx="${i}"><option value="father" ${p.type==='father'?'selected':''}>บิดา</option><option value="mother" ${p.type==='mother'?'selected':''}>มารดา</option></select></div><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${i}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${i}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields${skip?' hidden':''}"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${i}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${i}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${i}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${i}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${i}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${i}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${i}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${i}" value="${p.occupation}"></div></div></div></div>`;
       container.appendChild(card);
     });
     container.querySelectorAll('.remove-btn').forEach(btn=>{btn.onclick=()=>{this.data.parents.splice(+btn.dataset.idx,1);this._renderParents();};});
-    container.querySelectorAll('[data-field]').forEach(el=>{el.addEventListener('change',()=>{const idx=+el.dataset.idx,field=el.dataset.field;this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;});});
+    container.querySelectorAll('[data-field]').forEach(el=>{el.addEventListener('change',()=>{
+      const idx=+el.dataset.idx,field=el.dataset.field;
+      this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;
+      if(field==='isDeceased'||field==='unknownInfo')this._renderParents();
+    });});
   },
 
   _initStep5() {
@@ -1222,8 +1235,9 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
-    if(n===2){['idCard','prefix','firstName','lastName','phone','education','oldSchool','educationProvince','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});this.data.birthDate=this._getBirthDateISO();}
-    if(n===3){this.data.addrProvince=document.getElementById('addr-province').value;this.data.addrDistrict=document.getElementById('addr-district').value;this.data.addrSubDistrict=document.getElementById('addr-subdistrict').value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
+    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
+    if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
+    if(n===4){for(const p of this.data.parents){const label=p.type==='father'?'บิดา':'มารดา';if(p.isDeceased||p.unknownInfo)continue;if(!p.idCard||p.idCard.length!==13)return err(`กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);if(!p.firstName.trim()||!p.lastName.trim())return err(`กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`);}}
     if(n===5){['idCard','prefix','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
   },
 
@@ -1232,7 +1246,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         hideLoading();

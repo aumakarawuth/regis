@@ -488,6 +488,7 @@
   <!-- STEP 6 -->
   <div class="step-panel" id="step-6">
     <div class="step-heading"><div class="step-icon">🧑</div>ข้อมูลผู้ปกครอง</div>
+    <p class="text-sm text-muted" style="margin-bottom:16px">กรอกเฉพาะกรณีที่นักเรียนไม่ได้อยู่กับบิดา/มารดา — ข้ามได้หากไม่มีข้อมูล</p>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button id="btn-copy-father" class="btn btn-outline btn-sm" style="flex:1">📋 ดึงข้อมูลบิดา</button>
       <button id="btn-copy-mother" class="btn btn-outline btn-sm" style="flex:1">📋 ดึงข้อมูลมารดา</button>
@@ -498,12 +499,12 @@
         <div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" id="grd-idCard" type="tel" maxlength="13" inputmode="numeric"></div>
       </div>
       <div class="field-row">
-        <div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" id="grd-firstName" type="text"></div>
-        <div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" id="grd-lastName" type="text"></div>
+        <div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" id="grd-firstName" type="text"></div>
+        <div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" id="grd-lastName" type="text"></div>
       </div>
       <div class="field-row">
         <div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" id="grd-phone" type="tel" maxlength="10" inputmode="numeric"></div>
-        <div class="form-group"><label class="form-label">ความสัมพันธ์ <span class="required">*</span></label><select class="form-control" id="grd-relation"><option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ตา">ปู่/ตา</option><option value="ย่า/ยาย">ย่า/ยาย</option><option value="พี่">พี่</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option><option value="อื่นๆ">อื่นๆ</option></select></div>
+        <div class="form-group"><label class="form-label">ความสัมพันธ์</label><select class="form-control" id="grd-relation"><option value="">-- เลือกความสัมพันธ์ --</option><option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ตา">ปู่/ตา</option><option value="ย่า/ยาย">ย่า/ยาย</option><option value="พี่">พี่</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option><option value="อื่นๆ">อื่นๆ</option></select></div>
       </div>
     </div>
   </div>
@@ -518,26 +519,32 @@
   <!-- STEP 8 -->
   <div class="step-panel" id="step-8">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
-    <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
-      <button id="btn-skip-payment" class="btn btn-sm" style="background:#92400E;color:#fff;white-space:nowrap;flex-shrink:0">ข้ามขั้นตอนนี้</button>
+    <div id="payment-dual-notice" class="hidden" style="background:#DBEAFE;border-radius:10px;padding:16px;text-align:center;color:#1E40AF">
+      <p class="fw-600">🏭 หลักสูตรทวิภาคีไม่ต้องชำระค่าสมัคร</p>
+      <p class="text-sm" style="margin-top:4px">ไม่ต้องแนบหลักฐานการชำระเงิน — กด "ถัดไป" เพื่อดำเนินการต่อ</p>
     </div>
-    <div class="qr-container">
-      <p class="text-sm text-muted">สแกน QR Code PromptPay</p>
-      <img id="promptpay-qr" alt="QR PromptPay" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block'">
-      <div id="qr-fallback" style="display:none;padding:16px;background:var(--clr-bg);border-radius:8px;text-align:center">
-        <p class="text-sm">PromptPay: <strong id="pp-number"></strong></p>
+    <div id="payment-normal-content">
+      <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
+        <button id="btn-skip-payment" class="btn btn-sm" style="background:#92400E;color:#fff;white-space:nowrap;flex-shrink:0">ข้ามขั้นตอนนี้</button>
       </div>
-      <div class="payment-amount" id="payment-amount">฿300</div>
-      <p class="text-xs text-muted mt-2">ค่าสมัครเรียน (ไม่คืนเงิน)</p>
-    </div>
-    <hr class="divider">
-    <p class="fw-600" style="margin-bottom:12px">แนบหลักฐานชำระเงิน <span class="required">*</span></p>
-    <div class="doc-upload-card" id="slip-upload-card">
-      <div class="doc-icon">📸</div>
-      <div class="doc-label">แนบสลิปโอนเงิน</div>
-      <div class="doc-sublabel">แตะเพื่อถ่าย/เลือกภาพ</div>
-      <img class="doc-preview hidden" alt="slip">
+      <div class="qr-container">
+        <p class="text-sm text-muted">สแกน QR Code PromptPay</p>
+        <img id="promptpay-qr" alt="QR PromptPay" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block'">
+        <div id="qr-fallback" style="display:none;padding:16px;background:var(--clr-bg);border-radius:8px;text-align:center">
+          <p class="text-sm">PromptPay: <strong id="pp-number"></strong></p>
+        </div>
+        <div class="payment-amount" id="payment-amount">฿300</div>
+        <p class="text-xs text-muted mt-2">ค่าสมัครเรียน (ไม่คืนเงิน)</p>
+      </div>
+      <hr class="divider">
+      <p class="fw-600" style="margin-bottom:12px">แนบหลักฐานชำระเงิน <span class="required">*</span></p>
+      <div class="doc-upload-card" id="slip-upload-card">
+        <div class="doc-icon">📸</div>
+        <div class="doc-label">แนบสลิปโอนเงิน</div>
+        <div class="doc-sublabel">แตะเพื่อถ่าย/เลือกภาพ</div>
+        <img class="doc-preview hidden" alt="slip">
+      </div>
     </div>
   </div>
 
@@ -1155,6 +1162,7 @@ const Form = {
   },
   async _loadEduProvinces() {
     const provSel=document.getElementById('inp-educationProvince');
+    if(provSel.options.length>1)return; // already populated — avoid re-appending duplicate options on revisit
     try{const pvs=await Address.loadProvinces();pvs.forEach(p=>{provSel.appendChild(new Option(p.name,p.id));});if(this.data.educationProvince)provSel.value=this.data.educationProvince;}catch(e){}
   },
 
@@ -1204,7 +1212,7 @@ const Form = {
   },
   _copyParent(type) {
     const parent=this.data.parents.find(p=>p.type===type);
-    if(!parent){showToast('ไม่พบข้อมูล','warning');return;}
+    if(!parent||parent.isDeceased||parent.unknownInfo){showToast('ไม่มีข้อมูล'+(type==='father'?'บิดา':'มารดา')+'ให้ดึง','warning');return;}
     ['idCard','prefix','firstName','lastName','phone'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el){el.value=parent[f];this.data.guardian[f]=parent[f];}});
     document.getElementById('grd-relation').value=type==='father'?'บิดา':'มารดา';
     this.data.guardian.relation=type==='father'?'บิดา':'มารดา';
@@ -1226,6 +1234,9 @@ const Form = {
   },
 
   _initStep8() {
+    document.getElementById('payment-dual-notice').classList.toggle('hidden',!this.isDual);
+    document.getElementById('payment-normal-content').classList.toggle('hidden',this.isDual);
+    if(this.isDual){this.data.payment.skipped=true;return;}
     const amount=CONFIG.APPLICATION_FEE;
     document.getElementById('payment-amount').textContent='฿'+amount.toLocaleString();
     document.getElementById('promptpay-qr').src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
@@ -1249,7 +1260,18 @@ const Form = {
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
     if(n===5){const msg=this._validateParent('mother');if(msg)return err(msg);}
+    if(n===6){
+      // prefix has a non-empty default and doesn't signal intent on its own;
+      // the rest are blank until the applicant actually enters something.
+      const g={};['idCard','firstName','lastName','phone','relation'].forEach(f=>{const el=document.getElementById('grd-'+f);g[f]=el?el.value.trim():'';});
+      const anyFilled=Object.values(g).some(v=>v!=='');
+      if(anyFilled){
+        if(!g.firstName||!g.lastName)return err('กรุณากรอกชื่อ-นามสกุลผู้ปกครองให้ครบ หรือลบข้อมูลที่กรอกไว้ทั้งหมดถ้าไม่ต้องการระบุผู้ปกครอง');
+        if(!g.relation)return err('กรุณาเลือกความสัมพันธ์กับผู้ปกครอง');
+      }
+    }
     if(n===7){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
+    if(n===8&&!this.isDual){if(!this.data.payment.skipped&&!this.data.payment.slipBase64)return err('กรุณาแนบหลักฐานชำระเงิน หรือกด "ข้ามขั้นตอนนี้" หากต้องการชำระภายหลัง');}
     return true;
   },
 

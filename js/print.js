@@ -95,7 +95,19 @@ const FORM_CSS = [
   '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
   '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
   '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
+  // Every .fld used to share row width equally (flex:1 1 40px) regardless
+  // of its fld-xs/sm/md/lg/xl size class, since this rule's higher
+  // specificity (two classes) overrode the plain .fld-lg etc rules above.
+  // That's why a short field (e.g. ปวช. สาขา) next to a long one (โรงเรียน)
+  // could claim just as much space, starving the long field and forcing
+  // its text to wrap onto a second line. Scaling flex-grow by size class
+  // instead lets longer fields actually claim more of the row.
   '.fill-form .fld{flex:1 1 40px;min-width:0}',
+  '.fill-form .fld-xs{flex:0.5 1 30px}',
+  '.fill-form .fld-sm{flex:0.8 1 40px}',
+  '.fill-form .fld-md{flex:1.6 1 60px}',
+  '.fill-form .fld-lg{flex:2.6 1 90px}',
+  '.fill-form .fld-xl{flex:3.6 1 120px}',
   '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
   '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
 
@@ -252,7 +264,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.6') !== -1) + ' ม.6 ' +
-      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _fld(isPvchGrad ? s.education : '', 'fld-md') +
+      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _fld(isPvchGrad ? s.education : '', 'fld-sm') +
       ' โรงเรียน ' + _fld(s.oldSchool, 'fld-lg') + '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +

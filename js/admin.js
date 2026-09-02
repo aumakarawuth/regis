@@ -11,6 +11,15 @@ const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_AN
 
 const REQUIRED_DOC_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back'];
 
+// Applicant-supplied text (names, addresses, notes, ...) is rendered as
+// raw HTML all over this dashboard's template literals — escape it before
+// interpolating, or a malicious name/note runs script in a logged-in
+// admin/staff session (which holds full RLS privileges).
+function _esc(v) {
+  if (v === undefined || v === null) return '';
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ROUND_LABELS comes from js/round-labels.js (loaded before this file) —
 // the round dropdown is restricted to those exact labels on purpose so a
 // typo here can't silently make a branch unselectable again.
@@ -267,8 +276,8 @@ const Admin = {
     const appItem = s => `
       <div class="notif-item" data-open-id="${s.id}">
         <div>
-          <div class="notif-item-title">${s.prefix || ''}${s.firstName || ''} ${s.lastName || ''}</div>
-          <div class="notif-item-sub">${s.applicationNo || '—'} · ${_thDate(s.applyDate)}</div>
+          <div class="notif-item-title">${_esc(s.prefix)}${_esc(s.firstName)} ${_esc(s.lastName)}</div>
+          <div class="notif-item-sub">${_esc(s.applicationNo) || '—'} · ${_thDate(s.applyDate)}</div>
         </div>
       </div>`;
 
@@ -278,7 +287,7 @@ const Admin = {
       section('⚠️ ความพยายามสมัครซ้ำ (เลขบัตร ปชช.)', duplicates, d => `
         <div class="notif-item notif-item-dup">
           <div>
-            <div class="notif-item-title">${d.attempted_first_name || ''} ${d.attempted_last_name || ''} <span class="notif-item-sub">(${d.id_card})</span></div>
+            <div class="notif-item-title">${_esc(d.attempted_first_name)} ${_esc(d.attempted_last_name)} <span class="notif-item-sub">(${_esc(d.id_card)})</span></div>
             <div class="notif-item-sub">ลองสมัครซ้ำเมื่อ ${_thDate(d.attempted_at)}</div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
@@ -400,15 +409,15 @@ const Admin = {
 
     tbody.innerHTML = items.map(s => `
       <tr data-id="${s.id}">
-        <td class="td-appno">${s.applicationNo || '—'}</td>
-        <td><div class="td-name">${s.prefix || ''}${s.firstName || ''} ${s.lastName || ''}</div>
-        <div class="td-sub">${s.idCard || ''}</div></td>
-        <td><div>${s.branchName || '—'}</div><div class="td-sub">${s.roundName || ''}</div></td>
-        <td>${s.phone || '—'}</td>
+        <td class="td-appno">${_esc(s.applicationNo) || '—'}</td>
+        <td><div class="td-name">${_esc(s.prefix)}${_esc(s.firstName)} ${_esc(s.lastName)}</div>
+        <div class="td-sub">${_esc(s.idCard)}</div></td>
+        <td><div>${_esc(s.branchName) || '—'}</div><div class="td-sub">${_esc(s.roundName)}</div></td>
+        <td>${_esc(s.phone) || '—'}</td>
         <td style="white-space:nowrap">${_thDate(s.applyDate)}</td>
         <td><span class="badge ${_statusBadge(s.status)}">${_statusLabel(s.status)}</span></td>
         <td>${s.docsComplete ? '<span class="badge badge-success">ครบ</span>' : '<span class="badge badge-warning">ไม่ครบ</span>'}</td>
-        <td>${s.assignedStaffId ? staffName(s.assignedStaffId) : '<span style="color:var(--muted)">— ยังไม่มอบหมาย —</span>'}</td>
+        <td>${s.assignedStaffId ? _esc(staffName(s.assignedStaffId)) : '<span style="color:var(--muted)">— ยังไม่มอบหมาย —</span>'}</td>
         <td><button class="btn btn-outline btn-sm" data-open-id="${s.id}">ดูรายละเอียด</button></td>
       </tr>
     `).join('');
@@ -545,9 +554,9 @@ const Admin = {
       ? data.map(f => {
           const staff = Array.isArray(f.staff) ? f.staff[0] : f.staff;
           return `<div style="font-size:0.8125rem;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="font-weight:700">${staff?.name || 'ไม่ระบุ'}</span>
+          <span style="font-weight:700">${_esc(staff?.name) || 'ไม่ระบุ'}</span>
           <span style="color:var(--muted)"> · ${_thDate(f.created_at)}</span>
-          <div>${f.note}</div>
+          <div>${_esc(f.note)}</div>
         </div>`;
         }).join('')
       : '';
@@ -596,7 +605,7 @@ const Admin = {
             ${r.status === 'pending' ? `<button class="btn btn-outline btn-sm" data-resolve-request="${r.id}">ทำเครื่องหมายว่าครบแล้ว</button>` : ''}
           </div>
           <div class="doc-request-item-docs">${r.doc_types.map(t => `<span>${_docLabel(t)}</span>`).join('')}</div>
-          ${r.note ? `<div class="doc-request-item-note">"${r.note}"</div>` : ''}
+          ${r.note ? `<div class="doc-request-item-note">"${_esc(r.note)}"</div>` : ''}
         </div>`).join('')
       : '<p class="doc-request-history-empty">ยังไม่มีคำขอเอกสาร</p>';
 
@@ -642,12 +651,17 @@ const Admin = {
 
   async _verifyDoc(docId, table, verified, btn) {
     const { data: { session } } = await _sb.auth.getSession();
-    const { error } = await _sb.from(table || 'documents').update({
+    if (!session) { showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'error'); return; }
+    // .select() so an RLS policy that silently matches zero rows (no
+    // permission, not "no error") is caught here instead of showing a
+    // false "verified" success while nothing was actually saved.
+    const { data, error } = await _sb.from(table || 'documents').update({
       is_verified: verified,
       verified_at: verified ? new Date().toISOString() : null,
       verified_by: verified ? session.user.id : null,
-    }).eq('id', docId);
+    }).eq('id', docId).select();
     if (error) { showToast('เกิดข้อผิดพลาด', 'error'); return; }
+    if (!data || !data.length) { showToast('ไม่มีสิทธิ์แก้ไขรายการนี้', 'error'); return; }
 
     btn.textContent = verified ? '✓ ผ่านแล้ว' : 'ตรวจสอบ';
     btn.className = `btn btn-sm ${verified ? 'btn-outline' : 'btn-primary'}`;
@@ -1137,7 +1151,7 @@ function _thDate(iso) {
   try { return new Date(iso).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); }
   catch { return iso; }
 }
-function _infoItem(label, val) { return `<div><div class="info-label">${label}</div><div class="info-value">${val || '—'}</div></div>`; }
+function _infoItem(label, val) { return `<div><div class="info-label">${_esc(label)}</div><div class="info-value">${_esc(val) || '—'}</div></div>`; }
 
 function showToast(msg, type = 'info', ms = 3500) {
   const c = document.getElementById('toast-container');

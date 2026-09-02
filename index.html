@@ -270,6 +270,11 @@ var DOC_LABELS = {
 };
 function docLabel(t) { return DOC_LABELS[t] || t; }
 
+function _esc(v) {
+  if (v === undefined || v === null) return '';
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function fileToBase64(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
@@ -295,7 +300,7 @@ async function renderDocRequests(lineUserId) {
     card.className = 'doc-request-card';
     card.innerHTML =
       '<h3>📋 กรุณาอัปโหลดเอกสารเพิ่มเติม</h3>' +
-      (req.note ? '<div class="req-note">"' + req.note + '"</div>' : '') +
+      (req.note ? '<div class="req-note">"' + _esc(req.note) + '"</div>' : '') +
       '<div class="doc-request-items"></div>' +
       '<button class="btn btn-primary btn-full btn-sm btn-doc-request-done" style="margin-top:12px" disabled>ส่งเอกสารครบแล้ว</button>';
     var itemsEl = card.querySelector('.doc-request-items');

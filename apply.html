@@ -1083,8 +1083,27 @@ const Form = {
     // โหลดหลักสูตร — mode=program
     await this._loadPrograms();
     this._bindNav();
-    this._renderStep(1);
+    const draft=this._loadDraft();
+    let startStep=1;
+    if(draft&&draft.data){
+      Object.assign(this.data,draft.data,{lineUserId:this.data.lineUserId,displayName:this.data.displayName,pictureUrl:this.data.pictureUrl});
+      this.isDual=draft.isDual||false;
+      startStep=Math.min(Math.max(draft.currentStep||1,1),this.totalSteps);
+      showToast('กู้คืนข้อมูลที่กรอกไว้ก่อนหน้า','success');
+    }
+    window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')this._persistCurrentStep();});
+    window.addEventListener('pagehide',()=>this._persistCurrentStep());
+    this._renderStep(startStep);
   },
+  // Draft persistence — keeps in-progress applications across page
+  // reloads/closes so an applicant who leaves mid-form doesn't lose what
+  // they already filled in. Keyed per LINE user so it never bleeds across
+  // accounts on a shared device.
+  _draftKey(){return 'regis_draft_'+this.data.lineUserId;},
+  _saveDraft(){try{localStorage.setItem(this._draftKey(),JSON.stringify({data:this.data,currentStep:this.currentStep,isDual:this.isDual}));}catch(e){}},
+  _loadDraft(){try{const raw=localStorage.getItem(this._draftKey());return raw?JSON.parse(raw):null;}catch(e){return null;}},
+  _clearDraft(){try{localStorage.removeItem(this._draftKey());}catch(e){}},
+  _persistCurrentStep(){try{this._saveStep(this.currentStep);}catch(e){}this._saveDraft();},
 
   async _loadPrograms() {
     try {
@@ -1242,6 +1261,7 @@ const Form = {
       const field=el.dataset.field;
       this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;
       if(field==='isDeceased'||field==='unknownInfo')this._renderParentCard(type,containerId);
+      this._saveDraft();
     });});
   },
   _validateParent(type) {
@@ -1264,6 +1284,7 @@ const Form = {
     ['idCard','prefix','firstName','lastName','phone'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el){el.value=parent[f];this.data.guardian[f]=parent[f];}});
     document.getElementById('grd-relation').value=type==='father'?'บิดา':'มารดา';
     this.data.guardian.relation=type==='father'?'บิดา':'มารดา';
+    this._saveDraft();
     showToast('คัดลอกข้อมูลแล้ว','success');
   },
 
@@ -1276,7 +1297,7 @@ const Form = {
       const card=document.createElement('div');card.className='doc-upload-card';card.dataset.docType=doc.id;
       card.innerHTML=`<div class="doc-icon">${doc.icon}</div><div class="doc-label">${doc.label}${doc.required?' <span style="color:var(--clr-danger)">*</span>':''}</div><div class="doc-sublabel">แตะเพื่อถ่าย/เลือก</div><img class="doc-preview hidden" alt="preview">`;
       if(this.data.documents[doc.id]){card.classList.add('has-file');card.querySelector('.doc-preview').src=this.data.documents[doc.id];card.querySelector('.doc-preview').classList.remove('hidden');card.querySelector('.doc-label').innerHTML='✅ '+doc.label;}
-      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;});
+      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;this._saveDraft();});
       wrapper.appendChild(card);grid.appendChild(wrapper);
     });
   },
@@ -1292,7 +1313,7 @@ const Form = {
     const skipBtn=document.getElementById('btn-skip-payment');
     if(skipBtn&&!skipBtn._bound){skipBtn._bound=true;skipBtn.onclick=()=>{this.data.payment.skipped=true;this.data.payment.slipBase64='';this._saveStep(this.currentStep);this._renderStep(this.currentStep+1);};}
     const slipCard=document.getElementById('slip-upload-card');
-    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this.data.payment.skipped=false;},true);slipCard._bound=true;}
+    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this.data.payment.skipped=false;this._saveDraft();},true);slipCard._bound=true;}
     if(this.data.payment.slipBase64){slipCard.classList.add('has-file');slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;slipCard.querySelector('.doc-preview').classList.remove('hidden');}
   },
 
@@ -1330,6 +1351,7 @@ const Form = {
     if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===6){['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
+    this._saveDraft();
   },
 
   async _submit() {
@@ -1341,6 +1363,7 @@ const Form = {
       const res=await API.submitApplication(payload);
       if(res.success){
         hideLoading();
+        this._clearDraft();
         this._showSuccess(res.applicationNo);
         // Fire-and-forget — a LINE push failure shouldn't block the
         // already-successful application from showing as submitted.

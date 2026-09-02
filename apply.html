@@ -1094,6 +1094,57 @@ function _handlePhoto(cardEl,preview,label,result,docType,onFile){
 }
 
 // ============================================================
+// DRAFT DB — IndexedDB-backed key/value store for the in-progress
+// application draft. See Form._saveDraft/_loadDraft/_clearDraft.
+// ============================================================
+const DraftDB = {
+  _dbPromise:null,
+  _openDB(){
+    if(this._dbPromise)return this._dbPromise;
+    this._dbPromise=new Promise((resolve,reject)=>{
+      if(!window.indexedDB){reject(new Error('IndexedDB unavailable'));return;}
+      const req=indexedDB.open('regis-drafts',1);
+      req.onupgradeneeded=()=>{req.result.createObjectStore('drafts');};
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+    return this._dbPromise;
+  },
+  async get(key){
+    try{
+      const db=await this._openDB();
+      return await new Promise((resolve,reject)=>{
+        const req=db.transaction('drafts','readonly').objectStore('drafts').get(key);
+        req.onsuccess=()=>resolve(req.result||null);
+        req.onerror=()=>reject(req.error);
+      });
+    }catch(e){return null;}
+  },
+  async set(key,value){
+    try{
+      const db=await this._openDB();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('drafts','readwrite');
+        tx.objectStore('drafts').put(value,key);
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error);
+      });
+    }catch(e){/* private-browsing/storage-disabled — draft resume just won't work this session */}
+  },
+  async del(key){
+    try{
+      const db=await this._openDB();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('drafts','readwrite');
+        tx.objectStore('drafts').delete(key);
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error);
+      });
+    }catch(e){}
+  },
+};
+
+// ============================================================
 // FORM CONTROLLER
 // ============================================================
 const Form = {
@@ -1113,7 +1164,7 @@ const Form = {
     // โหลดหลักสูตร — mode=program
     await this._loadPrograms();
     this._bindNav();
-    const draft=this._loadDraft();
+    const draft=await this._loadDraft();
     let startStep=1;
     if(draft&&draft.data){
       Object.assign(this.data,draft.data,{lineUserId:this.data.lineUserId,displayName:this.data.displayName,pictureUrl:this.data.pictureUrl});
@@ -1128,24 +1179,16 @@ const Form = {
   // Draft persistence — keeps in-progress applications across page
   // reloads/closes so an applicant who leaves mid-form doesn't lose what
   // they already filled in. Keyed per LINE user so it never bleeds across
-  // accounts on a shared device.
+  // accounts on a shared device. Backed by IndexedDB (via DraftDB, below)
+  // rather than localStorage — a draft with 5 full-size document photos
+  // plus a payment slip easily runs several MB of base64, well past what
+  // localStorage's ~5-10MB-per-origin quota can hold, and previously that
+  // meant the resume feature silently stopped working exactly for
+  // whoever got furthest along.
   _draftKey(){return 'regis_draft_'+this.data.lineUserId;},
-  _saveDraft(){
-    try{localStorage.setItem(this._draftKey(),JSON.stringify({data:this.data,currentStep:this.currentStep,isDual:this.isDual}));return;}
-    catch(e){/* likely quota exceeded — the base64 photos push this over the limit; fall through */}
-    // Retry without the photo/slip data so at least the step/text fields
-    // (the parts a user is most likely mid-typing) survive a reload —
-    // silently doing nothing here meant the whole resume feature quietly
-    // stopped working the moment someone got furthest along (most photos
-    // attached), which is exactly the worst time to lose it.
-    try{
-      const {documents,payment,...rest}=this.data;
-      localStorage.setItem(this._draftKey(),JSON.stringify({data:{...rest,documents:{},payment:{slipBase64:'',skipped:payment?.skipped||false}},currentStep:this.currentStep,isDual:this.isDual}));
-      if(!this._draftPhotoWarningShown){this._draftPhotoWarningShown=true;showToast('รูปที่แนบไว้มีขนาดใหญ่เกินจะบันทึกอัตโนมัติ หากออกจากหน้านี้อาจต้องแนบรูปใหม่','warning',6000);}
-    }catch(e){/* still failing — nothing more we can do without IndexedDB */}
-  },
-  _loadDraft(){try{const raw=localStorage.getItem(this._draftKey());return raw?JSON.parse(raw):null;}catch(e){return null;}},
-  _clearDraft(){try{localStorage.removeItem(this._draftKey());}catch(e){}},
+  async _saveDraft(){await DraftDB.set(this._draftKey(),{data:this.data,currentStep:this.currentStep,isDual:this.isDual});},
+  async _loadDraft(){return await DraftDB.get(this._draftKey());},
+  async _clearDraft(){await DraftDB.del(this._draftKey());},
   _persistCurrentStep(){try{this._saveStep(this.currentStep);}catch(e){}this._saveDraft();},
 
   async _loadPrograms() {

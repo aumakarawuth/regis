@@ -963,12 +963,22 @@ const Camera = {
     if(isA4){const maxH=Math.round(vh*0.75),w=Math.round(maxH/1.414);frame.style.width=w+'px';frame.style.height=maxH+'px';}
     else{frame.style.width=Math.round(vw*0.82)+'px';frame.style.height=Math.round(vw*0.82*0.63)+'px';}
     document.getElementById('camera-overlay').classList.remove('hidden');
-    await this._startStream(); this._startFrameCheck();
+    const started=await this._startStream();
+    if(started)this._startFrameCheck();
   },
   async _startStream() {
     this._stopStream();
-    try{this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false});document.getElementById('camera-video').srcObject=this.stream;}
-    catch(err){showToast('ไม่สามารถเข้าถึงกล้องได้','error');this.close();}
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      // Some in-app browsers/webviews don't expose getUserMedia at all
+      // (or never surface the OS permission prompt for it) — fall back to
+      // the native camera-capture file input so the user can still take a photo.
+      const cb=this.currentCallback;this.close();this._fallbackCapture(cb);return false;
+    }
+    try{this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this._facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false});document.getElementById('camera-video').srcObject=this.stream;return true;}
+    catch(err){const cb=this.currentCallback;this.close();this._fallbackCapture(cb);return false;}
+  },
+  _fallbackCapture(callback){
+    this._pickFile(callback,'environment');
   },
   _stopStream(){if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;}},
   flipCamera(){this._facingMode=this._facingMode==='environment'?'user':'environment';this._startStream();},
@@ -996,7 +1006,35 @@ const Camera = {
   // 3000px+/several MB with no resizing, unlike the capture() path which
   // already downsizes to <=1600px. Re-encoding through a canvas here keeps
   // uploads (and the whole submit step) fast regardless of source photo size.
-  pickFromGallery(callback){const input=document.createElement('input');input.type='file';input.accept='image/*';input.addEventListener('change',async(e)=>{const file=e.target.files[0];if(!file)return;const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(file);});try{const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=dataUrl;});const maxDim=1600;let w=img.naturalWidth,h=img.naturalHeight;if(w>maxDim||h>maxDim){const scale=maxDim/Math.max(w,h);w=Math.round(w*scale);h=Math.round(h*scale);}this.canvas.width=w;this.canvas.height=h;this.ctx.drawImage(img,0,0,w,h);const base64=this.canvas.toDataURL('image/jpeg',0.85);callback({base64,isBlurry:false,blurScore:999});}catch(err){callback({base64:dataUrl,isBlurry:false,blurScore:999});}});input.click();},
+  pickFromGallery(callback){this._pickFile(callback);},
+  // Some webviews (e.g. in-app browsers) won't reliably dispatch clicks or
+  // change events on a file input that isn't attached to the document, so
+  // the input is appended (hidden) before click() and cleaned up afterward.
+  _pickFile(callback,capture){
+    const input=document.createElement('input');
+    input.type='file';input.accept='image/*';input.style.cssText='position:fixed;top:-9999px;left:-9999px;';
+    if(capture)input.capture=capture;
+    const cleanup=()=>{if(input.parentNode)input.parentNode.removeChild(input);};
+    input.addEventListener('change',async(e)=>{
+      try{
+        const file=e.target.files[0];
+        if(!file){cleanup();return;}
+        let dataUrl;
+        try{dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej(r.error||new Error('read failed'));r.readAsDataURL(file);});}
+        catch(err){cleanup();showToast('ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่','error');return;}
+        try{
+          const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=dataUrl;});
+          const maxDim=1600;let w=img.naturalWidth,h=img.naturalHeight;
+          if(w>maxDim||h>maxDim){const scale=maxDim/Math.max(w,h);w=Math.round(w*scale);h=Math.round(h*scale);}
+          this.canvas.width=w;this.canvas.height=h;this.ctx.drawImage(img,0,0,w,h);
+          const base64=this.canvas.toDataURL('image/jpeg',0.85);
+          callback({base64,isBlurry:false,blurScore:999});
+        }catch(err){callback({base64:dataUrl,isBlurry:false,blurScore:999});}
+      }finally{cleanup();}
+    });
+    document.body.appendChild(input);
+    input.click();
+  },
   close(){clearInterval(this._checkInterval);this._stopStream();document.getElementById('camera-overlay').classList.add('hidden');},
 };
 
@@ -1005,7 +1043,9 @@ function initDocUpload(cardEl,docType,onFile,galleryOnly){
   cardEl.addEventListener('click',()=>{
     if(cardEl.classList.contains('has-file'))if(!confirm('ต้องการเปลี่ยนรูปใหม่?'))return;
     if(galleryOnly){Camera.pickFromGallery((r)=>_handlePhoto(cardEl,preview,label,r,docType,onFile));return;}
+    if(document.getElementById('doc-picker-sheet'))return;
     const sheet=document.createElement('div');
+    sheet.id='doc-picker-sheet';
     sheet.style.cssText='position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;';
     sheet.innerHTML=`<div style="width:100%;background:#fff;border-radius:16px 16px 0 0;padding:20px;"><p style="font-weight:700;margin-bottom:16px;text-align:center">เลือกรูปภาพ</p><button id="btn-cam" class="btn btn-primary btn-full" style="margin-bottom:10px">📷 ถ่ายภาพ</button><button id="btn-gal" class="btn btn-outline btn-full" style="margin-bottom:10px">🖼️ เลือกจากแกลเลอรี่</button><button id="btn-cx" class="btn btn-ghost btn-full">ยกเลิก</button></div>`;
     document.body.appendChild(sheet);
@@ -1043,8 +1083,27 @@ const Form = {
     // โหลดหลักสูตร — mode=program
     await this._loadPrograms();
     this._bindNav();
-    this._renderStep(1);
+    const draft=this._loadDraft();
+    let startStep=1;
+    if(draft&&draft.data){
+      Object.assign(this.data,draft.data,{lineUserId:this.data.lineUserId,displayName:this.data.displayName,pictureUrl:this.data.pictureUrl});
+      this.isDual=draft.isDual||false;
+      startStep=Math.min(Math.max(draft.currentStep||1,1),this.totalSteps);
+      showToast('กู้คืนข้อมูลที่กรอกไว้ก่อนหน้า','success');
+    }
+    window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')this._persistCurrentStep();});
+    window.addEventListener('pagehide',()=>this._persistCurrentStep());
+    this._renderStep(startStep);
   },
+  // Draft persistence — keeps in-progress applications across page
+  // reloads/closes so an applicant who leaves mid-form doesn't lose what
+  // they already filled in. Keyed per LINE user so it never bleeds across
+  // accounts on a shared device.
+  _draftKey(){return 'regis_draft_'+this.data.lineUserId;},
+  _saveDraft(){try{localStorage.setItem(this._draftKey(),JSON.stringify({data:this.data,currentStep:this.currentStep,isDual:this.isDual}));}catch(e){}},
+  _loadDraft(){try{const raw=localStorage.getItem(this._draftKey());return raw?JSON.parse(raw):null;}catch(e){return null;}},
+  _clearDraft(){try{localStorage.removeItem(this._draftKey());}catch(e){}},
+  _persistCurrentStep(){try{this._saveStep(this.currentStep);}catch(e){}this._saveDraft();},
 
   async _loadPrograms() {
     try {
@@ -1202,6 +1261,7 @@ const Form = {
       const field=el.dataset.field;
       this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;
       if(field==='isDeceased'||field==='unknownInfo')this._renderParentCard(type,containerId);
+      this._saveDraft();
     });});
   },
   _validateParent(type) {
@@ -1224,6 +1284,7 @@ const Form = {
     ['idCard','prefix','firstName','lastName','phone'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el){el.value=parent[f];this.data.guardian[f]=parent[f];}});
     document.getElementById('grd-relation').value=type==='father'?'บิดา':'มารดา';
     this.data.guardian.relation=type==='father'?'บิดา':'มารดา';
+    this._saveDraft();
     showToast('คัดลอกข้อมูลแล้ว','success');
   },
 
@@ -1236,7 +1297,7 @@ const Form = {
       const card=document.createElement('div');card.className='doc-upload-card';card.dataset.docType=doc.id;
       card.innerHTML=`<div class="doc-icon">${doc.icon}</div><div class="doc-label">${doc.label}${doc.required?' <span style="color:var(--clr-danger)">*</span>':''}</div><div class="doc-sublabel">แตะเพื่อถ่าย/เลือก</div><img class="doc-preview hidden" alt="preview">`;
       if(this.data.documents[doc.id]){card.classList.add('has-file');card.querySelector('.doc-preview').src=this.data.documents[doc.id];card.querySelector('.doc-preview').classList.remove('hidden');card.querySelector('.doc-label').innerHTML='✅ '+doc.label;}
-      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;});
+      initDocUpload(card,doc.id,(type,base64)=>{this.data.documents[type]=base64;this._saveDraft();});
       wrapper.appendChild(card);grid.appendChild(wrapper);
     });
   },
@@ -1252,7 +1313,7 @@ const Form = {
     const skipBtn=document.getElementById('btn-skip-payment');
     if(skipBtn&&!skipBtn._bound){skipBtn._bound=true;skipBtn.onclick=()=>{this.data.payment.skipped=true;this.data.payment.slipBase64='';this._saveStep(this.currentStep);this._renderStep(this.currentStep+1);};}
     const slipCard=document.getElementById('slip-upload-card');
-    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this.data.payment.skipped=false;},true);slipCard._bound=true;}
+    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this.data.payment.skipped=false;this._saveDraft();},true);slipCard._bound=true;}
     if(this.data.payment.slipBase64){slipCard.classList.add('has-file');slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;slipCard.querySelector('.doc-preview').classList.remove('hidden');}
   },
 
@@ -1275,6 +1336,7 @@ const Form = {
       const anyFilled=Object.values(g).some(v=>v!=='');
       if(anyFilled){
         if(!g.firstName||!g.lastName)return err('กรุณากรอกชื่อ-นามสกุลผู้ปกครองให้ครบ หรือลบข้อมูลที่กรอกไว้ทั้งหมดถ้าไม่ต้องการระบุผู้ปกครอง');
+        if(!g.phone)return err('กรุณากรอกเบอร์โทรผู้ปกครอง');
         if(!g.relation)return err('กรุณาเลือกความสัมพันธ์กับผู้ปกครอง');
         if(!g.address)return err('กรุณากรอกที่อยู่ผู้ปกครอง');
       }
@@ -1289,6 +1351,7 @@ const Form = {
     if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===6){['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
+    this._saveDraft();
   },
 
   async _submit() {
@@ -1300,6 +1363,7 @@ const Form = {
       const res=await API.submitApplication(payload);
       if(res.success){
         hideLoading();
+        this._clearDraft();
         this._showSuccess(res.applicationNo);
         // Fire-and-forget — a LINE push failure shouldn't block the
         // already-successful application from showing as submitted.

@@ -919,27 +919,57 @@ const Address = {
     items.forEach(item => { const o=document.createElement('option'); o.value=item[vk]; o.textContent=item[lk]; if(item.zipcode) o.dataset.zipcode=item.zipcode; frag.appendChild(o); });
     sel.appendChild(frag); sel.disabled = items.length === 0;
   },
-  async bindAddressSelects(opts) {
+  // `initial` restores a previously-chosen address by id (province ->
+  // district -> subdistrict cascade) — used when revisiting step 3 or
+  // resuming a saved draft, since _saveStep(3) only has display text to
+  // send to the RPC and text alone can't repopulate a <select>.
+  async bindAddressSelects(opts, initial) {
     const self=this, {provinceSelect:ps,districtSelect:ds,subDistrictSelect:ss,zipcodeInput:zi}=opts;
     const pvs=await this.loadProvinces();
     this.populateSelect(ps,pvs,'id','name','-- เลือกจังหวัด --');
     this.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');
     this.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');
     ds.disabled=ss.disabled=true;
-    ps.addEventListener('change', async function() {
-      const pid=ps.value, isBkk=pid==='111';
-      if(!pid){self.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');self.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');ds.disabled=ss.disabled=true;if(zi)zi.value='';return;}
-      const dis=await self.loadDistricts(pid);
-      self.populateSelect(ds,dis,'id','name',isBkk?'-- เลือกเขต --':'-- เลือกอำเภอ --');
-      ds.disabled=false; self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --'); ss.disabled=true; if(zi)zi.value='';
-    });
-    ds.addEventListener('change', async function() {
-      const did=ds.value,isBkk=ps.value==='111';
-      if(!did){self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');ss.disabled=true;if(zi)zi.value='';return;}
-      const subs=await self.loadSubDistricts(did);
-      self.populateSelect(ss,subs,'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --'); ss.disabled=false; if(zi)zi.value='';
-    });
-    if(zi) ss.addEventListener('change',function(){const s=ss.options[ss.selectedIndex];zi.value=s?.dataset.zipcode||'';});
+
+    // These selects are static, persistent DOM elements (unlike the doc
+    // upload cards) — bind the cascade listeners once, not on every
+    // revisit of step 3, or they'd stack and fire the same load N times.
+    if(!ps._addrBound){
+      ps._addrBound=true;
+      ps.addEventListener('change', async function() {
+        const pid=ps.value, isBkk=pid==='111';
+        if(!pid){self.populateSelect(ds,[],'id','name','-- เลือกอำเภอ/เขต --');self.populateSelect(ss,[],'id','name','-- เลือกตำบล/แขวง --');ds.disabled=ss.disabled=true;if(zi)zi.value='';return;}
+        const dis=await self.loadDistricts(pid);
+        self.populateSelect(ds,dis,'id','name',isBkk?'-- เลือกเขต --':'-- เลือกอำเภอ --');
+        ds.disabled=false; self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --'); ss.disabled=true; if(zi)zi.value='';
+      });
+      ds.addEventListener('change', async function() {
+        const did=ds.value,isBkk=ps.value==='111';
+        if(!did){self.populateSelect(ss,[],'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');ss.disabled=true;if(zi)zi.value='';return;}
+        const subs=await self.loadSubDistricts(did);
+        self.populateSelect(ss,subs,'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --'); ss.disabled=false; if(zi)zi.value='';
+      });
+      if(zi) ss.addEventListener('change',function(){const s=ss.options[ss.selectedIndex];zi.value=s?.dataset.zipcode||'';});
+    }
+
+    if(initial?.provinceId){
+      ps.value=initial.provinceId;
+      const isBkk=initial.provinceId==='111';
+      const dis=await this.loadDistricts(initial.provinceId);
+      this.populateSelect(ds,dis,'id','name',isBkk?'-- เลือกเขต --':'-- เลือกอำเภอ --');
+      ds.disabled=false;
+      if(initial.districtId){
+        ds.value=initial.districtId;
+        const subs=await this.loadSubDistricts(initial.districtId);
+        this.populateSelect(ss,subs,'id','name',isBkk?'-- เลือกแขวง --':'-- เลือกตำบล --');
+        ss.disabled=false;
+        if(initial.subDistrictId){
+          ss.value=initial.subDistrictId;
+          const s=ss.options[ss.selectedIndex];
+          if(zi&&s) zi.value=s.dataset.zipcode||'';
+        }
+      }
+    }
   },
 };
 
@@ -1068,7 +1098,7 @@ function _handlePhoto(cardEl,preview,label,result,docType,onFile){
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 9;},
 
@@ -1100,7 +1130,20 @@ const Form = {
   // they already filled in. Keyed per LINE user so it never bleeds across
   // accounts on a shared device.
   _draftKey(){return 'regis_draft_'+this.data.lineUserId;},
-  _saveDraft(){try{localStorage.setItem(this._draftKey(),JSON.stringify({data:this.data,currentStep:this.currentStep,isDual:this.isDual}));}catch(e){}},
+  _saveDraft(){
+    try{localStorage.setItem(this._draftKey(),JSON.stringify({data:this.data,currentStep:this.currentStep,isDual:this.isDual}));return;}
+    catch(e){/* likely quota exceeded — the base64 photos push this over the limit; fall through */}
+    // Retry without the photo/slip data so at least the step/text fields
+    // (the parts a user is most likely mid-typing) survive a reload —
+    // silently doing nothing here meant the whole resume feature quietly
+    // stopped working the moment someone got furthest along (most photos
+    // attached), which is exactly the worst time to lose it.
+    try{
+      const {documents,payment,...rest}=this.data;
+      localStorage.setItem(this._draftKey(),JSON.stringify({data:{...rest,documents:{},payment:{slipBase64:'',skipped:payment?.skipped||false}},currentStep:this.currentStep,isDual:this.isDual}));
+      if(!this._draftPhotoWarningShown){this._draftPhotoWarningShown=true;showToast('รูปที่แนบไว้มีขนาดใหญ่เกินจะบันทึกอัตโนมัติ หากออกจากหน้านี้อาจต้องแนบรูปใหม่','warning',6000);}
+    }catch(e){/* still failing — nothing more we can do without IndexedDB */}
+  },
   _loadDraft(){try{const raw=localStorage.getItem(this._draftKey());return raw?JSON.parse(raw):null;}catch(e){return null;}},
   _clearDraft(){try{localStorage.removeItem(this._draftKey());}catch(e){}},
   _persistCurrentStep(){try{this._saveStep(this.currentStep);}catch(e){}this._saveDraft();},
@@ -1171,7 +1214,13 @@ const Form = {
       branchSel.disabled=filtered.length===0;
       bg.style.opacity=filtered.length?'1':'0.4'; bg.style.pointerEvents=filtered.length?'auto':'none';
       branchSel.value=this.data.branchId;
-      branchSel.onchange=()=>{const branch=branches.find(b=>b.id===branchSel.value);const prog=branch?.programs.find(p=>p.round===this._roundLabel(this.data.studyRound));this.data.selectedProgramId=prog?.programId||'';};
+      const syncSelectedProgram=()=>{const branch=branches.find(b=>b.id===branchSel.value);const prog=branch?.programs.find(p=>p.round===this._roundLabel(this.data.studyRound));this.data.selectedProgramId=prog?.programId||'';};
+      branchSel.onchange=syncSelectedProgram;
+      // Setting .value above doesn't fire 'change', so re-picking the same
+      // branch after switching round (or revisiting this step) left
+      // selectedProgramId pointing at the previous round's program —
+      // recompute it here too, every time the branch list is rebuilt.
+      syncSelectedProgram();
     };
     levelSel.onchange=updateBranches;
     if(this.data.levelId)updateBranches();
@@ -1184,7 +1233,7 @@ const Form = {
   _roundLabel(round){return ROUND_CODE_TO_LABEL[round]||round;},
 
   _initStep2() {
-    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','educationProvince'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
     this._populateBirthDateSelects();
     this._updateEducationOptions();
     document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
@@ -1208,6 +1257,17 @@ const Form = {
       daySel.value=String(d);monthSel.value=String(m);yearSel.value=String(y+543);
     }
   },
+  // students.id_card is unique — a mistyped-but-still-13-digit number
+  // permanently "burns" a real person's ID for future use (they get
+  // 'เลขบัตรประชาชนนี้ถูกใช้งานแล้ว' with no way to fix it themselves).
+  // The standard Thai national ID checksum catches most typos before
+  // that submit ever happens.
+  _isValidThaiId(id){
+    if(!/^\d{13}$/.test(id))return false;
+    let sum=0;for(let i=0;i<12;i++)sum+=Number(id[i])*(13-i);
+    const check=(11-(sum%11))%10;
+    return check===Number(id[12]);
+  },
   _getBirthDateISO(){
     const d=document.getElementById('inp-birthDay').value,m=document.getElementById('inp-birthMonth').value,yBE=document.getElementById('inp-birthYear').value;
     if(!d||!m||!yBE)return '';
@@ -1230,11 +1290,14 @@ const Form = {
   async _loadEduProvinces() {
     const provSel=document.getElementById('inp-educationProvince');
     if(provSel.options.length>1)return; // already populated — avoid re-appending duplicate options on revisit
-    try{const pvs=await Address.loadProvinces();pvs.forEach(p=>{provSel.appendChild(new Option(p.name,p.id));});if(this.data.educationProvince)provSel.value=this.data.educationProvince;}catch(e){}
+    try{const pvs=await Address.loadProvinces();pvs.forEach(p=>{provSel.appendChild(new Option(p.name,p.id));});if(this.data.educationProvinceId)provSel.value=this.data.educationProvinceId;}catch(e){}
   },
 
   async _initStep3() {
-    await Address.bindAddressSelects({provinceSelect:document.getElementById('addr-province'),districtSelect:document.getElementById('addr-district'),subDistrictSelect:document.getElementById('addr-subdistrict'),zipcodeInput:document.getElementById('addr-zipcode')});
+    await Address.bindAddressSelects(
+      {provinceSelect:document.getElementById('addr-province'),districtSelect:document.getElementById('addr-district'),subDistrictSelect:document.getElementById('addr-subdistrict'),zipcodeInput:document.getElementById('addr-zipcode')},
+      {provinceId:this.data.addrProvinceId,districtId:this.data.addrDistrictId,subDistrictId:this.data.addrSubDistrictId},
+    );
     if(this.data.addrDetail)document.getElementById('addr-detail').value=this.data.addrDetail;
     if(this.data.addrZipcode)document.getElementById('addr-zipcode').value=this.data.addrZipcode;
   },
@@ -1277,6 +1340,7 @@ const Form = {
     const label=type==='father'?'บิดา':'มารดา';
     if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
     if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
+    if(p.phone&&p.phone.length!==10)return `เบอร์โทรของ${label}ต้องมี 10 หลัก`;
     return null;
   },
 
@@ -1332,7 +1396,7 @@ const Form = {
   _validate(n) {
     const err=(msg)=>{showToast(msg,'error');return false;};
     if(n===1){if(!this.data.studyRound)return err('กรุณาเลือกรอบเรียน');if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');if(!document.getElementById('sel-branch').value)return err('กรุณาเลือกสาขาวิชา');}
-    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
+    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
     if(n===5){const msg=this._validateParent('mother');if(msg)return err(msg);}
@@ -1343,7 +1407,7 @@ const Form = {
       const anyFilled=Object.values(g).some(v=>v!=='');
       if(anyFilled){
         if(!g.firstName||!g.lastName)return err('กรุณากรอกชื่อ-นามสกุลผู้ปกครองให้ครบ หรือลบข้อมูลที่กรอกไว้ทั้งหมดถ้าไม่ต้องการระบุผู้ปกครอง');
-        if(!g.phone)return err('กรุณากรอกเบอร์โทรผู้ปกครอง');
+        if(g.phone.length!==10)return err('เบอร์โทรผู้ปกครองต้องมี 10 หลัก');
         if(!g.relation)return err('กรุณาเลือกความสัมพันธ์กับผู้ปกครอง');
         if(!g.address)return err('กรุณากรอกที่อยู่ผู้ปกครอง');
       }
@@ -1355,8 +1419,8 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
-    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
-    if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
+    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvinceId=ep?ep.value:'';this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
+    if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrProvinceId=pv.value;this.data.addrDistrictId=ds.value;this.data.addrSubDistrictId=ss.value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===6){['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
     this._saveDraft();
   },
@@ -1369,8 +1433,34 @@ const Form = {
       const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
+        // submit_application() already created the student/enrollment row
+        // at this point — re-running _submit() on a failure would insert a
+        // duplicate application, so a failed document/payment upload gets
+        // one automatic retry here (now safe: uploadDocument upserts)
+        // instead of ever resubmitting the whole form.
+        let failedTypes=(res.documents||[]).filter(d=>!d.success).map(d=>d.type);
+        let paymentFailed=!!res.paymentError;
+        if((failedTypes.length||paymentFailed)&&res.studentId){
+          showLoading('กำลังลองอัปโหลดเอกสารอีกครั้ง...','submit');
+          for(const type of failedTypes.slice()){
+            try{await API.uploadDocument({studentId:res.studentId,docType:type,base64Data:this.data.documents[type]?.split(',')[1],mimeType:'image/jpeg'});failedTypes=failedTypes.filter(t=>t!==type);}
+            catch(e){/* still failed — reported below */}
+          }
+          if(paymentFailed&&this.data.payment.slipBase64){
+            try{await API.uploadDocument({studentId:res.studentId,docType:'payment_slip',base64Data:this.data.payment.slipBase64.split(',')[1],mimeType:'image/jpeg'});paymentFailed=false;}
+            catch(e){/* still failed — reported below */}
+          }
+        }
         hideLoading();
-        this._clearDraft();
+        if(failedTypes.length||paymentFailed){
+          // Keep the draft (photos are still needed) instead of clearing
+          // it — the application itself was created successfully with an
+          // applicationNo, but some files never made it to storage.
+          this._saveDraft();
+          showToast('ส่งใบสมัครสำเร็จ แต่เอกสารบางรายการอัปโหลดไม่สำเร็จ ('+([...failedTypes,...(paymentFailed?['สลิปโอนเงิน']:[])].map(_docLabel).join(', '))+') กรุณาติดต่อเจ้าหน้าที่หรือลองใหม่ภายหลัง','error',8000);
+        } else {
+          this._clearDraft();
+        }
         this._showSuccess(res.applicationNo);
         // Fire-and-forget — a LINE push failure shouldn't block the
         // already-successful application from showing as submitted.

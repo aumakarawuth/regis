@@ -107,9 +107,12 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ success: false, message: 'Method not allowed' }, 405);
   if (!LINE_CHANNEL_ACCESS_TOKEN) return json({ success: false, message: 'LINE_CHANNEL_ACCESS_TOKEN not configured' }, 500);
 
-  // Caller must be a logged-in admin — verified against admin_users with
-  // the service role, using the identity from the caller's own JWT
-  // (never trust a studentId/docTypes body alone for this).
+  // Caller must be a logged-in admin OR active staff — verified against
+  // admin_users/staff with the service role, using the identity from the
+  // caller's own JWT (never trust a studentId/docTypes body alone for
+  // this). admin.js shows this action to staff too (0009_staff_logins.sql
+  // grants staff insert/update on document_requests), so staff must pass
+  // here as well, not just full admins.
   const authHeader = req.headers.get('Authorization') ?? '';
   const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
@@ -120,7 +123,10 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: adminRow } = await supabase.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
-  if (!adminRow) return json({ success: false, message: 'ไม่มีสิทธิ์แอดมิน' }, 403);
+  if (!adminRow) {
+    const { data: staffRow } = await supabase.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+    if (!staffRow) return json({ success: false, message: 'ไม่มีสิทธิ์แอดมิน' }, 403);
+  }
 
   const { studentId, docTypes, note } = await req.json().catch(() => ({}));
   if (!studentId || !Array.isArray(docTypes) || docTypes.length === 0) {

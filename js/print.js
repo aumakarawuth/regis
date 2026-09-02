@@ -319,7 +319,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
     transferRow +
 
-    '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> บ้านเลขที่' + _fld('', 'fld-xs') + ' หมู่' + _fld('', 'fld-xs') + ' ซอย' + _fld('', 'fld-sm') + ' ถนน' + _fld('', 'fld-md') + '</div>' +
+    // apply.html collects house no./moo/soi/road as one free-text field
+    // (not four separate inputs), so there's no reliable way to split it
+    // back into these four boxes — print the whole thing in one wide
+    // field instead of leaving it permanently blank.
+    '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> ' + _fld(addr.detail, 'fld-xl') + '</div>' +
     '<div class="row indent">' +
       'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
       ' อำเภอ/เขต ' + _fld(addr.district, 'fld-md') +
@@ -450,7 +454,7 @@ async function _loadStudent(studentId) {
       id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
       nationality, ethnicity, religion, weight, height, blood_type,
       id_card, phone, birth_date, applied_at, education, old_school,
-      addresses(province_text, district_text, subdistrict_text, zipcode),
+      addresses(province_text, district_text, subdistrict_text, zipcode, detail),
       parents(type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
       guardians(id_card, prefix, first_name, last_name, phone, relation, address),
       enrollments(program_rounds(round_label, branches(name, education_levels(name)))),
@@ -511,6 +515,7 @@ async function init() {
     district: addrRow?.district_text || '',
     province: addrRow?.province_text || '',
     zipcode: addrRow?.zipcode || '',
+    detail: addrRow?.detail || '',
   };
   const father = _camelPerson((s.parents || []).find(p => p.type === 'father'));
   const mother = _camelPerson((s.parents || []).find(p => p.type === 'mother'));

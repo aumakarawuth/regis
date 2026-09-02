@@ -106,11 +106,19 @@ const API = {
         });
         if (upErr) throw upErr;
 
-        const { error: dbErr } = await _sb.from('documents').insert({
+        // upsert (not insert) — re-submitting the same doc_type for this
+        // student (retry after a partial failure, or a resubmission) must
+        // replace the old row instead of leaving a stale duplicate behind
+        // with its own (possibly already-verified) is_verified state.
+        const { error: dbErr } = await _sb.from('documents').upsert({
           student_id: studentId,
           doc_type: doc.type,
           storage_path: storagePath,
-        });
+          uploaded_at: new Date().toISOString(),
+          is_verified: false,
+          verified_at: null,
+          verified_by: null,
+        }, { onConflict: 'student_id,doc_type' });
         if (dbErr) throw dbErr;
         docResults.push({ type: doc.type, success: true });
       } catch (err) {
@@ -118,6 +126,7 @@ const API = {
       }
     }
 
+    let paymentError = null;
     if (payload.payment && payload.payment.slipBase64) {
       try {
         const blob = _base64ToBlob(payload.payment.slipBase64, 'image/jpeg');
@@ -128,19 +137,24 @@ const API = {
         });
         if (upErr) throw upErr;
 
-        const { error: dbErr } = await _sb.from('payments').insert({
+        const { error: dbErr } = await _sb.from('payments').upsert({
           student_id: studentId,
           amount: payload.payment.amount || 0,
           method: 'promptpay',
           storage_path: storagePath,
-        });
+          paid_at: new Date().toISOString(),
+          is_verified: false,
+          verified_at: null,
+          verified_by: null,
+        }, { onConflict: 'student_id' });
         if (dbErr) throw dbErr;
       } catch (err) {
         console.error('Payment slip upload error:', err);
+        paymentError = err.message;
       }
     }
 
-    return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults };
+    return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults, paymentError };
   },
 
   async getApplicationStatus(lineUserId) {
@@ -177,12 +191,43 @@ const API = {
   },
 
   // ---------- Document Upload (standalone) ----------
+  // A requested payment_slip goes to the payments table/payment-slips
+  // bucket, same as the one submit_application writes — otherwise the
+  // finance-side payment record never picks up the re-uploaded slip.
   async uploadDocument({ studentId, docType, base64Data, mimeType }) {
     if (!studentId || !base64Data) return { success: false, message: 'Missing required fields' };
 
     await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, upload will fail:', err));
 
     const blob = _base64ToBlob(base64Data, mimeType || 'image/jpeg');
+
+    if (docType === 'payment_slip') {
+      const storagePath = `${studentId}/slip.jpg`;
+      const { error: upErr } = await _sb.storage.from('payment-slips').upload(storagePath, blob, {
+        contentType: mimeType || 'image/jpeg',
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+
+      // amount is NOT NULL with no default — a student who initially
+      // skipped payment has no payments row yet, so this upsert may be an
+      // insert; fall back to the standard fee since there's no per-payment
+      // amount to read from here.
+      const { error: dbErr } = await _sb.from('payments').upsert({
+        student_id: studentId,
+        amount: CONFIG.APPLICATION_FEE || 0,
+        method: 'promptpay',
+        storage_path: storagePath,
+        paid_at: new Date().toISOString(),
+        is_verified: false,
+        verified_at: null,
+        verified_by: null,
+      }, { onConflict: 'student_id' });
+      if (dbErr) throw dbErr;
+
+      return { success: true, storagePath };
+    }
+
     const storagePath = `${studentId}/${docType}.jpg`;
     const { error: upErr } = await _sb.storage.from('documents').upload(storagePath, blob, {
       contentType: mimeType || 'image/jpeg',
@@ -190,11 +235,15 @@ const API = {
     });
     if (upErr) throw upErr;
 
-    const { error: dbErr } = await _sb.from('documents').insert({
+    const { error: dbErr } = await _sb.from('documents').upsert({
       student_id: studentId,
       doc_type: docType,
       storage_path: storagePath,
-    });
+      uploaded_at: new Date().toISOString(),
+      is_verified: false,
+      verified_at: null,
+      verified_by: null,
+    }, { onConflict: 'student_id,doc_type' });
     if (dbErr) throw dbErr;
 
     return { success: true, storagePath };

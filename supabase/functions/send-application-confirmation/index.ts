@@ -77,7 +77,7 @@ function buildFlex(opts: {
   const { applicationNo, applicantName, levelName, branchName, roundName, appliedAt } = opts;
   return {
     type: 'flex',
-    altText: `ใบยืนยันการสมัครเรียน — เลขที่ใบสมัคร ${applicationNo}`,
+    altText: `ใบสมัครเรียน — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
       header: {
@@ -87,7 +87,7 @@ function buildFlex(opts: {
             type: 'box', layout: 'vertical', spacing: 'xs', flex: 4,
             contents: [
               { type: 'text', text: SCHOOL_NAME, color: '#E0F2FE', size: 'xs', weight: 'bold', wrap: true },
-              { type: 'text', text: 'ใบยืนยันการสมัครเรียน', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
+              { type: 'text', text: 'ใบสมัครเรียน', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
             ],
           },
           {

@@ -324,6 +324,7 @@ const Admin = {
         old_school, assigned_staff_id,
         enrollments(status, program_rounds(round_label, branches(name, education_levels(name)))),
         documents(id, doc_type, storage_path, uploaded_at, is_verified),
+        payments(id, storage_path, amount, paid_at, is_verified),
         addresses(province_text)
       `)
       .order('applied_at', { ascending: false });
@@ -334,6 +335,7 @@ const Admin = {
       const enroll = Array.isArray(s.enrollments) ? s.enrollments[0] : s.enrollments;
       const branch = enroll?.program_rounds?.branches;
       const docs = s.documents || [];
+      const payment = (Array.isArray(s.payments) ? s.payments[0] : s.payments) || null;
       const addr = Array.isArray(s.addresses) ? s.addresses[0] : s.addresses;
       return {
         id: s.id,
@@ -346,6 +348,7 @@ const Admin = {
         roundName: enroll?.program_rounds?.round_label || '—',
         levelName: branch?.education_levels?.name || '—',
         documents: docs,
+        payment,
         docsComplete: REQUIRED_DOC_TYPES.every(t => docs.some(d => d.doc_type === t)),
       };
     });
@@ -474,16 +477,25 @@ const Admin = {
       '<div class="section-label">เอกสารแนบ</div>' +
       '<div id="dp-docs">' + (docs.length ? docs.map(d => `
         <div class="doc-row" data-doc-id="${d.id}">
-          <div class="doc-thumb" data-thumb-for="${d.id}">📄</div>
+          <div class="doc-thumb" data-thumb-for="${d.id}" data-bucket="documents" data-path="${d.storage_path}">📄</div>
           <div style="flex:1"><div class="doc-name">${_docLabel(d.doc_type)}</div><div class="doc-date">${_thDate(d.uploaded_at)}</div></div>
-          <button class="btn btn-sm ${d.is_verified ? 'btn-outline' : 'btn-primary'}" data-verify-id="${d.id}" data-verify-next="${!d.is_verified}">
+          <button class="btn btn-sm ${d.is_verified ? 'btn-outline' : 'btn-primary'}" data-verify-id="${d.id}" data-verify-table="documents" data-verify-next="${!d.is_verified}">
             ${d.is_verified ? '✓ ผ่านแล้ว' : 'ตรวจสอบ'}
           </button>
         </div>
-      `).join('') : '<p style="color:var(--muted);font-size:0.875rem">ยังไม่มีเอกสาร</p>') + '</div>';
+      `).join('') : '<p style="color:var(--muted);font-size:0.875rem">ยังไม่มีเอกสาร</p>') +
+      (s.payment && s.payment.storage_path ? `
+        <div class="doc-row" data-doc-id="${s.payment.id}">
+          <div class="doc-thumb" data-thumb-for="${s.payment.id}" data-bucket="payment-slips" data-path="${s.payment.storage_path}">📄</div>
+          <div style="flex:1"><div class="doc-name">${_docLabel('payment_slip')}</div><div class="doc-date">${_thDate(s.payment.paid_at)}</div></div>
+          <button class="btn btn-sm ${s.payment.is_verified ? 'btn-outline' : 'btn-primary'}" data-verify-id="${s.payment.id}" data-verify-table="payments" data-verify-next="${!s.payment.is_verified}">
+            ${s.payment.is_verified ? '✓ ผ่านแล้ว' : 'ตรวจสอบ'}
+          </button>
+        </div>
+      ` : '') + '</div>';
 
     document.getElementById('dp-body').querySelectorAll('[data-verify-id]').forEach(btn => {
-      btn.onclick = () => this._verifyDoc(btn.dataset.verifyId, btn.dataset.verifyNext === 'true', btn);
+      btn.onclick = () => this._verifyDoc(btn.dataset.verifyId, btn.dataset.verifyTable, btn.dataset.verifyNext === 'true', btn);
     });
 
     this._populateStaffDropdowns();
@@ -496,13 +508,13 @@ const Admin = {
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-panel').classList.add('open');
 
-    // Signed thumbnail URLs load after the panel opens (private bucket).
-    docs.forEach(async d => {
-      const thumb = document.querySelector(`[data-thumb-for="${d.id}"]`);
-      if (!thumb) return;
-      const { data: signed } = await _sb.storage.from('documents').createSignedUrl(d.storage_path, 3600);
+    // Signed thumbnail URLs load after the panel opens (private buckets).
+    document.getElementById('dp-body').querySelectorAll('[data-thumb-for]').forEach(async thumb => {
+      const { bucket, path } = thumb.dataset;
+      if (!bucket || !path) return;
+      const { data: signed } = await _sb.storage.from(bucket).createSignedUrl(path, 3600);
       if (signed?.signedUrl) {
-        thumb.innerHTML = `<img src="${signed.signedUrl}" alt="${_docLabel(d.doc_type)}">`;
+        thumb.innerHTML = `<img src="${signed.signedUrl}" alt="เอกสาร">`;
         thumb.onclick = () => window.open(signed.signedUrl, '_blank');
       }
     });
@@ -628,9 +640,9 @@ const Admin = {
     this._loadNotifications();
   },
 
-  async _verifyDoc(docId, verified, btn) {
+  async _verifyDoc(docId, table, verified, btn) {
     const { data: { session } } = await _sb.auth.getSession();
-    const { error } = await _sb.from('documents').update({
+    const { error } = await _sb.from(table || 'documents').update({
       is_verified: verified,
       verified_at: verified ? new Date().toISOString() : null,
       verified_by: verified ? session.user.id : null,
@@ -642,8 +654,12 @@ const Admin = {
     btn.dataset.verifyNext = String(!verified);
     showToast(verified ? 'ยืนยันเอกสารแล้ว' : 'ยกเลิกการยืนยัน', 'success');
 
-    const doc = this.currentStudent?.documents.find(d => d.id === docId);
-    if (doc) doc.is_verified = verified;
+    if (table === 'payments') {
+      if (this.currentStudent?.payment?.id === docId) this.currentStudent.payment.is_verified = verified;
+    } else {
+      const doc = this.currentStudent?.documents.find(d => d.id === docId);
+      if (doc) doc.is_verified = verified;
+    }
   },
 
   async _updateStatus(status) {

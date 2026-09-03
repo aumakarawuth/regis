@@ -145,6 +145,11 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .info-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
 .info-value { font-size: 0.9rem; font-weight: 600; }
+.info-editable .info-value { cursor: pointer; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; }
+.info-editable .info-value:hover { background: var(--bg-alt, #f3f4f6); }
+.info-editable .edit-ic { font-size: 0.75rem; opacity: 0.5; }
+.dp-name-editable { cursor: pointer; }
+.dp-name-editable .edit-ic { font-size: 0.8rem; opacity: 0.5; margin-left: 4px; }
 .section-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .doc-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .doc-row:last-child { border: none; }
@@ -428,6 +433,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
     <button class="btn btn-danger btn-sm" id="dp-btn-reject">❌ ปฏิเสธ</button>
     <button class="btn btn-outline btn-sm" id="dp-btn-pending">🔄 รอดำเนินการ</button>
     <button class="btn btn-outline btn-sm" id="dp-btn-print">🖨️ พิมพ์</button>
+    <button class="btn btn-outline btn-sm" id="dp-btn-regen-pdf">🔄 สร้าง PDF ใหม่</button>
     <button class="btn btn-danger btn-sm admin-only" id="dp-btn-delete" style="margin-left:auto">🗑️ ลบใบสมัคร</button>
   </div>
 </div>

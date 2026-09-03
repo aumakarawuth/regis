@@ -454,35 +454,16 @@ const Admin = {
     if (!s) return;
     this.currentStudent = s;
 
-    document.getElementById('dp-name').textContent = `${s.prefix || ''}${s.firstName || ''} ${s.lastName || ''}`;
+    this._renderDpName();
     document.getElementById('dp-appno').textContent = s.applicationNo || '—';
 
     const docs = s.documents || [];
     document.getElementById('dp-body').innerHTML =
       '<div class="section-label">ข้อมูลการสมัคร</div>' +
-      '<div class="info-grid" style="margin-bottom:20px">' +
-      _infoItem('สาขา', s.branchName) + _infoItem('รอบ', s.roundName) +
-      _infoItem('เลขบัตร', s.idCard) + _infoItem('เบอร์โทร', s.phone) +
-      _infoItem('โรงเรียนเดิม', s.oldSchool) + _infoItem('จังหวัด', s.province) +
-      _infoItem('วันที่สมัคร', _thDate(s.applyDate)) +
-      `<div><div class="info-label">สถานะ</div><div class="info-value"><span class="badge ${_statusBadge(s.status)}">${_statusLabel(s.status)}</span></div></div>` +
-      '</div>' +
+      '<div class="info-grid" id="dp-info-grid" style="margin-bottom:20px"></div>' +
       '<div class="section-label">ผู้ดูแล / การติดตาม</div>' +
       '<div class="form-group" style="margin-bottom:12px"><select class="form-control" id="dp-assigned-staff"></select></div>' +
       '<div id="dp-followups" style="margin-bottom:20px"></div>' +
-      '<div class="doc-request-panel">' +
-        '<div class="section-label">📋 ขอเอกสารเพิ่มเติมทาง LINE</div>' +
-        '<div class="doc-chips">' +
-          _DOC_REQUEST_TYPES.map(t => `
-            <label class="doc-chip">
-              <input type="checkbox" class="dp-doc-request-check" value="${t}">
-              <span>${_docLabel(t)}</span>
-            </label>`).join('') +
-        '</div>' +
-        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี) เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด"></textarea>' +
-        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
-        '<div class="doc-request-history" id="dp-doc-requests"></div>' +
-      '</div>' +
       '<div class="section-label">เอกสารแนบ</div>' +
       '<div id="dp-docs">' + (docs.length ? docs.map(d => `
         <div class="doc-row" data-doc-id="${d.id}">
@@ -501,7 +482,22 @@ const Admin = {
             ${s.payment.is_verified ? '✓ ผ่านแล้ว' : 'ตรวจสอบ'}
           </button>
         </div>
-      ` : '') + '</div>';
+      ` : '') + '</div>' +
+      '<div class="doc-request-panel">' +
+        '<div class="section-label">📋 ขอเอกสารเพิ่มเติมทาง LINE</div>' +
+        '<div class="doc-chips">' +
+          _DOC_REQUEST_TYPES.map(t => `
+            <label class="doc-chip">
+              <input type="checkbox" class="dp-doc-request-check" value="${t}">
+              <span>${_docLabel(t)}</span>
+            </label>`).join('') +
+        '</div>' +
+        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี) เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด"></textarea>' +
+        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+        '<div class="doc-request-history" id="dp-doc-requests"></div>' +
+      '</div>';
+
+    this._renderInfoGrid();
 
     document.getElementById('dp-body').querySelectorAll('[data-verify-id]').forEach(btn => {
       btn.onclick = () => this._verifyDoc(btn.dataset.verifyId, btn.dataset.verifyTable, btn.dataset.verifyNext === 'true', btn);
@@ -527,6 +523,104 @@ const Admin = {
         thumb.onclick = () => window.open(signed.signedUrl, '_blank');
       }
     });
+  },
+
+  // ---------- Inline editing (name + basic application info) ----------
+  _renderDpName() {
+    const s = this.currentStudent;
+    const el = document.getElementById('dp-name');
+    el.className = 'dp-name-editable';
+    el.innerHTML = `${_esc(s.prefix)}${_esc(s.firstName)} ${_esc(s.lastName)}<span class="edit-ic">✏️</span>`;
+    el.onclick = () => this._editDpName();
+  },
+
+  _editDpName() {
+    const s = this.currentStudent;
+    const el = document.getElementById('dp-name');
+    el.onclick = null;
+    el.innerHTML = `
+      <select class="form-control" id="dp-edit-prefix" style="display:inline-block;width:auto;font-size:0.875rem;padding:4px 6px">
+        <option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option>
+        <option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option>
+      </select>
+      <input class="form-control" id="dp-edit-firstName" placeholder="ชื่อ" style="display:inline-block;width:100px;font-size:0.875rem;padding:4px 6px">
+      <input class="form-control" id="dp-edit-lastName" placeholder="นามสกุล" style="display:inline-block;width:120px;font-size:0.875rem;padding:4px 6px">
+      <button class="btn btn-sm btn-primary" id="dp-btn-save-name" style="padding:4px 10px">✓</button>
+      <button class="btn btn-sm btn-outline" id="dp-btn-cancel-name" style="padding:4px 10px">✕</button>
+    `;
+    document.getElementById('dp-edit-prefix').value = s.prefix || 'นาย';
+    document.getElementById('dp-edit-firstName').value = s.firstName || '';
+    document.getElementById('dp-edit-lastName').value = s.lastName || '';
+    document.getElementById('dp-btn-cancel-name').onclick = () => this._renderDpName();
+    document.getElementById('dp-btn-save-name').onclick = async () => {
+      const prefix = document.getElementById('dp-edit-prefix').value;
+      const firstName = document.getElementById('dp-edit-firstName').value.trim();
+      const lastName = document.getElementById('dp-edit-lastName').value.trim();
+      if (!firstName || !lastName) { showToast('กรุณากรอกชื่อ-นามสกุล', 'error'); return; }
+      const { error } = await _sb.from('students').update({ prefix, first_name: firstName, last_name: lastName }).eq('id', s.id);
+      if (error) { showToast('บันทึกล้มเหลว: ' + error.message, 'error'); return; }
+      s.prefix = prefix; s.firstName = firstName; s.lastName = lastName;
+      this._renderDpName();
+      this._renderTable();
+      showToast('บันทึกชื่อเรียบร้อยแล้ว', 'success');
+    };
+  },
+
+  // field -> which table/column an editable info-grid item writes to.
+  // students columns are matched by id; addresses is one-to-one with
+  // students via its own unique student_id column (no separate address id
+  // is loaded client-side, so matching by student_id is simplest and safe).
+  _EDITABLE_FIELD_MAP: {
+    idCard: { table: 'students', column: 'id_card', byId: true },
+    phone: { table: 'students', column: 'phone', byId: true },
+    oldSchool: { table: 'students', column: 'old_school', byId: true },
+    province: { table: 'addresses', column: 'province_text', byId: false },
+  },
+
+  _renderInfoGrid() {
+    const s = this.currentStudent;
+    document.getElementById('dp-info-grid').innerHTML =
+      _infoItem('สาขา', s.branchName) + _infoItem('รอบ', s.roundName) +
+      _editableInfoItem('เลขบัตร', s.idCard, 'idCard') + _editableInfoItem('เบอร์โทร', s.phone, 'phone') +
+      _editableInfoItem('โรงเรียนเดิม', s.oldSchool, 'oldSchool') + _editableInfoItem('จังหวัด', s.province, 'province') +
+      _infoItem('วันที่สมัคร', _thDate(s.applyDate)) +
+      `<div><div class="info-label">สถานะ</div><div class="info-value"><span class="badge ${_statusBadge(s.status)}">${_statusLabel(s.status)}</span></div></div>`;
+    document.getElementById('dp-info-grid').querySelectorAll('.info-editable').forEach(wrap => {
+      wrap.onclick = () => this._startEditField(wrap);
+    });
+  },
+
+  _startEditField(wrap) {
+    if (wrap.querySelector('input')) return; // already editing
+    const field = wrap.dataset.field;
+    const s = this.currentStudent;
+    const current = s[field] || '';
+    const valueDiv = wrap.querySelector('.info-value');
+    valueDiv.onclick = null;
+    valueDiv.innerHTML = `<input class="form-control" style="padding:3px 6px;font-size:0.875rem;width:100%" value="${_esc(current)}">`;
+    const input = valueDiv.querySelector('input');
+    input.focus();
+    input.select();
+
+    const finish = async (save) => {
+      const newVal = input.value.trim();
+      if (!save || newVal === current) { this._renderInfoGrid(); return; }
+      const map = this._EDITABLE_FIELD_MAP[field];
+      const query = map.byId
+        ? _sb.from(map.table).update({ [map.column]: newVal }).eq('id', s.id)
+        : _sb.from(map.table).update({ [map.column]: newVal }).eq('student_id', s.id);
+      const { error } = await query;
+      if (error) { showToast('บันทึกล้มเหลว: ' + error.message, 'error'); this._renderInfoGrid(); return; }
+      s[field] = newVal;
+      this._renderInfoGrid();
+      this._renderTable();
+      showToast('บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.dataset.cancelled = '1'; input.blur(); }
+    });
+    input.addEventListener('blur', () => finish(input.dataset.cancelled !== '1'));
   },
 
   async _assignStaff(staffId) {
@@ -1130,6 +1224,7 @@ const Admin = {
     document.getElementById('dp-btn-reject').onclick = () => this._updateStatus('rejected');
     document.getElementById('dp-btn-pending').onclick = () => this._updateStatus('pending');
     document.getElementById('dp-btn-print').onclick = () => this._printStudent();
+    document.getElementById('dp-btn-regen-pdf').onclick = () => this._printStudent();
     document.getElementById('dp-btn-delete').onclick = () => this._deleteApplication();
   },
 };
@@ -1152,6 +1247,7 @@ function _thDate(iso) {
   catch { return iso; }
 }
 function _infoItem(label, val) { return `<div><div class="info-label">${_esc(label)}</div><div class="info-value">${_esc(val) || '—'}</div></div>`; }
+function _editableInfoItem(label, val, field) { return `<div class="info-editable" data-field="${field}"><div class="info-label">${_esc(label)}</div><div class="info-value">${_esc(val) || '—'}<span class="edit-ic">✏️</span></div></div>`; }
 
 function showToast(msg, type = 'info', ms = 3500) {
   const c = document.getElementById('toast-container');

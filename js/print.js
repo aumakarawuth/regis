@@ -241,7 +241,7 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
       '<div class="cover-center">' +
         '<h1>ใบสมัคร ' + _esc(levelLabel) + '</h1>' +
         '<h2>วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</h2>' +
-        '<div class="en">Charansanitwong Technogical College</div>' +
+        '<div class="en">Charansanitwong Technological College</div>' +
         '<div class="addr">18 ถ.จรัญสนิทวงศ์ ซอย 41 แขวงอรุณอมรินทร์ เขตบางกอกน้อย กทม. 10700<br>' +
         'โทร. 0-2434-6155-7 โทรสาร. 0-2433-3647 www.charansanitwong.ac.th</div>' +
       '</div>' +
@@ -276,7 +276,16 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     ? '<div class="row indent">&#8211; เข้าศึกษา ' + _chk(false) + ' ปวส.2 ' + _chk(false) + ' ปวส.3 ห้อง/รอบ ' + _fld('', 'fld-md') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>'
     : '<div class="row indent">&#8211; เข้าศึกษา ห้อง/รอบ ' + _fld('', 'fld-md') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>';
 
-  var fatherName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
+  var guardianName = (guardian.prefix || '') + (guardian.firstName || '') + ' ' + (guardian.lastName || '');
+  // The "ลงชื่อ...ผู้ปกครอง" signature line always needs *someone's* name to
+  // put in parens — falling back to father then mother when no separate
+  // guardian was given avoids printing a bare "()" (verified against a real
+  // printed form where guardian was blank: it showed "()" with nothing
+  // inside, unlike the other two blank signature lines which use a dotted
+  // placeholder instead).
+  var guardianSignName = guardianName.trim()
+    || ((father.firstName || father.lastName) ? ((father.prefix || 'นาย') + (father.firstName || '') + ' ' + (father.lastName || '')).trim() : '')
+    || ((mother.firstName || mother.lastName) ? ((mother.prefix || 'นาง') + (mother.firstName || '') + ' ' + (mother.lastName || '')).trim() : '');
 
   return '<div class="page fill-form" style="padding:8mm">' +
     '<div class="fill-main">' +
@@ -342,7 +351,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(fatherName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
@@ -351,7 +360,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="sig-grid">' +
       '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + _esc(fatherName.trim()) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + (guardianSignName ? _esc(guardianSignName) : '............................................') + ')<br>' + _dateSlots(null) + '</div>' +
       '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
       '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +

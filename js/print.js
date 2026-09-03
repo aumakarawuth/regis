@@ -228,7 +228,7 @@ function _branchChecklistHtml(branches, branchName) {
 // ---- Cover page ----
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page cover-page">' +
-    '<div class="top-row">นาย/น.ส./นาง ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
+    '<div class="top-row">ชื่อ-นามสกุล ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
     '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +

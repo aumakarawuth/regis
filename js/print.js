@@ -272,7 +272,7 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
 }
 
 // ---- Fill page ----
-function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName) {
+function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName, studyCategory, workLocation) {
   var isPvs = level === 'pvs';
   var levelTitle = isPvs ? 'ปวส.' : 'ปวช.';
   var branches = isPvs ? PVS_BRANCHES : PVCH_BRANCHES;
@@ -335,6 +335,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row"><span class="b">2. สาขาวิชาที่สมัคร</span></div>' +
     _branchChecklistHtml(branches, branchName) +
+    '<div class="row indent">&#8211; หมวดการเรียน ' +
+      _chk(studyCategory === 'เรียน จ-ศ') + ' เรียน จ-ศ ' +
+      _chk(studyCategory === 'เรียนไปทำงานไป') + ' เรียนไปทำงานไป' +
+      (workLocation ? ('&emsp;สถานที่ทำงาน ' + _chk(workLocation === 'กรุงเทพ') + ' กรุงเทพ ' + _chk(workLocation === 'ต่างจังหวัด') + ' ต่างจังหวัด') : '') +
+    '</div>' +
 
     eduRow +
     '<div class="row indent">' +
@@ -450,7 +455,7 @@ function _roundKey(roundLabel) {
   return '';
 }
 
-function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchName, roundLabelRaw) {
+function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchName, roundLabelRaw, studyCategory, workLocation) {
   var studyRound = _roundKey(roundLabelRaw);
   var roundLabel = { morning: 'เช้า', afternoon: 'บ่าย', dual: 'ทวิภาคี' }[studyRound] || '';
   var fullName = (s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '');
@@ -461,7 +466,7 @@ function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchNa
     : (_chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้กยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'));
 
   var page1 = _coverPage(isPvs ? 'ปวส.' : 'ปวช.', fullName, roundLabel, s, _checklistItems(level, hasDoc), extraRow);
-  var page2 = _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName);
+  var page2 = _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName, studyCategory, workLocation);
   var docPages = _docPages(docs, fullName);
   return page1 + page2 + docPages;
 }
@@ -488,7 +493,7 @@ async function _loadStudent(studentId) {
       addresses(province_text, district_text, subdistrict_text, zipcode, detail),
       parents(type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
       guardians(id_card, prefix, first_name, last_name, phone, relation, address),
-      enrollments(program_rounds(round_label, branches(name, education_levels(name)))),
+      enrollments(study_category, work_location, program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
     `)
     .eq('id', studentId)
@@ -575,7 +580,7 @@ async function init() {
 
   root.innerHTML =
     '<button class="print-btn no-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
-    _buildFormHtml(isPvs, student, addr, father, mother, guardian, docs, branchName, enroll?.program_rounds?.round_label);
+    _buildFormHtml(isPvs, student, addr, father, mother, guardian, docs, branchName, enroll?.program_rounds?.round_label, enroll?.study_category, enroll?.work_location);
 
   document.getElementById('btn-print').onclick = () => window.print();
 }

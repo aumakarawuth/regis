@@ -403,7 +403,6 @@
         <div class="round-cards">
           <label class="round-card"><input type="radio" name="study-round" value="morning"><div class="rc-info"><div class="rc-name">☀️ รอบเช้า</div><div class="rc-sub">เรียน จ–ศ เวลา 08:00–16:30 น.</div></div></label>
           <label class="round-card"><input type="radio" name="study-round" value="afternoon"><div class="rc-info"><div class="rc-name">🌤️ รอบบ่าย</div><div class="rc-sub">เรียนวันอาทิตย์ เวลา 08:30–17:00 น.</div></div></label>
-          <label class="round-card"><input type="radio" name="study-round" value="dual"><div class="rc-info"><div class="rc-name">🏭 ทวิภาคี</div><div class="rc-sub">เรียนควบคู่กับสถานประกอบการ</div></div></label>
         </div>
       </div>
       <div class="form-group" id="level-group" style="opacity:0.4;pointer-events:none">
@@ -413,6 +412,22 @@
       <div class="form-group" id="branch-group" style="opacity:0.4;pointer-events:none">
         <label class="form-label">สาขาวิชา <span class="required">*</span></label>
         <select class="form-control" id="sel-branch" disabled><option value="">-- เลือกระดับก่อน --</option></select>
+      </div>
+      <div class="form-group hidden" id="study-category-group">
+        <label class="form-label">หมวดการเรียน <span class="required">*</span></label>
+        <select class="form-control" id="sel-study-category">
+          <option value="">-- เลือกหมวดการเรียน --</option>
+          <option value="เรียน จ-ศ">เรียน จ-ศ</option>
+          <option value="เรียนไปทำงานไป">เรียนไปทำงานไป</option>
+        </select>
+      </div>
+      <div class="form-group hidden" id="work-location-group">
+        <label class="form-label">สถานที่ทำงาน <span class="required">*</span></label>
+        <select class="form-control" id="sel-work-location">
+          <option value="">-- เลือกสถานที่ทำงาน --</option>
+          <option value="กรุงเทพ">กรุงเทพ</option>
+          <option value="ต่างจังหวัด">ต่างจังหวัด</option>
+        </select>
       </div>
       <div class="card" style="background:var(--clr-primary-light)">
         <p class="text-sm" style="color:#005700">💡 แสดงเฉพาะสาขาที่เปิดรับสมัคร</p>
@@ -1149,7 +1164,7 @@ const DraftDB = {
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 9;},
 
@@ -1240,6 +1255,31 @@ const Form = {
       });
     });
     if(this.data.studyRound){const lg=document.getElementById('level-group');lg.style.opacity='1';lg.style.pointerEvents='auto';this._populateLevels();}
+
+    const catSel=document.getElementById('sel-study-category');
+    catSel.value=this.data.studyCategory;
+    catSel.onchange=()=>{this.data.studyCategory=catSel.value;this._updateWorkLocationUI(document.getElementById('sel-branch').value);};
+    const locSel=document.getElementById('sel-work-location');
+    locSel.value=this.data.workLocation;
+    locSel.onchange=()=>{this.data.workLocation=locSel.value;};
+    this._updateStudyCategoryUI(document.getElementById('sel-branch').value);
+  },
+  // "ธุรกิจค้าปลีก" / "การจัดการธุรกิจค้าปลีก" are the only branches with a
+  // กรุงเทพ/ต่างจังหวัด work-study split (matches print.js's PVCH_BRANCHES/
+  // PVS_BRANCHES "[กทม./ต่างจังหวัด]" naming).
+  _isRetailBranch(branchId){
+    const branch=(this.programs.branches||[]).find(b=>b.id===branchId);
+    return !!branch && branch.name.indexOf('ค้าปลีก')!==-1;
+  },
+  _updateStudyCategoryUI(branchId){
+    const cg=document.getElementById('study-category-group');
+    if(branchId){cg.classList.remove('hidden');}else{cg.classList.add('hidden');this.data.studyCategory='';document.getElementById('sel-study-category').value='';}
+    this._updateWorkLocationUI(branchId);
+  },
+  _updateWorkLocationUI(branchId){
+    const lg=document.getElementById('work-location-group');
+    const show=this.data.studyCategory==='เรียนไปทำงานไป'&&this._isRetailBranch(branchId);
+    if(show){lg.classList.remove('hidden');}else{lg.classList.add('hidden');this.data.workLocation='';document.getElementById('sel-work-location').value='';}
   },
   _populateLevels() {
     const{levels,branches}=this.programs;
@@ -1258,12 +1298,13 @@ const Form = {
       bg.style.opacity=filtered.length?'1':'0.4'; bg.style.pointerEvents=filtered.length?'auto':'none';
       branchSel.value=this.data.branchId;
       const syncSelectedProgram=()=>{const branch=branches.find(b=>b.id===branchSel.value);const prog=branch?.programs.find(p=>p.round===this._roundLabel(this.data.studyRound));this.data.selectedProgramId=prog?.programId||'';};
-      branchSel.onchange=syncSelectedProgram;
+      branchSel.onchange=()=>{syncSelectedProgram();this._updateStudyCategoryUI(branchSel.value);};
       // Setting .value above doesn't fire 'change', so re-picking the same
       // branch after switching round (or revisiting this step) left
       // selectedProgramId pointing at the previous round's program —
       // recompute it here too, every time the branch list is rebuilt.
       syncSelectedProgram();
+      this._updateStudyCategoryUI(branchSel.value);
     };
     levelSel.onchange=updateBranches;
     if(this.data.levelId)updateBranches();
@@ -1433,12 +1474,20 @@ const Form = {
 
   _initStep9() {
     const d=this.data;
-    document.getElementById('review-content').innerHTML=`<div class="review-section"><h3>หลักสูตรที่เลือก</h3><div class="review-row"><span class="review-key">รอบเรียน</span><span class="review-val">${d.studyRoundName}</span></div><div class="review-row"><span class="review-key">ระดับ</span><span class="review-val">${d.levelName}</span></div><div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${d.branchName}</span></div></div><div class="review-section"><h3>ข้อมูลส่วนตัว</h3><div class="review-row"><span class="review-key">ชื่อ-นามสกุล</span><span class="review-val">${d.prefix}${d.firstName} ${d.lastName}</span></div><div class="review-row"><span class="review-key">เลขบัตร ปชช.</span><span class="review-val">${d.idCard}</span></div><div class="review-row"><span class="review-key">วันเกิด</span><span class="review-val">${d.birthDate}</span></div><div class="review-row"><span class="review-key">เบอร์โทร</span><span class="review-val">${d.phone}</span></div><div class="review-row"><span class="review-key">วุฒิการศึกษา</span><span class="review-val">${d.education}</span></div><div class="review-row"><span class="review-key">โรงเรียนเดิม</span><span class="review-val">${d.oldSchool}</span></div></div><div class="review-section"><h3>เอกสาร</h3>${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}${!d.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}${d.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}</div>`;
+    document.getElementById('review-content').innerHTML=`<div class="review-section"><h3>หลักสูตรที่เลือก</h3><div class="review-row"><span class="review-key">รอบเรียน</span><span class="review-val">${d.studyRoundName}</span></div><div class="review-row"><span class="review-key">ระดับ</span><span class="review-val">${d.levelName}</span></div><div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${d.branchName}</span></div><div class="review-row"><span class="review-key">หมวดการเรียน</span><span class="review-val">${d.studyCategory}</span></div>${d.workLocation?`<div class="review-row"><span class="review-key">สถานที่ทำงาน</span><span class="review-val">${d.workLocation}</span></div>`:''}</div><div class="review-section"><h3>ข้อมูลส่วนตัว</h3><div class="review-row"><span class="review-key">ชื่อ-นามสกุล</span><span class="review-val">${d.prefix}${d.firstName} ${d.lastName}</span></div><div class="review-row"><span class="review-key">เลขบัตร ปชช.</span><span class="review-val">${d.idCard}</span></div><div class="review-row"><span class="review-key">วันเกิด</span><span class="review-val">${d.birthDate}</span></div><div class="review-row"><span class="review-key">เบอร์โทร</span><span class="review-val">${d.phone}</span></div><div class="review-row"><span class="review-key">วุฒิการศึกษา</span><span class="review-val">${d.education}</span></div><div class="review-row"><span class="review-key">โรงเรียนเดิม</span><span class="review-val">${d.oldSchool}</span></div></div><div class="review-section"><h3>เอกสาร</h3>${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}${!d.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}${d.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}</div>`;
   },
 
   _validate(n) {
     const err=(msg)=>{showToast(msg,'error');return false;};
-    if(n===1){if(!this.data.studyRound)return err('กรุณาเลือกรอบเรียน');if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');if(!document.getElementById('sel-branch').value)return err('กรุณาเลือกสาขาวิชา');}
+    if(n===1){
+      if(!this.data.studyRound)return err('กรุณาเลือกรอบเรียน');
+      if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');
+      const branchId=document.getElementById('sel-branch').value;
+      if(!branchId)return err('กรุณาเลือกสาขาวิชา');
+      const studyCategory=document.getElementById('sel-study-category').value;
+      if(!studyCategory)return err('กรุณาเลือกหมวดการเรียน');
+      if(studyCategory==='เรียนไปทำงานไป'&&this._isRetailBranch(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกสถานที่ทำงาน');
+    }
     if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
@@ -1461,7 +1510,7 @@ const Form = {
   },
 
   _saveStep(n) {
-    if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');}
+    if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');this.data.studyCategory=document.getElementById('sel-study-category').value;this.data.workLocation=document.getElementById('sel-work-location').value;}
     if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvinceId=ep?ep.value:'';this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrProvinceId=pv.value;this.data.addrDistrictId=ds.value;this.data.addrSubDistrictId=ss.value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===6){['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
@@ -1473,7 +1522,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         // submit_application() already created the student/enrollment row

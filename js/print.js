@@ -129,7 +129,8 @@ const FORM_CSS = [
   '.idwrap{display:inline-block;vertical-align:middle}',
   '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
   '.idgap{display:inline-block;width:4px}',
-  '.big-idcode{display:inline-block;vertical-align:bottom;margin-top:-9px}',
+  '.big-idcode{position:relative;display:inline-block;width:1px;height:1px;vertical-align:bottom}',
+  '.big-idcode .idwrap{position:absolute;left:0;bottom:0;white-space:nowrap}',
   '.big-idcode .idbox{width:22.5px;height:27px;font-size:16.5px;line-height:27px}',
 
   '.row{margin:4px 0}',

@@ -25,6 +25,14 @@ function _chk(checked) {
   return '<span class="chk">(' + (checked ? '<b>&nbsp;/&nbsp;</b>' : '&nbsp;&nbsp;&nbsp;') + ')</span>';
 }
 
+// English title matching the Thai prefix, so the "Mr./Miss./Mrs." line
+// shows the one that actually applies instead of listing all three.
+function _enTitle(prefixTh) {
+  if (prefixTh === 'นาย' || prefixTh === 'เด็กชาย') return 'Mr.';
+  if (prefixTh === 'นาง') return 'Mrs.';
+  return 'Miss.'; // นางสาว, เด็กหญิง, or unset
+}
+
 function _fld(value, sizeClass) {
   return '<span class="fld ' + (sizeClass || '') + '">' + _esc(value) + '</span>';
 }
@@ -301,11 +309,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
     '<div class="row indent">' +
-      'นาย/นางสาว/นาง ' + _fld(s.firstName, 'fld-lg') +
-      ' นามสกุล ' + _fld(s.lastName, 'fld-lg') +
+      'ชื่อ-นามสกุล ' + _fld(s.firstName, 'fld-lg') +
+      ' ' + _fld(s.lastName, 'fld-lg') +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
-    '<div class="row indent">Mr./Miss./Mrs. ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
+    '<div class="row indent">' + _enTitle(s.prefix) + ' ' + _fld(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
       '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
@@ -351,8 +359,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> นาย/นางสาว/นาง ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
+    '<div class="row indent" style="border-bottom:1px dotted #000;height:1.3em"></div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +

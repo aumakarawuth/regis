@@ -129,6 +129,8 @@ const FORM_CSS = [
   '.idwrap{display:inline-block;vertical-align:middle}',
   '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
   '.idgap{display:inline-block;width:4px}',
+  '.big-idcode{display:inline-block;vertical-align:bottom;margin-top:-9px}',
+  '.big-idcode .idbox{width:22.5px;height:27px;font-size:16.5px;line-height:27px}',
 
   '.row{margin:4px 0}',
   '.indent{padding-left:20px}',
@@ -244,7 +246,7 @@ function _branchChecklistHtml(branches, branchName) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page cover-page">' +
     '<div class="top-row">ชื่อ-นามสกุล ' + _fld(fullName, 'fld-lg') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว ' + _plainBoxes(11) + '</div>' +
+    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +

@@ -1260,6 +1260,13 @@ const Form = {
         this.isDual=radio.value==='dual';
         const lg=document.getElementById('level-group');lg.style.opacity='1';lg.style.pointerEvents='auto';
         this._populateLevels();
+        // _populateLevels() only re-derives the branch list (and, with
+        // it, the หมวดการเรียน visibility) when a level has already been
+        // saved via _saveStep — switching rounds before ever clicking
+        // "next" skipped that path entirely, leaving the group visible
+        // for รอบบ่าย. Recompute it directly off the live branch select
+        // so it reacts to every round change.
+        this._updateStudyCategoryUI(document.getElementById('sel-branch').value);
       });
     });
     if(this.data.studyRound){const lg=document.getElementById('level-group');lg.style.opacity='1';lg.style.pointerEvents='auto';this._populateLevels();}

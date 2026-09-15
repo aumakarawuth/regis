@@ -92,6 +92,7 @@ const FORM_CSS = [
   '.fill-form{font-size:1.08rem;height:280mm;display:flex;flex-direction:column;overflow:hidden}',
   '.fill-main{flex:0 0 auto}',
   '.finance-fill{flex:1 1 auto;margin-top:6px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 23px,#888 23px 24px)}',
+  '.finance-box{border:2px solid #000;padding:8px 12px;margin-top:6px}',
   '.page{box-sizing:border-box;position:relative;width:100%;min-height:280mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '.cover-page{height:280mm}',
@@ -386,6 +387,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
     '</div>' +
+    '<div class="finance-box"><b>รับเงินค่าลงทะเบียนและค่าธรรมเนียมการศึกษา</b><br>ใบเสร็จ เลขที่...................................&emsp;วันที่ ............/............/...............</div>' +
     '<div class="finance-fill"></div>' +
   '</div>';
 }

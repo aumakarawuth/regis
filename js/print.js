@@ -156,9 +156,7 @@ const FORM_CSS = [
   '.sig-grid{margin-top:16px;text-align:center}',
   '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:2.2em;vertical-align:bottom;margin:0 4px}',
-  '.sig-name{display:inline-block;margin-top:14px}',
-  '.sig-date{display:inline-block;margin-top:-8px}',
+  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 
@@ -379,10 +377,10 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br><span class="sig-name">(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')</span><br><span class="sig-date">' + _dateSlots(null) + '</span></div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br><span class="sig-name">(' + (guardianSignName ? _esc(guardianSignName) : '............................................') + ')</span><br><span class="sig-date">' + _dateSlots(null) + '</span></div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br><span class="sig-name">(............................................)</span><br><span class="sig-date">' + _dateSlots(null) + '</span></div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br><span class="sig-name">(............................................)</span><br><span class="sig-date">' + _dateSlots(null) + '</span></div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + (guardianSignName ? _esc(guardianSignName) : '............................................') + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +

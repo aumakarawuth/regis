@@ -331,7 +331,7 @@ const Admin = {
       .select(`
         id, application_no, prefix, first_name, last_name, id_card, phone, applied_at, status,
         old_school, assigned_staff_id,
-        enrollments(status, program_rounds(round_label, branches(name, education_levels(name)))),
+        enrollments(status, study_category, work_location, program_rounds(round_label, branches(name, education_levels(name)))),
         documents(id, doc_type, storage_path, uploaded_at, is_verified),
         payments(id, storage_path, amount, paid_at, is_verified),
         addresses(province_text)
@@ -356,6 +356,8 @@ const Admin = {
         branchName: branch?.name || '—',
         roundName: enroll?.program_rounds?.round_label || '—',
         levelName: branch?.education_levels?.name || '—',
+        studyCategory: enroll?.study_category || '',
+        workLocation: enroll?.work_location || '',
         documents: docs,
         payment,
         docsComplete: REQUIRED_DOC_TYPES.every(t => docs.some(d => d.doc_type === t)),
@@ -581,6 +583,8 @@ const Admin = {
     const s = this.currentStudent;
     document.getElementById('dp-info-grid').innerHTML =
       _infoItem('สาขา', s.branchName) + _infoItem('รอบ', s.roundName) +
+      (s.studyCategory ? _infoItem('หมวดการเรียน', s.studyCategory) : '') +
+      (s.workLocation ? _infoItem('สถานที่ทำงาน', s.workLocation) : '') +
       _editableInfoItem('เลขบัตร', s.idCard, 'idCard') + _editableInfoItem('เบอร์โทร', s.phone, 'phone') +
       _editableInfoItem('โรงเรียนเดิม', s.oldSchool, 'oldSchool') + _editableInfoItem('จังหวัด', s.province, 'province') +
       _infoItem('วันที่สมัคร', _thDate(s.applyDate)) +

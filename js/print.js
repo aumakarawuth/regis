@@ -312,7 +312,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       'ชื่อ-นามสกุล ' + _fld(((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')).trim(), 'fld-xl') +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
-    '<div class="row indent">' + _enTitle(s.prefix) + ' ' + _esc(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim()) + '&emsp;เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row indent">' + _enTitle(s.prefix) + ' <span class="fld" style="text-align:left;flex:0 1 240px;min-width:180px">' + _esc(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim()) + '</span>&emsp;เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
       '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
       ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +

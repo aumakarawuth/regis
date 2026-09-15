@@ -141,7 +141,6 @@ const FORM_CSS = [
   '.branch-item{white-space:nowrap;margin-right:14px;display:inline-block}',
 
   '.top-row{}',
-  '.top-row .name-label{font-size:1.3rem;font-weight:700}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
   '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:34mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
   '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
@@ -248,7 +247,7 @@ function _branchChecklistHtml(branches, branchName) {
 // ---- Cover page ----
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   return '<div class="page cover-page">' +
-    '<div class="top-row"><span class="name-label">ชื่อ-นามสกุล</span> ' + _fld(fullName, 'fld-lg name-fld') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
+    '<div class="top-row">ชื่อ-นามสกุล ' + _fld(fullName, 'fld-lg name-fld') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
     '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +

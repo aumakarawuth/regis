@@ -153,9 +153,9 @@ const FORM_CSS = [
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
   '.sig-grid{margin-top:16px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:1.6}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:2.4}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
+  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:2.2em;vertical-align:bottom;margin:0 4px}',
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
 
@@ -365,13 +365,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
-    // Blank continuation line for a long guardian address — one long
-    // dotted line like before, just starting after a hidden copy of the
-    // "เกี่ยวข้องเป็น" label (kept for spacing only) so it doesn't start
-    // further left than that heading.
-    '<div class="row indent">' +
-      '<span style="visibility:hidden">เกี่ยวข้องเป็น</span> ' + _fld('') +
-    '</div>' +
+    // Blank continuation line for a long guardian address — one solid
+    // dotted line spanning the same width as the row above, with no gap
+    // at the start (a hidden label there previously left a visible break
+    // before the dots began).
+    '<div class="row indent" style="border-bottom:1px dotted #000;height:1.3em"></div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +

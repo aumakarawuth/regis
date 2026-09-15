@@ -359,7 +359,15 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
-    '<div class="row indent" style="border-bottom:1px dotted #000;height:1.3em"></div>' +
+    // Blank continuation line for a long guardian address — mirrors the
+    // row above's label widths (hidden, not removed) so the blank fld
+    // lines up under the ที่อยู่ box exactly instead of spanning the
+    // full row width and overshooting past it.
+    '<div class="row indent">' +
+      '<span style="visibility:hidden">เกี่ยวข้องเป็น</span> ' + _fld('', 'fld-sm') +
+      ' <span style="visibility:hidden">โทรศัพท์</span> ' + _fld('', 'fld-md') +
+      ' <span style="visibility:hidden">ที่อยู่</span> ' + _fld('', 'fld-xl') +
+    '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +

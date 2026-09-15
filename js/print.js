@@ -99,7 +99,13 @@ const FORM_CSS = [
   '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
 
   '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
-  '.fld{display:inline-block;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
+  // vertical-align:bottom keeps every .fld's baseline consistent whether
+  // it holds text or is empty — an empty inline-block otherwise uses its
+  // own bottom margin edge as its baseline instead of the surrounding
+  // text's baseline, making it sit at a different height than its
+  // siblings on the same line (e.g. an unfilled "ห้อง" field next to a
+  // filled "รอบ" field on the cover page's top row).
+  '.fld{display:inline-block;vertical-align:bottom;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
   '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
   '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
   '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',
@@ -135,7 +141,7 @@ const FORM_CSS = [
   '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
-  '.seal{width:130mm;height:auto;display:block;margin:0 auto}',
+  '.seal{width:104mm;height:auto;display:block;margin:0 auto}',
   '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
   '.cover-center h2{font-size:1.932rem;margin:2px 0}',
   '.cover-center .en{font-size:1.428rem}',
@@ -448,8 +454,8 @@ function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchNa
   var hasDoc = function (t) { return docs.some(function (d) { return d.doc_type === t; }); };
   var level = isPvs ? 'pvs' : 'pvch';
   var extraRow = isPvs
-    ? (_chk(false) + ' กู้ยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'))
-    : (_chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้ยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'));
+    ? (_chk(false) + ' กู้กยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'))
+    : (_chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้กยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'));
 
   var page1 = _coverPage(isPvs ? 'ปวส.' : 'ปวช.', fullName, roundLabel, s, _checklistItems(level, hasDoc), extraRow);
   var page2 = _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName);

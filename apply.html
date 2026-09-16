@@ -808,7 +808,7 @@ const API = {
   async getPrograms() {
     const { data: branches, error } = await _sb
       .from('branches')
-      .select('code, name, is_open, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
+      .select('code, name, is_open, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
       .eq('is_open', true);
     if (error) throw error;
 
@@ -825,6 +825,7 @@ const API = {
         name: b.name,
         levelId: level ? level.code : '',
         isOpen: b.is_open,
+        showStudyCategory: !!b.show_study_category,
         showWorkLocation: !!b.show_work_location,
         programs: (b.program_rounds || [])
           .filter(r => r.is_open)
@@ -1287,10 +1288,14 @@ const Form = {
     const branch=(this.programs.branches||[]).find(b=>b.id===branchId);
     return !!branch && !!branch.showWorkLocation;
   },
+  _showsStudyCategory(branchId){
+    const branch=(this.programs.branches||[]).find(b=>b.id===branchId);
+    return !!branch && !!branch.showStudyCategory;
+  },
   _updateStudyCategoryUI(branchId){
     const cg=document.getElementById('study-category-group');
     // รอบบ่าย ไม่มีหมวดการเรียนให้เลือก — เรียนวันอาทิตย์วันเดียวเท่านั้น
-    const show=branchId&&this.data.studyRound!=='afternoon';
+    const show=branchId&&this.data.studyRound!=='afternoon'&&this._showsStudyCategory(branchId);
     if(show){cg.classList.remove('hidden');}else{cg.classList.add('hidden');this.data.studyCategory='';document.getElementById('sel-study-category').value='';}
     this._updateWorkLocationUI(branchId);
   },
@@ -1502,7 +1507,7 @@ const Form = {
       if(!document.getElementById('sel-level').value)return err('กรุณาเลือกระดับการศึกษา');
       const branchId=document.getElementById('sel-branch').value;
       if(!branchId)return err('กรุณาเลือกสาขาวิชา');
-      if(this.data.studyRound!=='afternoon'){
+      if(this.data.studyRound!=='afternoon'&&this._showsStudyCategory(branchId)){
         const studyCategory=document.getElementById('sel-study-category').value;
         if(!studyCategory)return err('กรุณาเลือกหมวดการเรียน');
         if(studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกทวิภาคี');

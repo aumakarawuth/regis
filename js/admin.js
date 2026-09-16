@@ -261,12 +261,20 @@ const Admin = {
     if (!user) return;
     this._notifUserId = user.id;
     const seenRaw = localStorage.getItem(this._notifSeenKey(user.id));
-    const seenAt = seenRaw ? new Date(seenRaw) : new Date(0);
+    this._notifSeenAt = seenRaw ? new Date(seenRaw) : new Date(0);
 
     const newApps = this.students
-      .filter(s => new Date(s.applyDate) > seenAt)
+      .filter(s => new Date(s.applyDate) > this._notifSeenAt)
       .sort((a, b) => new Date(b.applyDate) - new Date(a.applyDate));
 
+    // Unlike newApps/duplicates, this is a genuine standing worklist (any
+    // pending application nobody's picked up yet) — clearing the *panel*
+    // list on "mark as read" would make an old unassigned application
+    // invisible forever just because someone clicked the button once. It
+    // stays fully listed regardless of seen state; only the badge *count*
+    // (below, in _renderNotifications) is gated by seenAt, so the bell
+    // stops nagging about ones you've already acknowledged without
+    // hiding them from the list staff actually work off of.
     const unhandled = this.students
       .filter(s => s.status === 'pending' && !s.assignedStaffId)
       .sort((a, b) => new Date(a.applyDate) - new Date(b.applyDate));
@@ -282,7 +290,9 @@ const Admin = {
 
   _renderNotifications() {
     const { newApps, unhandled, duplicates } = this._notif || { newApps: [], unhandled: [], duplicates: [] };
-    const total = newApps.length + unhandled.length + duplicates.length;
+    const seenAt = this._notifSeenAt || new Date(0);
+    const unhandledNew = unhandled.filter(s => new Date(s.applyDate) > seenAt);
+    const total = newApps.length + unhandledNew.length + duplicates.length;
     const badge = document.getElementById('notif-badge');
     badge.textContent = total > 99 ? '99+' : String(total);
     badge.classList.toggle('hidden', total === 0);
@@ -340,7 +350,9 @@ const Admin = {
 
   _markNotificationsSeen() {
     if (!this._notifUserId) return;
-    localStorage.setItem(this._notifSeenKey(this._notifUserId), new Date().toISOString());
+    const now = new Date();
+    localStorage.setItem(this._notifSeenKey(this._notifUserId), now.toISOString());
+    this._notifSeenAt = now;
     if (this._notif) this._notif.newApps = [];
     this._renderNotifications();
   },
@@ -424,6 +436,29 @@ const Admin = {
     // scoping to the wrong (or no) year — re-run it now that both are
     // known so ภาพรวม's totals/charts match what's actually selected.
     this._loadStats();
+  },
+
+  // The dropdown only ever lists years that already have an application
+  // (plus the currently configured admission year) — a genuinely new
+  // future year (opening next year's admissions early) has neither, so
+  // there'd be no way to even select it to hand to _setAdmissionYear().
+  // This adds it as an option (selected) without touching app_config;
+  // "ตั้งเป็นปีปัจจุบัน" still does the actual switch.
+  _addYearOption() {
+    const suggested = this.admissionYear ? Number(this.admissionYear) + 1 : new Date().getFullYear() + 543;
+    const input = prompt('ปี พ.ศ. ที่ต้องการเพิ่ม (เช่น เปิดรับสมัครปีถัดไปล่วงหน้า)', String(suggested));
+    if (!input) return;
+    const year = String(parseInt(input, 10));
+    if (!/^25\d{2}$/.test(year)) return showToast('กรุณากรอกปี พ.ศ. ให้ถูกต้อง (เช่น 2571)', 'error');
+    const sel = document.getElementById('year-filter');
+    if (![...sel.options].some(o => o.value === year)) {
+      const opt = new Option(`ปี ${year}`, year);
+      sel.add(opt);
+    }
+    sel.value = year;
+    this._applyFilter();
+    this._loadStats();
+    showToast(`เพิ่มปี ${year} แล้ว — กด "ตั้งเป็นปีปัจจุบัน" เพื่อเริ่มใช้ออกเลขใบสมัคร`, 'info', 4000);
   },
 
   async _setAdmissionYear() {
@@ -585,16 +620,43 @@ const Admin = {
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-panel').classList.add('open');
 
-    // Signed thumbnail URLs load after the panel opens (private buckets).
-    document.getElementById('dp-body').querySelectorAll('[data-thumb-for]').forEach(async thumb => {
-      const { bucket, path } = thumb.dataset;
-      if (!bucket || !path) return;
-      const { data: signed } = await _sb.storage.from(bucket).createSignedUrl(path, 3600);
-      if (signed?.signedUrl) {
-        thumb.innerHTML = `<img src="${signed.signedUrl}" alt="เอกสาร">`;
-        thumb.onclick = () => window.open(signed.signedUrl, '_blank');
+    this._loadDocThumbs(document.getElementById('dp-body').querySelectorAll('[data-thumb-for]'));
+  },
+
+  // Firing 6+ full-size signed-URL image loads (id card, both sides of
+  // 2 documents, house reg, payment slip — often several MB each, since
+  // most were uploaded before apply.html started downscaling photos)
+  // all at once made the panel visibly hang while every one fought for
+  // the same bandwidth. Two changes: request a resized/lower-quality
+  // render for the thumbnail itself (falls back to the untouched
+  // original if image transforms aren't available on this project's
+  // plan), and cap how many load at once so the ones already on screen
+  // finish instead of all of them crawling together.
+  async _loadDocThumbs(thumbs, concurrency = 3) {
+    const queue = Array.from(thumbs);
+    const worker = async () => {
+      let thumb;
+      while ((thumb = queue.shift())) {
+        const { bucket, path } = thumb.dataset;
+        if (!bucket || !path) continue;
+        let signed;
+        try {
+          const res = await _sb.storage.from(bucket).createSignedUrl(path, 3600, { transform: { width: 320, quality: 60 } });
+          signed = res.data;
+        } catch (e) { /* transforms unavailable on this plan — fall through */ }
+        if (!signed?.signedUrl) {
+          ({ data: signed } = await _sb.storage.from(bucket).createSignedUrl(path, 3600));
+        }
+        if (signed?.signedUrl) {
+          thumb.innerHTML = `<img src="${signed.signedUrl}" alt="เอกสาร" loading="lazy">`;
+          thumb.onclick = async () => {
+            const { data: full } = await _sb.storage.from(bucket).createSignedUrl(path, 3600);
+            if (full?.signedUrl) window.open(full.signedUrl, '_blank');
+          };
+        }
       }
-    });
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker));
   },
 
   // ---------- Inline editing (name + basic application info) ----------
@@ -1299,6 +1361,7 @@ const Admin = {
     });
     document.getElementById('filter-branch').addEventListener('change', () => this._applyFilter());
     document.getElementById('year-filter').addEventListener('change', () => { this._applyFilter(); this._loadStats(); });
+    document.getElementById('btn-add-year').onclick = () => this._addYearOption();
     document.getElementById('btn-set-admission-year').onclick = () => this._setAdmissionYear();
     document.getElementById('btn-export-csv').onclick = () => this._exportCSV();
     document.getElementById('nav-export').onclick = () => this._exportCSV();

@@ -1109,6 +1109,14 @@ const Admin = {
     });
   },
 
+  // ระดับการศึกษา/สาขาวิชา "add" forms live in floating modals rather
+  // than always-visible inline forms, so the Programs page reads as a
+  // clean list until you actually want to add something.
+  _toggleModal(which, open) {
+    document.getElementById(`${which}-modal-overlay`).classList.toggle('open', open);
+    document.getElementById(`${which}-modal`).classList.toggle('open', open);
+  },
+
   async _addLevel() {
     const code = document.getElementById('new-level-code').value.trim();
     const name = document.getElementById('new-level-name').value.trim();
@@ -1119,6 +1127,7 @@ const Admin = {
 
     document.getElementById('new-level-code').value = '';
     document.getElementById('new-level-name').value = '';
+    this._toggleModal('level', false);
     showToast('เพิ่มระดับแล้ว', 'success');
     await this._loadCatalog();
   },
@@ -1138,6 +1147,7 @@ const Admin = {
 
     document.getElementById('new-branch-code').value = '';
     document.getElementById('new-branch-name').value = '';
+    this._toggleModal('branch', false);
     showToast('เพิ่มสาขาแล้ว', 'success');
     await this._loadCatalog();
   },
@@ -1216,7 +1226,13 @@ const Admin = {
     document.getElementById('btn-notif-mark-seen').onclick = e => { e.stopPropagation(); this._markNotificationsSeen(); };
     document.getElementById('notif-panel').onclick = e => e.stopPropagation();
     document.addEventListener('click', () => document.getElementById('notif-panel').classList.add('hidden'));
+    document.getElementById('btn-open-level-modal').onclick = () => this._toggleModal('level', true);
+    document.getElementById('btn-cancel-level').onclick = () => this._toggleModal('level', false);
+    document.getElementById('level-modal-overlay').onclick = () => this._toggleModal('level', false);
     document.getElementById('btn-add-level').onclick = () => this._addLevel();
+    document.getElementById('btn-open-branch-modal').onclick = () => this._toggleModal('branch', true);
+    document.getElementById('btn-cancel-branch').onclick = () => this._toggleModal('branch', false);
+    document.getElementById('branch-modal-overlay').onclick = () => this._toggleModal('branch', false);
     document.getElementById('btn-add-branch').onclick = () => this._addBranch();
     document.getElementById('btn-add-staff').onclick = () => this._addStaff();
     document.getElementById('btn-export-report-branch').onclick = () => this._exportReportBranch();

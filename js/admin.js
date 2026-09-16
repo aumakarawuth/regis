@@ -1010,11 +1010,6 @@ const Admin = {
   },
 
   _renderProgramsPage() {
-    const chipsEl = document.getElementById('level-chips');
-    chipsEl.innerHTML = this.programLevels.length
-      ? this.programLevels.map(l => `<span class="badge badge-gray">${l.code} — ${l.name}</span>`).join('')
-      : '<span style="color:var(--muted);font-size:0.875rem">ยังไม่มีระดับการศึกษา</span>';
-
     const levelSel = document.getElementById('new-branch-level');
     const curLevel = levelSel.value;
     levelSel.innerHTML = this.programLevels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
@@ -1109,27 +1104,12 @@ const Admin = {
     });
   },
 
-  // ระดับการศึกษา/สาขาวิชา "add" forms live in floating modals rather
-  // than always-visible inline forms, so the Programs page reads as a
-  // clean list until you actually want to add something.
+  // สาขาวิชา's "add" form lives in a floating modal rather than an
+  // always-visible inline form, so the Programs page reads as a clean
+  // list until you actually want to add something.
   _toggleModal(which, open) {
     document.getElementById(`${which}-modal-overlay`).classList.toggle('open', open);
     document.getElementById(`${which}-modal`).classList.toggle('open', open);
-  },
-
-  async _addLevel() {
-    const code = document.getElementById('new-level-code').value.trim();
-    const name = document.getElementById('new-level-name').value.trim();
-    if (!code || !name) return showToast('กรอกรหัสและชื่อระดับให้ครบ', 'error');
-
-    const { error } = await _sb.from('education_levels').insert({ code, name });
-    if (error) return showToast('เพิ่มระดับล้มเหลว: ' + error.message, 'error');
-
-    document.getElementById('new-level-code').value = '';
-    document.getElementById('new-level-name').value = '';
-    this._toggleModal('level', false);
-    showToast('เพิ่มระดับแล้ว', 'success');
-    await this._loadCatalog();
   },
 
   async _addBranch() {
@@ -1226,10 +1206,6 @@ const Admin = {
     document.getElementById('btn-notif-mark-seen').onclick = e => { e.stopPropagation(); this._markNotificationsSeen(); };
     document.getElementById('notif-panel').onclick = e => e.stopPropagation();
     document.addEventListener('click', () => document.getElementById('notif-panel').classList.add('hidden'));
-    document.getElementById('btn-open-level-modal').onclick = () => this._toggleModal('level', true);
-    document.getElementById('btn-cancel-level').onclick = () => this._toggleModal('level', false);
-    document.getElementById('level-modal-overlay').onclick = () => this._toggleModal('level', false);
-    document.getElementById('btn-add-level').onclick = () => this._addLevel();
     document.getElementById('btn-open-branch-modal').onclick = () => this._toggleModal('branch', true);
     document.getElementById('btn-cancel-branch').onclick = () => this._toggleModal('branch', false);
     document.getElementById('branch-modal-overlay').onclick = () => this._toggleModal('branch', false);

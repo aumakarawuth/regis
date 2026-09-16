@@ -1064,11 +1064,14 @@ const Camera = {
     else this._setFrame('green',isA4?'📄 พร้อมถ่าย — กดปุ่มถ่ายภาพ':'✅ พบเอกสาร — กดปุ่มถ่ายภาพ',shutter,frame,true);
   },
   _setFrame(color,msg,shutter,frame,enabled){const colors={red:'#EF4444',yellow:'#F59E0B',green:'#10B981'};const c=colors[color]||'#fff';frame.style.borderColor=c;frame.style.boxShadow=`0 0 0 9999px rgba(0,0,0,0.45),0 0 20px ${c}55`;document.querySelectorAll('.cam-corner').forEach(el=>el.style.borderColor=c);document.getElementById('cam-status').textContent=msg;if(enabled){shutter.classList.remove('disabled');shutter.style.opacity='1';}else{shutter.classList.add('disabled');shutter.style.opacity='0.4';}},
-  capture(){clearInterval(this._checkInterval);const video=document.getElementById('camera-video'),frame=document.getElementById('camera-frame'),vr=video.getBoundingClientRect(),fr=frame.getBoundingClientRect(),sx=video.videoWidth/vr.width,sy=video.videoHeight/vr.height,cx=(fr.left-vr.left)*sx,cy=(fr.top-vr.top)*sy,cw=fr.width*sx,ch=fr.height*sy;this.canvas.width=Math.min(cw,1600);this.canvas.height=this.canvas.width*(ch/cw);this.ctx.drawImage(video,cx,cy,cw,ch,0,0,this.canvas.width,this.canvas.height);const base64=this.canvas.toDataURL('image/jpeg',0.85);this.close();if(this.currentCallback)this.currentCallback({base64,isBlurry:false,blurScore:999});},
+  capture(){clearInterval(this._checkInterval);const video=document.getElementById('camera-video'),frame=document.getElementById('camera-frame'),vr=video.getBoundingClientRect(),fr=frame.getBoundingClientRect(),sx=video.videoWidth/vr.width,sy=video.videoHeight/vr.height,cx=(fr.left-vr.left)*sx,cy=(fr.top-vr.top)*sy,cw=fr.width*sx,ch=fr.height*sy;this.canvas.width=Math.min(cw,1280);this.canvas.height=this.canvas.width*(ch/cw);this.ctx.drawImage(video,cx,cy,cw,ch,0,0,this.canvas.width,this.canvas.height);const base64=this.canvas.toDataURL('image/jpeg',0.7);this.close();if(this.currentCallback)this.currentCallback({base64,isBlurry:false,blurScore:999});},
   // Gallery photos come straight off the phone's camera roll — often
   // 3000px+/several MB with no resizing, unlike the capture() path which
-  // already downsizes to <=1600px. Re-encoding through a canvas here keeps
+  // already downsizes to <=1280px. Re-encoding through a canvas here keeps
   // uploads (and the whole submit step) fast regardless of source photo size.
+  // 1280px/0.7 quality is still plenty legible for a document photo (text,
+  // ID numbers) while cutting typical file size roughly in half again vs
+  // the previous 1600px/0.85 — the bulk of a slow submit is this upload.
   pickFromGallery(callback){this._pickFile(callback);},
   // Some webviews (e.g. in-app browsers) won't reliably dispatch clicks or
   // change events on a file input that isn't attached to the document, so
@@ -1087,10 +1090,10 @@ const Camera = {
         catch(err){cleanup();showToast('ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่','error');return;}
         try{
           const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=dataUrl;});
-          const maxDim=1600;let w=img.naturalWidth,h=img.naturalHeight;
+          const maxDim=1280;let w=img.naturalWidth,h=img.naturalHeight;
           if(w>maxDim||h>maxDim){const scale=maxDim/Math.max(w,h);w=Math.round(w*scale);h=Math.round(h*scale);}
           this.canvas.width=w;this.canvas.height=h;this.ctx.drawImage(img,0,0,w,h);
-          const base64=this.canvas.toDataURL('image/jpeg',0.85);
+          const base64=this.canvas.toDataURL('image/jpeg',0.7);
           callback({base64,isBlurry:false,blurScore:999});
         }catch(err){callback({base64:dataUrl,isBlurry:false,blurScore:999});}
       }finally{cleanup();}
@@ -1596,14 +1599,15 @@ const Form = {
         let paymentFailed=!!res.paymentError;
         if((failedTypes.length||paymentFailed)&&res.studentId){
           showLoading('กำลังลองอัปโหลดเอกสารอีกครั้ง...','submit');
-          for(const type of failedTypes.slice()){
-            try{await API.uploadDocument({studentId:res.studentId,docType:type,base64Data:this.data.documents[type]?.split(',')[1],mimeType:'image/jpeg'});failedTypes=failedTypes.filter(t=>t!==type);}
-            catch(e){/* still failed — reported below */}
+          const retryDocs=failedTypes.slice();
+          const retryTasks=retryDocs.map(type=>API.uploadDocument({studentId:res.studentId,docType:type,base64Data:this.data.documents[type]?.split(',')[1],mimeType:'image/jpeg'}).then(()=>({type,ok:true}),()=>({type,ok:false})));
+          const retryPayment=paymentFailed&&this.data.payment.slipBase64;
+          if(retryPayment){
+            retryTasks.push(API.uploadDocument({studentId:res.studentId,docType:'payment_slip',base64Data:this.data.payment.slipBase64.split(',')[1],mimeType:'image/jpeg'}).then(()=>({type:'payment_slip',ok:true}),()=>({type:'payment_slip',ok:false})));
           }
-          if(paymentFailed&&this.data.payment.slipBase64){
-            try{await API.uploadDocument({studentId:res.studentId,docType:'payment_slip',base64Data:this.data.payment.slipBase64.split(',')[1],mimeType:'image/jpeg'});paymentFailed=false;}
-            catch(e){/* still failed — reported below */}
-          }
+          const retryResults=await Promise.all(retryTasks);
+          failedTypes=retryResults.filter(r=>!r.ok&&r.type!=='payment_slip').map(r=>r.type);
+          if(retryPayment)paymentFailed=retryResults.some(r=>r.type==='payment_slip'&&!r.ok);
         }
         hideLoading();
         if(failedTypes.length||paymentFailed){

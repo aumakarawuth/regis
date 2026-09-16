@@ -37,6 +37,21 @@ function _fld(value, sizeClass) {
   return '<span class="fld ' + (sizeClass || '') + '">' + _esc(value) + '</span>';
 }
 
+// Editable version of _fld — used on print.html so an admin can correct
+// data straight on the printed form and save it back, instead of only
+// through the separate dashboard edit fields. `table`/`col` say which
+// Supabase column this maps to; `rowId` is that row's id (blank when
+// the row doesn't exist yet — e.g. no father/guardian on file — in
+// which case `newRowMeta` carries what _saveEdits() needs to insert one:
+// {student_id, type} for parents/guardians.
+function _efld(value, sizeClass, table, col, rowId, newRowMeta) {
+  var attrs = ' class="fld editable ' + (sizeClass || '') + '"' +
+    ' contenteditable="true" data-table="' + table + '" data-col="' + col + '"' +
+    ' data-id="' + (rowId || '') + '"';
+  if (!rowId && newRowMeta) attrs += ' data-new="' + _esc(JSON.stringify(newRowMeta)).replace(/"/g, '&quot;') + '"';
+  return '<span' + attrs + '>' + _esc(value) + '</span>';
+}
+
 function _dateSlots(d) {
   var day = '', month = '', year = '';
   if (d) {
@@ -163,6 +178,9 @@ const FORM_CSS = [
   '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
+  '.save-btn{position:fixed;bottom:16px;right:170px;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
+  '@media screen{.fld.editable{cursor:text;background:#FFFDE7}.fld.editable:hover{background:#FFF9C4}.fld.editable:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
+  '@media print{.fld.editable{background:transparent}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
@@ -279,11 +297,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.6') !== -1) + ' ม.6 ' +
       _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _fld(isPvchGrad ? s.education : '', 'fld-sm') +
-      ' โรงเรียน ' + _fld(s.oldSchool, 'fld-lg') + '</div>';
+      ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) + '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.3') !== -1) + ' ม.3' +
-      ' โรงเรียน/วิทยาลัย ' + _fld(s.oldSchool, 'fld-lg') + '</div>';
+      ' โรงเรียน/วิทยาลัย ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) + '</div>';
   }
 
   var transferRow = isPvs
@@ -316,12 +334,12 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
     '<div class="row indent">' + _enTitle(s.prefix) + ' <span class="fld" style="text-align:center;flex:0 1 200px;min-width:140px">' + _esc(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim()) + '</span>&emsp;เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
     '<div class="row indent">' +
-      '&#8211; สัญชาติ' + _fld(s.nationality || 'ไทย', 'fld-sm') +
-      ' เชื้อชาติ' + _fld(s.ethnicity || 'ไทย', 'fld-sm') +
-      ' ศาสนา' + _fld(s.religion || 'พุทธ', 'fld-sm') +
-      ' น้ำหนัก' + _fld(s.weight, 'fld-xs') +
-      ' ส่วนสูง' + _fld(s.height, 'fld-xs') +
-      ' หมู่โลหิต' + _fld(s.bloodType, 'fld-xs') +
+      '&#8211; สัญชาติ' + _efld(s.nationality || 'ไทย', 'fld-sm', 'students', 'nationality', s.id) +
+      ' เชื้อชาติ' + _efld(s.ethnicity || 'ไทย', 'fld-sm', 'students', 'ethnicity', s.id) +
+      ' ศาสนา' + _efld(s.religion || 'พุทธ', 'fld-sm', 'students', 'religion', s.id) +
+      ' น้ำหนัก' + _efld(s.weight, 'fld-xs', 'students', 'weight', s.id) +
+      ' ส่วนสูง' + _efld(s.height, 'fld-xs', 'students', 'height', s.id) +
+      ' หมู่โลหิต' + _efld(s.bloodType, 'fld-xs', 'students', 'blood_type', s.id) +
     '</div>' +
 
     '<div class="row"><span class="b">2. สาขาวิชาที่สมัคร</span></div>' +
@@ -332,9 +350,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     eduRow +
     '<div class="row indent">' +
-      'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
-      ' อำเภอ/เขต ' + _fld(addr.district, 'fld-md') +
-      ' จังหวัด ' + _fld(addr.province, 'fld-md') +
+      'ตำบล/แขวง ' + _efld(addr.subDistrict, 'fld-md', 'addresses', 'subdistrict_text', addr.id) +
+      ' อำเภอ/เขต ' + _efld(addr.district, 'fld-md', 'addresses', 'district_text', addr.id) +
+      ' จังหวัด ' + _efld(addr.province, 'fld-md', 'addresses', 'province_text', addr.id) +
     '</div>' +
     '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
     transferRow +
@@ -343,27 +361,27 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     // (not four separate inputs), so there's no reliable way to split it
     // back into these four boxes — print the whole thing in one wide
     // field instead of leaving it permanently blank.
-    '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> ' + _fld(addr.detail, 'fld-xl') + '</div>' +
+    '<div class="row"><span class="b">4. ที่อยู่ปัจจุบัน</span> ' + _efld(addr.detail, 'fld-xl', 'addresses', 'detail', addr.id) + '</div>' +
     '<div class="row indent">' +
-      'ตำบล/แขวง ' + _fld(addr.subDistrict, 'fld-md') +
-      ' อำเภอ/เขต ' + _fld(addr.district, 'fld-md') +
-      ' จังหวัด ' + _fld(addr.province, 'fld-md') +
-      ' รหัสไปรษณีย์ ' + _fld(addr.zipcode, 'fld-sm') +
+      'ตำบล/แขวง ' + _efld(addr.subDistrict, 'fld-md', 'addresses', 'subdistrict_text', addr.id) +
+      ' อำเภอ/เขต ' + _efld(addr.district, 'fld-md', 'addresses', 'district_text', addr.id) +
+      ' จังหวัด ' + _efld(addr.province, 'fld-md', 'addresses', 'province_text', addr.id) +
+      ' รหัสไปรษณีย์ ' + _efld(addr.zipcode, 'fld-sm', 'addresses', 'zipcode', addr.id) +
     '</div>' +
-    '<div class="row indent">โทรศัพท์ ' + _fld(s.phone, 'fld-lg') + '</div>' +
+    '<div class="row indent">โทรศัพท์ ' + _efld(s.phone, 'fld-lg', 'students', 'phone', s.id) + '</div>' +
 
     '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
-    '<div class="row">&#8211; ชื่อบิดา นาย ' + _fld(father.firstName, 'fld-md') + ' นามสกุล ' + _fld(father.lastName, 'fld-md') + ' อาชีพ ' + _fld(father.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(father.phone, 'fld-md') + '</div>' +
+    '<div class="row">&#8211; ชื่อบิดา นาย ' + _efld(father.firstName, 'fld-md', 'parents', 'first_name', father.id, {student_id: s.id, type: 'father'}) + ' นามสกุล ' + _efld(father.lastName, 'fld-md', 'parents', 'last_name', father.id, {student_id: s.id, type: 'father'}) + ' อาชีพ ' + _efld(father.occupation, 'fld-sm', 'parents', 'occupation', father.id, {student_id: s.id, type: 'father'}) + ' โทรศัพท์ ' + _efld(father.phone, 'fld-md', 'parents', 'phone', father.id, {student_id: s.id, type: 'father'}) + '</div>' +
     '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _fld(mother.firstName, 'fld-md') + ' นามสกุล ' + _fld(mother.lastName, 'fld-md') + ' อาชีพ ' + _fld(mother.occupation, 'fld-sm') + ' โทรศัพท์ ' + _fld(mother.phone, 'fld-md') + '</div>' +
+    '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _efld(mother.firstName, 'fld-md', 'parents', 'first_name', mother.id, {student_id: s.id, type: 'mother'}) + ' นามสกุล ' + _efld(mother.lastName, 'fld-md', 'parents', 'last_name', mother.id, {student_id: s.id, type: 'mother'}) + ' อาชีพ ' + _efld(mother.occupation, 'fld-sm', 'parents', 'occupation', mother.id, {student_id: s.id, type: 'mother'}) + ' โทรศัพท์ ' + _efld(mother.phone, 'fld-md', 'parents', 'phone', mother.id, {student_id: s.id, type: 'mother'}) + '</div>' +
     '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
     '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _fld(guardian.occupation, 'fld-sm') + '</div>' +
-    '<div class="row indent">เกี่ยวข้องเป็น ' + _fld(guardian.relation, 'fld-sm') + ' โทรศัพท์ ' + _fld(guardian.phone, 'fld-md') + ' ที่อยู่ ' + _fld(guardian.address, 'fld-xl') + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
+    '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' + _efld(guardian.address, 'fld-xl', 'guardians', 'address', guardian.id, {student_id: s.id}) + '</div>' +
     // Blank continuation line for a long guardian address — one solid
     // dotted line spanning the same width as the row above, with no gap
     // at the start (a hidden label there previously left a visible break
@@ -479,9 +497,9 @@ async function _loadStudent(studentId) {
       id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
       nationality, ethnicity, religion, weight, height, blood_type,
       id_card, phone, birth_date, applied_at, education, old_school,
-      addresses(province_text, district_text, subdistrict_text, zipcode, detail),
-      parents(type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
-      guardians(id_card, prefix, first_name, last_name, phone, relation, address),
+      addresses(id, province_text, district_text, subdistrict_text, zipcode, detail),
+      parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
+      guardians(id, id_card, prefix, first_name, last_name, phone, relation, address),
       enrollments(study_category, work_location, program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
     `)
@@ -496,7 +514,7 @@ async function _loadStudent(studentId) {
 function _camelPerson(row) {
   if (!row) return {};
   return {
-    idCard: row.id_card, prefix: row.prefix, firstName: row.first_name, lastName: row.last_name,
+    id: row.id, idCard: row.id_card, prefix: row.prefix, firstName: row.first_name, lastName: row.last_name,
     firstNameEn: row.first_name_en, lastNameEn: row.last_name_en,
     phone: row.phone, occupation: row.occupation, relation: row.relation, address: row.address,
   };
@@ -536,6 +554,7 @@ async function init() {
 
   const addrRow = Array.isArray(s.addresses) ? s.addresses[0] : s.addresses;
   const addr = {
+    id: addrRow?.id,
     subDistrict: addrRow?.subdistrict_text || '',
     district: addrRow?.district_text || '',
     province: addrRow?.province_text || '',
@@ -552,6 +571,7 @@ async function init() {
   const isPvs = (levelName || s.education || '').indexOf('ปวส') !== -1;
 
   const student = {
+    id: s.id,
     idCard: s.id_card, prefix: s.prefix, firstName: s.first_name, lastName: s.last_name,
     firstNameEn: s.first_name_en, lastNameEn: s.last_name_en,
     nationality: s.nationality, ethnicity: s.ethnicity, religion: s.religion,
@@ -569,9 +589,78 @@ async function init() {
 
   root.innerHTML =
     '<button class="print-btn no-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    '<button class="save-btn no-print" id="btn-save">💾 บันทึกการแก้ไข</button>' +
     _buildFormHtml(isPvs, student, addr, father, mother, guardian, docs, branchName, enroll?.program_rounds?.round_label, enroll?.study_category, enroll?.work_location);
 
   document.getElementById('btn-print').onclick = () => window.print();
+  document.getElementById('btn-save').onclick = () => _saveEdits(studentId);
+}
+
+// Reads every [contenteditable][data-table] field on the page, groups
+// the edits by table+row (new rows — no data-id — are inserted first so
+// later edits to the same not-yet-existing father/mother/guardian land
+// on one row instead of one insert per field), and writes them back to
+// Supabase. Two fields showing the same column (the current address
+// block appears twice on the form) both update the same row, so
+// whichever was edited last wins — consistent since both start from the
+// same value anyway.
+async function _saveEdits(studentId) {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  try {
+    const fields = Array.from(document.querySelectorAll('.fld.editable[data-table]'));
+    // Group new-row fields (data-new, no data-id yet) by table+JSON meta
+    // so father's 4 fields become one insert, not four.
+    const newGroups = new Map();
+    const updates = []; // { table, id, col, value }
+    fields.forEach(el => {
+      const table = el.dataset.table, col = el.dataset.col;
+      const value = el.textContent.trim();
+      if (el.dataset.id) {
+        updates.push({ table, id: el.dataset.id, col, value });
+      } else if (el.dataset.new) {
+        const key = table + '|' + el.dataset.new;
+        if (!newGroups.has(key)) newGroups.set(key, { table, meta: JSON.parse(el.dataset.new), cols: {} });
+        newGroups.get(key).cols[col] = value;
+      }
+    });
+
+    // Insert new parent/guardian rows first — only if the admin actually
+    // typed something (an all-blank new row isn't worth creating).
+    for (const { table, meta, cols } of newGroups.values()) {
+      if (!Object.values(cols).some(v => v)) continue;
+      const { error } = await _sb.from(table).insert({ ...meta, ...cols });
+      if (error) throw error;
+    }
+
+    // Group plain updates by table+id so each row is one .update() call.
+    const byRow = new Map();
+    updates.forEach(({ table, id, col, value }) => {
+      const key = table + '|' + id;
+      if (!byRow.has(key)) byRow.set(key, { table, id, patch: {} });
+      byRow.get(key).patch[col] = value;
+    });
+    for (const { table, id, patch } of byRow.values()) {
+      const { error } = await _sb.from(table).update(patch).eq('id', id);
+      if (error) throw error;
+    }
+
+    showFormToast('บันทึกข้อมูลแล้ว — กำลังโหลดข้อมูลล่าสุด...');
+    location.reload();
+  } catch (err) {
+    alert('บันทึกล้มเหลว: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึกการแก้ไข';
+  }
+}
+
+function showFormToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'no-print';
+  el.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#0066cc;color:#fff;padding:10px 20px;border-radius:8px;font-weight:700;z-index:1000';
+  el.textContent = msg;
+  document.body.appendChild(el);
 }
 
 init();

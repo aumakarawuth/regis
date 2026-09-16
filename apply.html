@@ -1230,7 +1230,19 @@ const Form = {
     document.getElementById('btn-back').onclick=()=>this.back();
   },
   next(){if(!this._validate(this.currentStep))return;this._saveStep(this.currentStep);if(this.currentStep<this.totalSteps)this._renderStep(this.currentStep+1);else this._submit();},
-  back(){if(this.currentStep>1)this._renderStep(this.currentStep-1);else if(confirm('ออกจากการสมัคร?'))location.href='index.html';},
+  back(){if(this.currentStep>1)this._renderStep(this.currentStep-1);else if(confirm('ล้างข้อมูลที่เลือกไว้ในขั้นตอนนี้?'))this._clearStep1();},
+  _clearStep1(){
+    Object.assign(this.data,{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:''});
+    this.isDual=false;
+    document.querySelectorAll('.round-card input[type=radio]').forEach(r=>{r.checked=false;});
+    document.querySelectorAll('.round-card').forEach(c=>c.classList.remove('selected'));
+    const lg=document.getElementById('level-group');lg.style.opacity='0.4';lg.style.pointerEvents='none';
+    document.getElementById('sel-level').innerHTML='<option value="">-- เลือกรอบก่อน --</option>';
+    const bg=document.getElementById('branch-group');bg.style.opacity='0.4';bg.style.pointerEvents='none';
+    const branchSel=document.getElementById('sel-branch');branchSel.innerHTML='<option value="">-- เลือกระดับก่อน --</option>';branchSel.disabled=true;
+    this._updateStudyCategoryUI('');
+    this._saveDraft();
+  },
 
   async _renderStep(n) {
     this.currentStep=n;
@@ -1242,7 +1254,7 @@ const Form = {
     document.getElementById('step-total').textContent=this.totalSteps;
     const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา','ข้อมูลมารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
     document.getElementById('step-title-text').textContent=titles[n]||'';
-    document.getElementById('btn-back').textContent=n===1?'✕ ออก':'← ย้อนกลับ';
+    document.getElementById('btn-back').textContent=n===1?'🗑️ ล้าง':'← ย้อนกลับ';
     document.getElementById('btn-next').textContent=n===this.totalSteps?'✅ ส่งใบสมัคร':'ถัดไป →';
     const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8(),9:()=>this._initStep9()};
     if(initMap[n])await initMap[n]();

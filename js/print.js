@@ -218,6 +218,7 @@ const FORM_CSS = [
   '.big-idcode .idbox{width:22.5px;height:27px;font-size:16.5px;line-height:27px}',
 
   '.row{margin:4px 0}',
+  '.extra-row{display:inline-block;min-width:345px}',
   '.indent{padding-left:20px}',
   '.b{font-weight:700}',
   '.center{text-align:center}',
@@ -332,7 +333,11 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
   var nameFld = '<span class="fld fld-lg name-fld" style="font-size:' + _nameFontSize(fullName) + '">' + _esc(fullName) + '</span>';
   return '<div class="page cover-page">' +
     '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
+    // ปวช.'s extraRow has an extra "ทุนสัณห์ พรนิมิตร" checkbox that ปวส.'s
+    // doesn't, so without a fixed reserved width the two templates'
+    // "รหัสประจำตัว" boxes land at different horizontal positions.
+    // min-width pins both to the ปวช. (longer) width so they always align.
+    '<div class="row"><span class="extra-row">' + extraRow + '</span>&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +

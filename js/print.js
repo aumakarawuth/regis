@@ -244,10 +244,24 @@ function _branchChecklistHtml(branches, branchName) {
   return html;
 }
 
+// The cover page's ชื่อ-นามสกุล field is deliberately bigger/bolder
+// than the rest of the form (see #83) — fine for a typical name, but a
+// long one at that size overflows past where "ห้อง"/"รอบ" sit on the
+// same line. Scale the font down as the name gets longer instead of
+// letting it overflow.
+function _nameFontSize(name) {
+  var len = (name || '').length;
+  if (len <= 18) return '1.3rem';
+  if (len <= 24) return '1.1rem';
+  if (len <= 30) return '0.95rem';
+  return '0.85rem';
+}
+
 // ---- Cover page ----
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
+  var nameFld = '<span class="fld fld-lg name-fld" style="font-size:' + _nameFontSize(fullName) + '">' + _esc(fullName) + '</span>';
   return '<div class="page cover-page">' +
-    '<div class="top-row">ชื่อ-นามสกุล ' + _fld(fullName, 'fld-lg name-fld') + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
+    '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
     '<div class="row">' + extraRow + '&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +

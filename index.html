@@ -33,11 +33,13 @@
     .brand-block { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
     .school-logo {
       width: 84px; height: 84px; border-radius: 24px;
-      background: linear-gradient(155deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
+      background: #fff; padding: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.4rem; margin-bottom: 18px;
-      box-shadow: 0 12px 28px -8px rgba(0,153,0,0.45), 0 2px 6px rgba(0,0,0,0.06);
+      margin-bottom: 18px;
+      box-shadow: 0 12px 28px -8px rgba(30,75,156,0.35), 0 2px 6px rgba(0,0,0,0.06);
     }
+    .school-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-mascot { width: 128px; height: auto; margin-bottom: 8px; }
     .school-name { font-size: 1.25rem; font-weight: 800; text-align: center; letter-spacing: -0.01em; }
     .school-sub {
       display: inline-flex; align-items: center; gap: 6px;
@@ -145,10 +147,11 @@
     #loading-overlay { background: rgba(245,247,250,0.94); backdrop-filter: blur(2px); }
     .loading-badge {
       width: 56px; height: 56px; border-radius: 18px;
-      background: linear-gradient(155deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
-      display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-      margin-bottom: 6px; box-shadow: 0 10px 24px -10px rgba(0,153,0,0.45);
+      background: #fff; padding: 7px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 6px; box-shadow: 0 10px 24px -10px rgba(30,75,156,0.35);
     }
+    .loading-badge img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 </head>
 <body>
@@ -156,7 +159,7 @@
 
   <!-- Loading -->
   <div id="loading-overlay">
-    <div class="loading-badge">🏫</div>
+    <div class="loading-badge"><img src="assets/logo.svg" alt="ตราวิทยาลัย"></div>
     <div class="spinner"></div>
     <p id="loading-text">กำลังเชื่อมต่อ LINE...</p>
   </div>
@@ -167,7 +170,8 @@
   <!-- Login Screen (แสดงเมื่อยังไม่ login) -->
   <div id="login-screen" class="login-page hidden">
     <div class="brand-block">
-      <div class="school-logo">🏫</div>
+      <img class="brand-mascot" src="assets/mascot-icon.png" alt="นักเรียนวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์">
+      <div class="school-logo"><img src="assets/logo.svg" alt="ตราวิทยาลัย"></div>
       <div class="school-name" id="school-name">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</div>
       <div class="school-sub">🎓 ระบบรับสมัครนักเรียนใหม่ · ปีการศึกษา 2569</div>
     </div>
@@ -190,7 +194,7 @@
   <!-- ยังไม่ได้เพิ่มเพื่อน OA → เตือนก่อนสมัคร (ไม่งั้นจะไม่ได้รับ Flex Message แจ้งผล) -->
   <div id="friend-screen" class="login-page hidden">
     <div class="brand-block">
-      <div class="school-logo">🏫</div>
+      <div class="school-logo"><img src="assets/logo.svg" alt="ตราวิทยาลัย"></div>
       <div class="school-name" id="friend-school-name">วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์</div>
     </div>
     <div class="login-card">

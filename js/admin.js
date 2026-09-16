@@ -584,7 +584,7 @@ const Admin = {
     document.getElementById('dp-info-grid').innerHTML =
       _infoItem('สาขา', s.branchName) + _infoItem('รอบ', s.roundName) +
       (s.studyCategory ? _infoItem('หมวดการเรียน', s.studyCategory) : '') +
-      (s.workLocation ? _infoItem('สถานที่ทำงาน', s.workLocation) : '') +
+      (s.workLocation ? _infoItem('ทวิภาคี', s.workLocation) : '') +
       _editableInfoItem('เลขบัตร', s.idCard, 'idCard') + _editableInfoItem('เบอร์โทร', s.phone, 'phone') +
       _editableInfoItem('โรงเรียนเดิม', s.oldSchool, 'oldSchool') + _editableInfoItem('จังหวัด', s.province, 'province') +
       _infoItem('วันที่สมัคร', _thDate(s.applyDate)) +

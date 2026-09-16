@@ -338,7 +338,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="row indent">&#8211; หมวดการเรียน ' +
       _chk(studyCategory === 'เรียน จ-ศ') + ' เรียน จ-ศ ' +
       _chk(studyCategory === 'เรียนไปทำงานไป') + ' เรียนไปทำงานไป' +
-      (workLocation ? ('&emsp;สถานที่ทำงาน ' + _chk(workLocation === 'กรุงเทพ') + ' กรุงเทพ ' + _chk(workLocation === 'ต่างจังหวัด') + ' ต่างจังหวัด') : '') +
+      (workLocation ? ('&emsp;ทวิภาคี ' + _chk(workLocation === 'ทวิกรุงเทพ') + ' ทวิกรุงเทพ ' + _chk(workLocation === 'ทวิต่างจังหวัด') + ' ทวิต่างจังหวัด') : '') +
     '</div>' +
 
     eduRow +

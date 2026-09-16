@@ -806,20 +806,23 @@ const API = {
   // Shape matches the old Programs.gs getPrograms(): { levels, branches }
   // where each branch has .programs = [{ programId, round }].
   async getPrograms() {
-    const { data: branches, error } = await _sb
-      .from('branches')
-      .select('code, name, is_open, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
-      .eq('is_open', true);
+    const [{ data: levelRows, error: levelError }, { data: branches, error }] = await Promise.all([
+      // Fetched separately (ordered by code — LV1/ปวช. before LV2/ปวส.)
+      // rather than derived from "first branch seen", so the level
+      // order can never depend on branch sort_order or query order.
+      _sb.from('education_levels').select('code, name').order('code'),
+      _sb
+        .from('branches')
+        .select('code, name, is_open, sort_order, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
+        .eq('is_open', true)
+        .order('sort_order'),
+    ]);
+    if (levelError) throw levelError;
     if (error) throw error;
 
-    const levels = [];
-    const seenLevels = new Set();
+    const levels = (levelRows || []).map(l => ({ id: l.code, name: l.name }));
     const branchList = (branches || []).map(b => {
       const level = b.education_levels;
-      if (level && !seenLevels.has(level.code)) {
-        seenLevels.add(level.code);
-        levels.push({ id: level.code, name: level.name });
-      }
       return {
         id: b.code,
         name: b.name,

@@ -998,7 +998,7 @@ const Admin = {
   async _loadCatalog() {
     const [{ data: levels }, { data: branches }, { data: rounds }] = await Promise.all([
       _sb.from('education_levels').select('id, code, name').order('code'),
-      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open, show_study_category, show_work_location').order('code'),
+      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open, sort_order, show_study_category, show_work_location').order('sort_order'),
       _sb.from('program_rounds').select('id, branch_id, round_label, is_open'),
     ]);
     this.programLevels = levels || [];
@@ -1024,7 +1024,7 @@ const Admin = {
 
     const tbody = document.getElementById('branch-tbody');
     if (!this.programBranches.length) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีสาขา — เพิ่มจากฟอร์มด้านบน</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีสาขา — เพิ่มจากฟอร์มด้านบน</td></tr>';
       return;
     }
 
@@ -1048,6 +1048,7 @@ const Admin = {
       return `
       <tr data-branch-id="${b.id}">
         <td>${nameCell}</td>
+        <td><input class="form-control branch-sort-order" type="number" value="${b.sort_order}" style="width:60px"></td>
         <td>${levelCell}</td>
         <td><input class="form-control branch-fee" type="number" value="${b.fee}" style="width:90px"></td>
         <td><input class="form-control branch-max" type="number" value="${b.max_students}" style="width:80px"></td>
@@ -1068,12 +1069,16 @@ const Admin = {
     tbody.innerHTML = this.programLevels.map(l => {
       const branches = this.programBranches.filter(b => b.level_id === l.id);
       if (!branches.length) return '';
-      return `<tr><td colspan="9" style="background:var(--bg-alt,#f4f6f8);font-weight:700;font-size:0.8125rem">${l.name}</td></tr>` +
+      return `<tr><td colspan="10" style="background:var(--bg-alt,#f4f6f8);font-weight:700;font-size:0.8125rem">${l.name}</td></tr>` +
         branches.map(branchRow).join('');
     }).join('');
 
     tbody.querySelectorAll('tr[data-branch-id]').forEach(row => {
       const branchId = row.dataset.branchId;
+      row.querySelector('.branch-sort-order').addEventListener('change', async e => {
+        await this._updateBranch(branchId, { sort_order: Number(e.target.value) || 0 });
+        await this._loadCatalog(); // re-sort/re-render so the new position shows immediately
+      });
       row.querySelector('.branch-fee').addEventListener('change', e => this._updateBranch(branchId, { fee: Number(e.target.value) || 0 }));
       row.querySelector('.branch-max').addEventListener('change', e => this._updateBranch(branchId, { max_students: Number(e.target.value) || 0 }));
       row.querySelector('.branch-open').addEventListener('change', e => this._updateBranch(branchId, { is_open: e.target.checked }));

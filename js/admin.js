@@ -1040,22 +1040,23 @@ const Admin = {
         : `<button class="btn btn-outline btn-sm branch-edit">แก้ไข</button>
            <button class="btn btn-ghost btn-sm branch-delete" style="color:var(--danger)">ลบ</button>`;
 
+      const toggle = (cls, checked) =>
+        `<label class="toggle-switch"><input type="checkbox" class="${cls}" ${checked ? 'checked' : ''}><span class="toggle-slider"></span></label>`;
+
       return `
       <tr data-branch-id="${b.id}">
         <td>${nameCell}</td>
-        <td><input class="form-control branch-sort-order" type="number" value="${b.sort_order}" style="width:60px"></td>
+        <td><input class="form-control num-input branch-sort-order" type="number" value="${b.sort_order}"></td>
         <td>${levelCell}</td>
-        <td><input class="form-control branch-fee" type="number" value="${b.fee}" style="width:90px"></td>
-        <td><input class="form-control branch-max" type="number" value="${b.max_students}" style="width:80px"></td>
-        <td>${ROUND_LABELS.map(r => {
+        <td><input class="form-control num-input fee branch-fee" type="number" value="${b.fee}"></td>
+        <td><input class="form-control num-input branch-max" type="number" value="${b.max_students}"></td>
+        <td><div class="round-chips">${ROUND_LABELS.map(r => {
           const isOpen = b.rounds.some(x => x.round_label === r && x.is_open);
-          return `<label style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:0.8125rem">
-            <input type="checkbox" class="round-check" data-round="${r}" ${isOpen ? 'checked' : ''}> ${r}
-          </label>`;
-        }).join('')}</td>
-        <td><input type="checkbox" class="branch-open" ${b.is_open ? 'checked' : ''}></td>
-        <td><input type="checkbox" class="branch-study-category" ${b.show_study_category ? 'checked' : ''}></td>
-        <td><input type="checkbox" class="branch-work-location" ${b.show_work_location ? 'checked' : ''}></td>
+          return `<label class="round-chip"><input type="checkbox" class="round-check" data-round="${r}" ${isOpen ? 'checked' : ''}> ${r}</label>`;
+        }).join('')}</div></td>
+        <td style="text-align:center">${toggle('branch-open', b.is_open)}</td>
+        <td style="text-align:center">${toggle('branch-study-category', b.show_study_category)}</td>
+        <td style="text-align:center">${toggle('branch-work-location', b.show_work_location)}</td>
         <td style="white-space:nowrap">${actionsCell}</td>
       </tr>
     `;
@@ -1064,7 +1065,7 @@ const Admin = {
     tbody.innerHTML = this.programLevels.map(l => {
       const branches = this.programBranches.filter(b => b.level_id === l.id);
       if (!branches.length) return '';
-      return `<tr><td colspan="10" style="background:var(--bg-alt,#f4f6f8);font-weight:700;font-size:0.8125rem">${l.name}</td></tr>` +
+      return `<tr class="level-group-row"><td colspan="10">${l.name}</td></tr>` +
         branches.map(branchRow).join('');
     }).join('');
 

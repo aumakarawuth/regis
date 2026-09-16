@@ -94,9 +94,13 @@ const API = {
     await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, uploads will fail:', err));
 
     const studentId = rpcResult.studentId;
-    const docResults = [];
 
-    for (const doc of payload.documents || []) {
+    // Each document/payment upload is an independent storage path + DB
+    // row, so they don't need to wait on each other — running them all in
+    // parallel (instead of one at a time) turns N sequential round-trips
+    // into one, which matters most exactly when it's slowest: several
+    // photos over a weak mobile connection.
+    const uploadOneDoc = async (doc) => {
       try {
         const blob = _base64ToBlob(doc.base64Data, doc.mimeType || 'image/jpeg');
         const storagePath = `${studentId}/${doc.type}.jpg`;
@@ -120,14 +124,14 @@ const API = {
           verified_by: null,
         }, { onConflict: 'student_id,doc_type' });
         if (dbErr) throw dbErr;
-        docResults.push({ type: doc.type, success: true });
+        return { type: doc.type, success: true };
       } catch (err) {
-        docResults.push({ type: doc.type, success: false, error: err.message });
+        return { type: doc.type, success: false, error: err.message };
       }
-    }
+    };
 
-    let paymentError = null;
-    if (payload.payment && payload.payment.slipBase64) {
+    const uploadPayment = async () => {
+      if (!(payload.payment && payload.payment.slipBase64)) return null;
       try {
         const blob = _base64ToBlob(payload.payment.slipBase64, 'image/jpeg');
         const storagePath = `${studentId}/slip.jpg`;
@@ -148,11 +152,17 @@ const API = {
           verified_by: null,
         }, { onConflict: 'student_id' });
         if (dbErr) throw dbErr;
+        return null;
       } catch (err) {
         console.error('Payment slip upload error:', err);
-        paymentError = err.message;
+        return err.message;
       }
-    }
+    };
+
+    const [docResults, paymentError] = await Promise.all([
+      Promise.all((payload.documents || []).map(uploadOneDoc)),
+      uploadPayment(),
+    ]);
 
     return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults, paymentError };
   },

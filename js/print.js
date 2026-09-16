@@ -225,25 +225,6 @@ function _checklistHtml(items) {
   return '<div class="checklist">' + rows + '</div>';
 }
 
-// ---- Branches ----
-const PVCH_BRANCHES = ['การบัญชี', 'การตลาด', 'ภาษาต่างประเทศธุรกิจบริการ', 'ธุรกิจค้าปลีก [กทม./ต่างจังหวัด]', 'เทคโนโลยีธุรกิจดิจิทัล', 'เทคโนโลยีสารสนเทศ', 'ดิจิทัลกราฟิก', 'การท่องเที่ยว'];
-const PVS_BRANCHES = ['การบัญชี', 'การตลาด', 'ภาษาและการจัดการธุรกิจระหว่างประเทศ', 'ธุรกิจค้าปลีก [กทม./ต่างจังหวัด]', 'เทคโนโลยีธุรกิจดิจิทัล', 'เทคโนโลยีสารสนเทศ', 'ดิจิทัลกราฟิก', 'การท่องเที่ยว', 'การจัดการดูแลผู้สูงอายุ', 'การจัดการสำนักงานดิจิทัล'];
-
-function _branchChecklistHtml(branches, branchName) {
-  branchName = branchName || '';
-  var perRow = 4;
-  var html = '';
-  for (var i = 0; i < branches.length; i += perRow) {
-    var rowItems = branches.slice(i, i + perRow);
-    var cells = rowItems.map(function (b) {
-      var key = b.split(' [')[0];
-      return '<span class="branch-item">' + _chk(branchName.indexOf(key) !== -1) + ' ' + _esc(b) + '</span>';
-    });
-    html += '<div class="row branch-row' + (i > 0 ? ' indent' : '') + '">' + cells.join('') + '</div>';
-  }
-  return html;
-}
-
 // The cover page's ชื่อ-นามสกุล field is deliberately bigger/bolder
 // than the rest of the form (see #83) — fine for a typical name, but a
 // long one at that size overflows past where "ห้อง"/"รอบ" sit on the
@@ -289,7 +270,7 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
 function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName, studyCategory, workLocation) {
   var isPvs = level === 'pvs';
   var levelTitle = isPvs ? 'ปวส.' : 'ปวช.';
-  var branches = isPvs ? PVS_BRANCHES : PVCH_BRANCHES;
+  var roundLabel = { morning: 'เช้า', afternoon: 'บ่าย', dual: 'ทวิภาคี' }[studyRound] || '';
   var edu = String(s.education || '');
 
   var eduRow;
@@ -326,10 +307,6 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row">' +
       '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
-      '&emsp;<span class="b">ระดับที่สมัคร ' + levelTitle + '</span> &#8211; รอบ ' +
-      _chk(studyRound === 'morning') + ' เช้า ' +
-      _chk(studyRound === 'afternoon') + ' บ่าย ' +
-      _chk(studyRound === 'dual') + ' ทวิภาคี' +
     '</div>' +
 
     '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
@@ -348,11 +325,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="row"><span class="b">2. สาขาวิชาที่สมัคร</span></div>' +
-    _branchChecklistHtml(branches, branchName) +
-    '<div class="row indent">&#8211; หมวดการเรียน ' +
-      _chk(studyCategory === 'เรียน จ-ศ') + ' เรียน จ-ศ ' +
-      _chk(studyCategory === 'เรียนไปทำงานไป') + ' เรียนไปทำงานไป' +
-      (workLocation ? ('&emsp;ทวิภาคี ' + _chk(workLocation === 'ทวิกรุงเทพ') + ' ทวิกรุงเทพ ' + _chk(workLocation === 'ทวิต่างจังหวัด') + ' ทวิต่างจังหวัด') : '') +
+    '<div class="row indent b" style="font-size:1.1em">' +
+      'ระดับที่สมัคร ' + _esc(levelTitle) + ' รอบ ' + _esc(roundLabel) + ' สาขาวิชา ' + _esc(branchName) +
+      (workLocation ? ' ' + _esc(workLocation) : '') +
     '</div>' +
 
     eduRow +

@@ -126,25 +126,37 @@ const Admin = {
     await this._loadAll();
   },
 
+  // Scoped to the year-filter's current selection (falling back to the
+  // configured admission year on first load, before the dropdown has
+  // been populated yet) — otherwise switching "ปีการศึกษา" only filtered
+  // the ผู้สมัคร table while ภาพรวม's totals/charts silently kept
+  // counting every year ever submitted, which read as last year's
+  // applications "still showing" after picking a new admission year.
   async _loadStats() {
+    const yearSel = document.getElementById('year-filter');
+    const year = (yearSel && yearSel.value) || this.admissionYear || '';
+    const yearPattern = `APP-${year}-%`;
+    const scoped = (q) => year ? q.like('application_no', yearPattern) : q;
+
     const [{ count: total }, { count: pending }, { count: verified }, { count: rejected }] = await Promise.all([
-      _sb.from('students').select('*', { count: 'exact', head: true }),
-      _sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      _sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'verified'),
-      _sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'rejected'),
+      scoped(_sb.from('students').select('*', { count: 'exact', head: true })),
+      scoped(_sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'pending')),
+      scoped(_sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'verified')),
+      scoped(_sb.from('students').select('*', { count: 'exact', head: true }).eq('status', 'rejected')),
     ]);
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const { count: today } = await _sb.from('students').select('*', { count: 'exact', head: true }).gte('applied_at', todayStart.toISOString());
+    const { count: today } = await scoped(_sb.from('students').select('*', { count: 'exact', head: true }).gte('applied_at', todayStart.toISOString()));
 
     const trendStart = new Date(todayStart); trendStart.setDate(trendStart.getDate() - 13);
-    const { data: trendRows } = await _sb.from('students').select('applied_at').gte('applied_at', trendStart.toISOString());
+    const { data: trendRows } = await scoped(_sb.from('students').select('applied_at').gte('applied_at', trendStart.toISOString()));
     this._renderTrendChart(trendRows || [], trendStart);
     this._renderStatusChart({ pending, verified, rejected });
 
-    const { data: enrollments } = await _sb.from('enrollments').select('program_rounds(branches(name))');
+    const { data: students } = await scoped(_sb.from('students').select('application_no, enrollments(program_rounds(branches(name)))'));
     const branchCount = {};
-    (enrollments || []).forEach(e => {
-      const name = e.program_rounds?.branches?.name || 'ไม่ระบุ';
+    (students || []).forEach(s => {
+      const enroll = Array.isArray(s.enrollments) ? s.enrollments[0] : s.enrollments;
+      const name = enroll?.program_rounds?.branches?.name || 'ไม่ระบุ';
       branchCount[name] = (branchCount[name] || 0) + 1;
     });
     const byBranch = Object.entries(branchCount).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
@@ -407,6 +419,11 @@ const Admin = {
     sel.innerHTML = sorted.map(y => `<option value="${y}">ปี ${y}</option>`).join('');
     sel.value = sorted.includes(current) ? current : (this.admissionYear || sorted[0] || '');
     this._applyFilter();
+    // _loadStats() may have already run once (in the same _loadAll()
+    // Promise.all) before this.admissionYear/the dropdown were settled,
+    // scoping to the wrong (or no) year — re-run it now that both are
+    // known so ภาพรวม's totals/charts match what's actually selected.
+    this._loadStats();
   },
 
   async _setAdmissionYear() {
@@ -1281,7 +1298,7 @@ const Admin = {
       this.searchTimeout = setTimeout(() => this._applyFilter(), 300);
     });
     document.getElementById('filter-branch').addEventListener('change', () => this._applyFilter());
-    document.getElementById('year-filter').addEventListener('change', () => this._applyFilter());
+    document.getElementById('year-filter').addEventListener('change', () => { this._applyFilter(); this._loadStats(); });
     document.getElementById('btn-set-admission-year').onclick = () => this._setAdmissionYear();
     document.getElementById('btn-export-csv').onclick = () => this._exportCSV();
     document.getElementById('nav-export').onclick = () => this._exportCSV();

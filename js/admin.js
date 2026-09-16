@@ -998,7 +998,7 @@ const Admin = {
   async _loadCatalog() {
     const [{ data: levels }, { data: branches }, { data: rounds }] = await Promise.all([
       _sb.from('education_levels').select('id, code, name').order('code'),
-      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open, show_work_location').order('code'),
+      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open, show_study_category, show_work_location').order('code'),
       _sb.from('program_rounds').select('id, branch_id, round_label, is_open'),
     ]);
     this.programLevels = levels || [];
@@ -1024,7 +1024,7 @@ const Admin = {
 
     const tbody = document.getElementById('branch-tbody');
     if (!this.programBranches.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีสาขา — เพิ่มจากฟอร์มด้านบน</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">ยังไม่มีสาขา — เพิ่มจากฟอร์มด้านบน</td></tr>';
       return;
     }
 
@@ -1058,6 +1058,7 @@ const Admin = {
           </label>`;
         }).join('')}</td>
         <td><input type="checkbox" class="branch-open" ${b.is_open ? 'checked' : ''}></td>
+        <td><input type="checkbox" class="branch-study-category" ${b.show_study_category ? 'checked' : ''}></td>
         <td><input type="checkbox" class="branch-work-location" ${b.show_work_location ? 'checked' : ''}></td>
         <td style="white-space:nowrap">${actionsCell}</td>
       </tr>
@@ -1067,7 +1068,7 @@ const Admin = {
     tbody.innerHTML = this.programLevels.map(l => {
       const branches = this.programBranches.filter(b => b.level_id === l.id);
       if (!branches.length) return '';
-      return `<tr><td colspan="8" style="background:var(--bg-alt,#f4f6f8);font-weight:700;font-size:0.8125rem">${l.name}</td></tr>` +
+      return `<tr><td colspan="9" style="background:var(--bg-alt,#f4f6f8);font-weight:700;font-size:0.8125rem">${l.name}</td></tr>` +
         branches.map(branchRow).join('');
     }).join('');
 
@@ -1076,6 +1077,7 @@ const Admin = {
       row.querySelector('.branch-fee').addEventListener('change', e => this._updateBranch(branchId, { fee: Number(e.target.value) || 0 }));
       row.querySelector('.branch-max').addEventListener('change', e => this._updateBranch(branchId, { max_students: Number(e.target.value) || 0 }));
       row.querySelector('.branch-open').addEventListener('change', e => this._updateBranch(branchId, { is_open: e.target.checked }));
+      row.querySelector('.branch-study-category').addEventListener('change', e => this._updateBranch(branchId, { show_study_category: e.target.checked }));
       row.querySelector('.branch-work-location').addEventListener('change', e => this._updateBranch(branchId, { show_work_location: e.target.checked }));
       row.querySelectorAll('.round-check').forEach(cb => {
         cb.addEventListener('change', e => this._toggleRound(branchId, e.target.dataset.round, e.target.checked));

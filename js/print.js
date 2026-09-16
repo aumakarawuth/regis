@@ -45,11 +45,37 @@ function _fld(value, sizeClass) {
 // which case `newRowMeta` carries what _saveEdits() needs to insert one:
 // {student_id, type} for parents/guardians.
 function _efld(value, sizeClass, table, col, rowId, newRowMeta) {
-  var attrs = ' class="fld editable ' + (sizeClass || '') + '"' +
-    ' contenteditable="true" data-table="' + table + '" data-col="' + col + '"' +
-    ' data-id="' + (rowId || '') + '"';
-  if (!rowId && newRowMeta) attrs += ' data-new="' + _esc(JSON.stringify(newRowMeta)).replace(/"/g, '&quot;') + '"';
-  return '<span' + attrs + '>' + _esc(value) + '</span>';
+  return _efldGroup(sizeClass, [{ value: value, table: table, col: col, id: rowId, newRowMeta: newRowMeta }]);
+}
+
+// Cells belonging to the same _efldGroup/_idCardBoxes call share a
+// "seq" so _saveEdits() knows to concatenate them (e.g. 13 id-card
+// digit boxes, or a name's prefix/first/last parts) — as opposed to two
+// *separate* calls that happen to show the same column (the address
+// block appears twice on the form): those must NOT be concatenated
+// together, just take whichever was edited most recently.
+var _efldSeq = 0;
+
+// One editable cell: `part` is either a plain string (rendered as-is,
+// not editable — e.g. the space between first/last name) or
+// {value, table, col, id, newRowMeta}.
+function _ecell(part, seq) {
+  if (typeof part === 'string') return _esc(part);
+  var attrs = ' class="ecell" contenteditable="true" data-table="' + part.table + '" data-col="' + part.col + '"' +
+    ' data-id="' + (part.id || '') + '" data-seq="' + seq + '"';
+  if (!part.id && part.newRowMeta) attrs += ' data-new="' + _esc(JSON.stringify(part.newRowMeta)).replace(/"/g, '&quot;') + '"';
+  return '<span' + attrs + '>' + _esc(part.value) + '</span>';
+}
+
+// A _fld-styled box that can hold several independently-editable cells
+// glued together with no visible seam — e.g. "ชื่อ-นามสกุล" is one
+// printed field but three Supabase columns (prefix/first_name/
+// last_name). Each part maps to its own column, so splitting/combining
+// text on save is never guessed — the columns were never actually
+// merged, just displayed together.
+function _efldGroup(sizeClass, parts) {
+  var seq = _efldSeq++;
+  return '<span class="fld editable ' + (sizeClass || '') + '">' + parts.map(function (p) { return _ecell(p, seq); }).join('') + '</span>';
 }
 
 function _dateSlots(d) {
@@ -65,15 +91,23 @@ function _dateSlots(d) {
   return _fld(day, 'fld-date') + '/' + _fld(month, 'fld-date') + '/' + _fld(year, 'fld-date2');
 }
 
-function _idCardBoxes(idCard) {
+// `edit`, when given ({table, col, id, newRowMeta}), makes each digit box
+// independently contenteditable but all 13 sharing the same
+// table/col/id — _saveEdits() concatenates same-column cells in DOM
+// order back into one id-card string, same mechanism as _efldGroup.
+function _idCardBoxes(idCard, edit) {
   var digits = String(idCard || '').replace(/\D/g, '');
   var groupLens = [1, 4, 5, 2, 1];
   var pos = 0;
-  var html = '<span class="idwrap">';
+  var seq = edit ? _efldSeq++ : null;
+  var html = '<span class="idwrap' + (edit ? ' editable' : '') + '">';
   for (var gi = 0; gi < groupLens.length; gi++) {
     if (gi > 0) html += '<span class="idgap"></span>';
     for (var i = 0; i < groupLens[gi]; i++) {
-      html += '<span class="idbox">' + (digits[pos] || '') + '</span>';
+      var digit = digits[pos] || '';
+      html += edit
+        ? _ecell({ value: digit, table: edit.table, col: edit.col, id: edit.id, newRowMeta: edit.newRowMeta }, seq).replace('class="ecell"', 'class="ecell idbox"')
+        : '<span class="idbox">' + digit + '</span>';
       pos++;
     }
   }
@@ -179,8 +213,10 @@ const FORM_CSS = [
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
   '.save-btn{position:fixed;bottom:16px;right:170px;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
-  '@media screen{.fld.editable{cursor:text;background:#FFFDE7}.fld.editable:hover{background:#FFF9C4}.fld.editable:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
+  '@media screen{.fld.editable{cursor:text;background:#FFFDE7}.fld.editable:hover{background:#FFF9C4}.ecell:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
   '@media print{.fld.editable{background:transparent}}',
+  '@media screen{.idwrap.editable .idbox{cursor:text;background:#FFFDE7}.idwrap.editable .idbox:hover{background:#FFF9C4}.idwrap.editable .idbox:focus{outline:2px solid #0066cc;outline-offset:-2px;background:#fff}}',
+  '@media print{.idwrap.editable .idbox{background:transparent}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
@@ -329,10 +365,20 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row"><span class="b">1. ข้อมูลส่วนตัว</span></div>' +
     '<div class="row indent">' +
-      'ชื่อ-นามสกุล ' + _fld(((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')).trim(), 'fld-xl') +
+      'ชื่อ-นามสกุล ' + _efldGroup('fld-xl', [
+        { value: s.prefix, table: 'students', col: 'prefix', id: s.id },
+        { value: s.firstName, table: 'students', col: 'first_name', id: s.id },
+        ' ',
+        { value: s.lastName, table: 'students', col: 'last_name', id: s.id },
+      ]) +
       ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
     '</div>' +
-    '<div class="row indent">' + _enTitle(s.prefix) + ' <span class="fld" style="text-align:center;flex:0 1 200px;min-width:140px">' + _esc(((s.firstNameEn || '') + ' ' + (s.lastNameEn || '')).trim()) + '</span>&emsp;เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard) + '</div>' +
+    '<div class="row indent">' + _enTitle(s.prefix) + ' ' + _efldGroup('', [
+        { value: s.firstNameEn, table: 'students', col: 'first_name_en', id: s.id },
+        ' ',
+        { value: s.lastNameEn, table: 'students', col: 'last_name_en', id: s.id },
+      ]).replace('class="fld editable', 'style="text-align:center;flex:0 1 200px;min-width:140px" class="fld editable') +
+      '&emsp;เลขประจำตัวประชาชน ' + _idCardBoxes(s.idCard, { table: 'students', col: 'id_card', id: s.id }) + '</div>' +
     '<div class="row indent">' +
       '&#8211; สัญชาติ' + _efld(s.nationality || 'ไทย', 'fld-sm', 'students', 'nationality', s.id) +
       ' เชื้อชาติ' + _efld(s.ethnicity || 'ไทย', 'fld-sm', 'students', 'ethnicity', s.id) +
@@ -373,14 +419,27 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">ส่วนที่ 2 มอบตัว (โปรดกรอกข้อมูลให้ครบถ้วนตัวบรรจง)</div>' +
 
     '<div class="row">&#8211; ชื่อบิดา นาย ' + _efld(father.firstName, 'fld-md', 'parents', 'first_name', father.id, {student_id: s.id, type: 'father'}) + ' นามสกุล ' + _efld(father.lastName, 'fld-md', 'parents', 'last_name', father.id, {student_id: s.id, type: 'father'}) + ' อาชีพ ' + _efld(father.occupation, 'fld-sm', 'parents', 'occupation', father.id, {student_id: s.id, type: 'father'}) + ' โทรศัพท์ ' + _efld(father.phone, 'fld-md', 'parents', 'phone', father.id, {student_id: s.id, type: 'father'}) + '</div>' +
-    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _fld(((father.firstNameEn || '') + ' ' + (father.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
-    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard) + '</div>' +
+    '<div class="row indent">ชื่อบิดา(ภาษาอังกฤษ) Mr. ' + _efldGroup('fld-xl', [
+        { value: father.firstNameEn, table: 'parents', col: 'first_name_en', id: father.id, newRowMeta: { student_id: s.id, type: 'father' } },
+        ' ',
+        { value: father.lastNameEn, table: 'parents', col: 'last_name_en', id: father.id, newRowMeta: { student_id: s.id, type: 'father' } },
+      ]) + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(father.idCard, { table: 'parents', col: 'id_card', id: father.id, newRowMeta: { student_id: s.id, type: 'father' } }) + '</div>' +
 
     '<div class="row">&#8211; ชื่อมารดา น.ส./นาง ' + _efld(mother.firstName, 'fld-md', 'parents', 'first_name', mother.id, {student_id: s.id, type: 'mother'}) + ' นามสกุล ' + _efld(mother.lastName, 'fld-md', 'parents', 'last_name', mother.id, {student_id: s.id, type: 'mother'}) + ' อาชีพ ' + _efld(mother.occupation, 'fld-sm', 'parents', 'occupation', mother.id, {student_id: s.id, type: 'mother'}) + ' โทรศัพท์ ' + _efld(mother.phone, 'fld-md', 'parents', 'phone', mother.id, {student_id: s.id, type: 'mother'}) + '</div>' +
-    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _fld(((mother.firstNameEn || '') + ' ' + (mother.lastNameEn || '')).trim(), 'fld-xl') + '</div>' +
-    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard) + '</div>' +
+    '<div class="row indent">ชื่อมารดา(ภาษาอังกฤษ) Miss./Mrs. ' + _efldGroup('fld-xl', [
+        { value: mother.firstNameEn, table: 'parents', col: 'first_name_en', id: mother.id, newRowMeta: { student_id: s.id, type: 'mother' } },
+        ' ',
+        { value: mother.lastNameEn, table: 'parents', col: 'last_name_en', id: mother.id, newRowMeta: { student_id: s.id, type: 'mother' } },
+      ]) + '</div>' +
+    '<div class="row indent">เลขประจำตัวประชาชน ' + _idCardBoxes(mother.idCard, { table: 'parents', col: 'id_card', id: mother.id, newRowMeta: { student_id: s.id, type: 'mother' } }) + '</div>' +
 
-    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _fld(guardianName.trim(), 'fld-lg') + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
+    '<div class="row">&#8211; ชื่อผู้ปกครอง <span style="font-size:0.8em">(กรณีที่ไม่ได้อยู่กับบิดา มารดา)</span> ชื่อ-นามสกุล ' + _efldGroup('fld-lg', [
+        { value: guardian.prefix, table: 'guardians', col: 'prefix', id: guardian.id, newRowMeta: { student_id: s.id } },
+        { value: guardian.firstName, table: 'guardians', col: 'first_name', id: guardian.id, newRowMeta: { student_id: s.id } },
+        ' ',
+        { value: guardian.lastName, table: 'guardians', col: 'last_name', id: guardian.id, newRowMeta: { student_id: s.id } },
+      ]) + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
     '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' + _efld(guardian.address, 'fld-xl', 'guardians', 'address', guardian.id, {student_id: s.id}) + '</div>' +
     // Blank continuation line for a long guardian address — one solid
     // dotted line spanning the same width as the row above, with no gap
@@ -594,6 +653,34 @@ async function init() {
 
   document.getElementById('btn-print').onclick = () => window.print();
   document.getElementById('btn-save').onclick = () => _saveEdits(studentId);
+  _wireIdBoxInput();
+}
+
+// Each id-card digit box is its own contenteditable span (see
+// _idCardBoxes) — keep it to one digit and jump to the next box as
+// soon as one is typed, so it still behaves like a normal digit-box
+// input instead of letting someone type a whole number into one cell.
+function _wireIdBoxInput() {
+  document.querySelectorAll('.idwrap.editable .idbox').forEach(box => {
+    box.addEventListener('input', () => {
+      const digit = box.textContent.replace(/\D/g, '').slice(-1);
+      box.textContent = digit;
+      if (digit) {
+        let next = box.nextElementSibling;
+        while (next && !next.classList.contains('idbox')) next = next.nextElementSibling;
+        if (next) { next.focus(); _placeCaretAtEnd(next); }
+      }
+    });
+  });
+}
+
+function _placeCaretAtEnd(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
 }
 
 // Reads every [contenteditable][data-table] field on the page, groups
@@ -609,39 +696,61 @@ async function _saveEdits(studentId) {
   btn.disabled = true;
   btn.textContent = 'กำลังบันทึก...';
   try {
-    const fields = Array.from(document.querySelectorAll('.fld.editable[data-table]'));
-    // Group new-row fields (data-new, no data-id yet) by table+JSON meta
-    // so father's 4 fields become one insert, not four.
-    const newGroups = new Map();
-    const updates = []; // { table, id, col, value }
-    fields.forEach(el => {
-      const table = el.dataset.table, col = el.dataset.col;
-      const value = el.textContent.trim();
-      if (el.dataset.id) {
-        updates.push({ table, id: el.dataset.id, col, value });
-      } else if (el.dataset.new) {
-        const key = table + '|' + el.dataset.new;
-        if (!newGroups.has(key)) newGroups.set(key, { table, meta: JSON.parse(el.dataset.new), cols: {} });
-        newGroups.get(key).cols[col] = value;
+    // Every editable cell — single fields (_efld) and the individual
+    // parts of a composite one (_efldGroup: name parts, id-card digit
+    // boxes) all render as one plain [contenteditable][data-table] node,
+    // so one selector covers both. Cells sharing the same table+col+row
+    // AND the same data-seq (i.e. cells from one _efldGroup/_idCardBoxes
+    // call — 13 id-card digit boxes, or a name's prefix/first/last
+    // parts) are concatenated in DOM order into one value. A *different*
+    // call that happens to show the same column (the address block
+    // appears twice on the form, each its own single-cell field with
+    // its own seq) is kept separate here and only reduced to "whichever
+    // was edited most recently" below — concatenating those together
+    // would double the text instead of just picking one.
+    const cells = Array.from(document.querySelectorAll('[contenteditable][data-table]'));
+    const seqGroups = new Map(); // key -> { table, col, id, isNew, meta, values: [] }
+    cells.forEach(el => {
+      const table = el.dataset.table, col = el.dataset.col, id = el.dataset.id, seq = el.dataset.seq;
+      const isNew = !id;
+      const key = table + '|' + col + '|' + (id || el.dataset.new) + '|' + seq;
+      if (!seqGroups.has(key)) {
+        seqGroups.set(key, { table, col, id: id || null, isNew, meta: isNew && el.dataset.new ? JSON.parse(el.dataset.new) : null, values: [] });
+      }
+      seqGroups.get(key).values.push(el.textContent.trim());
+    });
+
+    // Fold groups into per-row patches: existing rows by id, new rows by
+    // table+meta (so e.g. father's first_name_en/last_name_en/id_card
+    // cells — all "new" since no parents row exists yet — become one
+    // insert, not three). Iterating seqGroups in DOM order means a later
+    // seq for the same table+col+id simply overwrites patch[col] —
+    // that's the "most recently edited wins" behavior for the
+    // duplicated address fields.
+    const existingRows = new Map();
+    const newRows = new Map();
+    seqGroups.forEach(g => {
+      const value = g.values.join('');
+      if (g.isNew) {
+        const key = g.table + '|' + JSON.stringify(g.meta);
+        if (!newRows.has(key)) newRows.set(key, { table: g.table, meta: g.meta, patch: {} });
+        newRows.get(key).patch[g.col] = value;
+      } else {
+        const key = g.table + '|' + g.id;
+        if (!existingRows.has(key)) existingRows.set(key, { table: g.table, id: g.id, patch: {} });
+        existingRows.get(key).patch[g.col] = value;
       }
     });
 
     // Insert new parent/guardian rows first — only if the admin actually
     // typed something (an all-blank new row isn't worth creating).
-    for (const { table, meta, cols } of newGroups.values()) {
-      if (!Object.values(cols).some(v => v)) continue;
-      const { error } = await _sb.from(table).insert({ ...meta, ...cols });
+    for (const { table, meta, patch } of newRows.values()) {
+      if (!Object.values(patch).some(v => v)) continue;
+      const { error } = await _sb.from(table).insert({ ...meta, ...patch });
       if (error) throw error;
     }
 
-    // Group plain updates by table+id so each row is one .update() call.
-    const byRow = new Map();
-    updates.forEach(({ table, id, col, value }) => {
-      const key = table + '|' + id;
-      if (!byRow.has(key)) byRow.set(key, { table, id, patch: {} });
-      byRow.get(key).patch[col] = value;
-    });
-    for (const { table, id, patch } of byRow.values()) {
+    for (const { table, id, patch } of existingRows.values()) {
       const { error } = await _sb.from(table).update(patch).eq('id', id);
       if (error) throw error;
     }

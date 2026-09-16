@@ -440,6 +440,11 @@
     <div class="step-heading"><div class="step-icon">👤</div>ข้อมูลส่วนตัว</div>
     <div class="field-stack">
       <div class="form-group"><label class="form-label">เลขบัตรประจำตัวประชาชน <span class="required">*</span></label><input class="form-control" id="inp-idCard" type="tel" maxlength="13" placeholder="13 หลัก ไม่ต้องมีขีด" inputmode="numeric"></div>
+      <!-- สัญชาติ selector below toggles this field's maxlength/inputmode/
+           placeholder for non-Thai nationalities (บัตรชมพู/พาสปอร์ต aren't
+           always 13 digits, and a passport isn't numeric at all) — see
+           _onNationalityChange(). -->
+      <div class="form-group hidden" id="idcard-note" style="margin-top:-8px"><span style="font-size:0.8125rem;color:var(--muted)">สัญชาติที่ไม่ใช่ไทย ไม่บังคับรูปแบบ 13 หลัก — กรอกเลขบัตรชมพูหรือเลขพาสปอร์ตได้</span></div>
       <div class="field-row">
         <div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" id="inp-prefix"><option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></div>
       </div>
@@ -1202,7 +1207,20 @@ const Form = {
     }
     window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')this._persistCurrentStep();});
     window.addEventListener('pagehide',()=>this._persistCurrentStep());
+    document.getElementById('inp-nationality').addEventListener('change',()=>this._onNationalityChange());
     this._renderStep(startStep);
+  },
+  // บัตรชมพู/พาสปอร์ตของนักเรียนต่างชาติไม่ใช่ตัวเลขไทย 13 หลักเสมอไป
+  // (พาสปอร์ตมีตัวอักษรปนด้วย) — คลาย maxlength/inputmode ของช่องเลขบัตร
+  // เมื่อเลือกสัญชาติอื่นนอกจากไทย ให้พิมพ์ได้อิสระ (การเช็ค checksum ไทย
+  // ในขั้นตอนถัดไปก็ข้ามให้เฉพาะกรณีนี้เช่นกัน — ดู _validateStep()).
+  _onNationalityChange(){
+    const isThai=document.getElementById('inp-nationality').value==='ไทย';
+    const idCardEl=document.getElementById('inp-idCard');
+    idCardEl.maxLength=isThai?13:20;
+    idCardEl.setAttribute('inputmode',isThai?'numeric':'text');
+    idCardEl.placeholder=isThai?'13 หลัก ไม่ต้องมีขีด':'เลขบัตรชมพู หรือเลขพาสปอร์ต';
+    document.getElementById('idcard-note').classList.toggle('hidden',isThai);
   },
   // Draft persistence — keeps in-progress applications across page
   // reloads/closes so an applicant who leaves mid-form doesn't lose what
@@ -1356,9 +1374,13 @@ const Form = {
 
   _initStep2() {
     ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','weight','height','bloodType','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    this._onNationalityChange();
     this._populateBirthDateSelects();
     this._updateEducationOptions();
-    document.getElementById('inp-idCard').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
+    // Only Thai IDs are digits-only — a passport number has letters, so
+    // stripping non-digits here would make a non-Thai applicant unable to
+    // type one at all.
+    document.getElementById('inp-idCard').addEventListener('input',e=>{if(document.getElementById('inp-nationality').value==='ไทย')e.target.value=e.target.value.replace(/\D/g,'').substring(0,13);});
     document.getElementById('inp-phone').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').substring(0,10);});
     this._loadEduProvinces();
   },
@@ -1528,7 +1550,7 @@ const Form = {
         if(studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกทวิภาคี');
       }
     }
-    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
+    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-nationality').value==='ไทย'){if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');}if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
     if(n===5){const msg=this._validateParent('mother');if(msg)return err(msg);}

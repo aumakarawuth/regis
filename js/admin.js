@@ -109,7 +109,14 @@ const Admin = {
 
   async _loadAll() {
     await Promise.all([this._loadStats(), this._loadStudents()]);
-    await this._loadStaff();
+    // _loadStaff() needs this.students (assignedCounts), so it can't run
+    // in the Promise.all above — but that means the student table is
+    // already clickable before it resolves. Stashing the promise lets
+    // _openDetail() await it, so opening a student right after a page
+    // refresh can't populate the ผู้ดูแล dropdown before staffList exists
+    // (which silently shows blank — no <option> yet for the assigned id).
+    this._staffReadyPromise = this._loadStaff();
+    await this._staffReadyPromise;
     await this._loadNotifications();
   },
 
@@ -452,6 +459,7 @@ const Admin = {
   },
 
   async _openDetail(id) {
+    if (this._staffReadyPromise) await this._staffReadyPromise;
     const s = this.students.find(st => st.id === id);
     if (!s) return;
     this.currentStudent = s;

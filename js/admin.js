@@ -108,7 +108,8 @@ const Admin = {
   },
 
   async _loadAll() {
-    await Promise.all([this._loadStats(), this._loadStudents()]);
+    await Promise.all([this._loadStats(), this._loadStudents(), this._loadAppConfig()]);
+    this._populateYearFilter();
     // _loadStaff() needs this.students (assignedCounts), so it can't run
     // in the Promise.all above — but that means the student table is
     // already clickable before it resolves. Stashing the promise lets
@@ -356,6 +357,11 @@ const Admin = {
       return {
         id: s.id,
         applicationNo: s.application_no,
+        // e.g. "APP-2569-0012" → 2569 — used by the year filter instead of
+        // applied_at, since applied_at is just when the row was inserted
+        // (server clock) while the application_no's year reflects whatever
+        // admission year was configured (app_config) at submit time.
+        applicationYear: (s.application_no || '').match(/^APP-(\d{4})-/)?.[1] || '',
         prefix: s.prefix, firstName: s.first_name, lastName: s.last_name,
         idCard: s.id_card, phone: s.phone, applyDate: s.applied_at, status: s.status,
         oldSchool: s.old_school || '', province: addr?.province_text || '',
@@ -376,6 +382,43 @@ const Admin = {
     this._renderTable();
   },
 
+  // The year students are stamped with (app_config.current_admission_year)
+  // is separate from what's actually being *viewed* (the year-filter
+  // dropdown) — an admin can open next year's admissions early while
+  // still reviewing this year's backlog.
+  async _loadAppConfig() {
+    const { data, error } = await _sb.from('app_config').select('current_admission_year').maybeSingle();
+    if (error) { console.warn('โหลดค่าปีรับสมัครล้มเหลว:', error); return; }
+    this.admissionYear = data ? String(data.current_admission_year) : '';
+  },
+
+  // Populates the topbar's year filter from every year actually present
+  // in application_no (so old years never disappear) plus the currently
+  // configured admission year (so a freshly-opened year with 0
+  // applications yet still shows up to switch to). Defaults the
+  // selection to the admission year, not "all" — that's what "ปีการศึกษา"
+  // is supposed to mean day to day.
+  _populateYearFilter() {
+    const sel = document.getElementById('year-filter');
+    const current = sel.value;
+    const years = new Set(this.students.map(s => s.applicationYear).filter(Boolean));
+    if (this.admissionYear) years.add(this.admissionYear);
+    const sorted = [...years].sort((a, b) => b - a);
+    sel.innerHTML = sorted.map(y => `<option value="${y}">ปี ${y}</option>`).join('');
+    sel.value = sorted.includes(current) ? current : (this.admissionYear || sorted[0] || '');
+    this._applyFilter();
+  },
+
+  async _setAdmissionYear() {
+    const year = document.getElementById('year-filter').value;
+    if (!year) return;
+    if (!confirm(`ตั้งปี ${year} เป็นปีรับสมัครปัจจุบัน?\nใบสมัครใหม่ทุกใบจะได้เลขที่ขึ้นต้นด้วยปีนี้ จนกว่าจะเปลี่ยนอีกครั้ง`)) return;
+    const { error } = await _sb.from('app_config').update({ current_admission_year: Number(year) }).eq('id', true);
+    if (error) return showToast('ตั้งค่าล้มเหลว: ' + error.message, 'error');
+    this.admissionYear = year;
+    showToast(`ตั้งปี ${year} เป็นปีรับสมัครปัจจุบันแล้ว`, 'success');
+  },
+
   _populateBranchFilter() {
     const sel = document.getElementById('filter-branch');
     const current = sel.value;
@@ -387,13 +430,15 @@ const Admin = {
   _applyFilter() {
     const search = (document.getElementById('search-input').value || '').toLowerCase().trim();
     const branch = document.getElementById('filter-branch').value;
+    const year = document.getElementById('year-filter').value;
     const tab = this.currentTab;
     this.filtered = this.students.filter(s => {
       const matchTab = tab === 'all' || s.status === tab;
       const matchBranch = !branch || s.branchName === branch;
+      const matchYear = !year || s.applicationYear === year;
       const matchSearch = !search || [s.firstName, s.lastName, s.idCard, s.applicationNo, s.phone]
         .some(v => v && String(v).toLowerCase().includes(search));
-      return matchTab && matchBranch && matchSearch;
+      return matchTab && matchBranch && matchYear && matchSearch;
     });
     this.page = 1;
     this._renderTable();
@@ -1236,6 +1281,8 @@ const Admin = {
       this.searchTimeout = setTimeout(() => this._applyFilter(), 300);
     });
     document.getElementById('filter-branch').addEventListener('change', () => this._applyFilter());
+    document.getElementById('year-filter').addEventListener('change', () => this._applyFilter());
+    document.getElementById('btn-set-admission-year').onclick = () => this._setAdmissionYear();
     document.getElementById('btn-export-csv').onclick = () => this._exportCSV();
     document.getElementById('nav-export').onclick = () => this._exportCSV();
     document.getElementById('btn-refresh-list').onclick = () => this._refreshAll();

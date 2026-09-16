@@ -181,11 +181,16 @@ const FORM_CSS = [
   // text's baseline, making it sit at a different height than its
   // siblings on the same line (e.g. an unfilled "ห้อง" field next to a
   // filled "รอบ" field on the cover page's top row).
+  '.fld{display:inline-block;vertical-align:bottom;border-bottom:1px dotted #000;min-width:70px;padding:0 3px;text-align:center}',
   // An empty inline-block has no content to establish a line box, so a
-  // blank .fld collapses to ~0 height — invisible and unclickable, which
-  // is exactly wrong for a blank *editable* field. line-height gives it a
-  // real height regardless of whether it currently holds any text.
-  '.fld{display:inline-block;vertical-align:bottom;border-bottom:1px dotted #000;min-width:70px;min-height:1.3em;padding:0 3px;text-align:center}',
+  // blank .fld collapses to ~0 height on screen — invisible and
+  // unclickable, which is exactly wrong for a blank *editable* field.
+  // Scoped to .fld.editable and to screen only: applying this to every
+  // .fld (including plain, non-editable ones like the cover page's
+  // "ห้อง"/"รอบ" row) fights the vertical-align:bottom fix right above —
+  // an empty non-editable field is supposed to collapse so it lines up
+  // with its filled siblings, not grow past them.
+  '@media screen{.fld.editable{min-height:1.3em}}',
   '.fld-xs{min-width:34px}.fld-sm{min-width:55px}.fld-md{min-width:110px}.fld-lg{min-width:170px}.fld-xl{min-width:250px}',
   '.fld-date{min-width:22px}.fld-date2{min-width:38px}',
   '.fill-form .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px}',

@@ -213,9 +213,9 @@ const FORM_CSS = [
 
   '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
   '.save-btn{position:fixed;bottom:16px;right:170px;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
-  '@media screen{.fld.editable{cursor:text;background:#FFFDE7}.fld.editable:hover{background:#FFF9C4}.ecell:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
+  '@media screen{.fld.editable{cursor:text;background:#FFF3B0;border-radius:2px}.fld.editable:hover{background:#FFE580}.ecell:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
   '@media print{.fld.editable{background:transparent}}',
-  '@media screen{.idwrap.editable .idbox{cursor:text;background:#FFFDE7}.idwrap.editable .idbox:hover{background:#FFF9C4}.idwrap.editable .idbox:focus{outline:2px solid #0066cc;outline-offset:-2px;background:#fff}}',
+  '@media screen{.idwrap.editable .idbox{cursor:text;background:#FFF3B0}.idwrap.editable .idbox:hover{background:#FFE580}.idwrap.editable .idbox:focus{outline:2px solid #0066cc;outline-offset:-2px;background:#fff}}',
   '@media print{.idwrap.editable .idbox{background:transparent}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',

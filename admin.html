@@ -135,6 +135,14 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
 /* Detail Panel */
 .detail-overlay { position: fixed; inset: 0; background: rgba(10,16,26,0.55); backdrop-filter: blur(2px); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .detail-overlay.open { opacity: 1; pointer-events: all; }
+/* Small floating form modals (add ระดับ/สาขา) */
+.modal-overlay { position: fixed; inset: 0; background: rgba(10,16,26,0.55); backdrop-filter: blur(2px); z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box { position: fixed; top: 50%; left: 50%; width: 420px; max-width: calc(100vw - 32px); max-height: calc(100vh - 48px); overflow-y: auto; background: #fff; z-index: 301; border-radius: var(--r-xl); box-shadow: var(--shadow-lg); transform: translate(-50%, -50%) scale(0.96); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; padding: 20px; }
+.modal-box.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
+.modal-box h3 { font-size: 0.9375rem; font-weight: 700; margin-bottom: 16px; }
+.modal-box .form-group { margin-bottom: 12px; }
+.modal-box .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .detail-panel { position: fixed; top: 50%; left: 50%; width: 640px; max-width: calc(100vw - 48px); max-height: calc(100vh - 48px); background: #fff; z-index: 201; border-radius: var(--r-xl); box-shadow: var(--shadow-lg); transform: translate(-50%, -50%) scale(0.96); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; display: flex; flex-direction: column; overflow: hidden; }
 .detail-panel.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
 .detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; background: linear-gradient(180deg,#FAFBFD,#fff); }
@@ -337,29 +345,14 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
       <!-- Programs Page -->
       <div id="page-programs" class="hidden">
         <div class="card" style="margin-bottom:16px">
-          <div class="card-header"><h3>ระดับการศึกษา</h3></div>
+          <div class="card-header"><h3>ระดับการศึกษา</h3><button class="btn btn-outline btn-sm" id="btn-open-level-modal">+ เพิ่มระดับ</button></div>
           <div class="card-body">
-            <div id="level-chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-              <div><label class="form-label">รหัส</label><input class="form-control" id="new-level-code" style="width:100px" placeholder="LV3"></div>
-              <div><label class="form-label">ชื่อระดับ</label><input class="form-control" id="new-level-name" style="width:200px" placeholder="เช่น ปวส. เทียบโอน"></div>
-              <button class="btn btn-outline btn-sm" id="btn-add-level">+ เพิ่มระดับ</button>
-            </div>
+            <div id="level-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>สาขาวิชา</h3></div>
+          <div class="card-header"><h3>สาขาวิชา</h3><button class="btn btn-primary btn-sm" id="btn-open-branch-modal">+ เพิ่มสาขา</button></div>
           <div class="card-body">
-            <div class="card" style="background:var(--bg);border:1px dashed var(--border);margin-bottom:16px">
-              <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-                <div><label class="form-label">ระดับ</label><select class="form-control" id="new-branch-level" style="width:150px"></select></div>
-                <div><label class="form-label">รหัสสาขา</label><input class="form-control" id="new-branch-code" style="width:90px" placeholder="BR7"></div>
-                <div><label class="form-label">ชื่อสาขา</label><input class="form-control" id="new-branch-name" style="width:200px" placeholder="เช่น การบัญชี"></div>
-                <div><label class="form-label">ค่าสมัคร</label><input class="form-control" id="new-branch-fee" type="number" style="width:100px" value="300"></div>
-                <div><label class="form-label">จำนวนรับ</label><input class="form-control" id="new-branch-max" type="number" style="width:90px" value="30"></div>
-                <button class="btn btn-primary btn-sm" id="btn-add-branch">+ เพิ่มสาขา</button>
-              </div>
-            </div>
             <div style="overflow-x:auto">
               <table>
                 <thead><tr>
@@ -417,6 +410,33 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Add ระดับการศึกษา modal -->
+<div class="modal-overlay" id="level-modal-overlay"></div>
+<div class="modal-box" id="level-modal">
+  <h3>เพิ่มระดับการศึกษา</h3>
+  <div class="form-group"><label class="form-label">รหัส</label><input class="form-control" id="new-level-code" placeholder="LV3"></div>
+  <div class="form-group"><label class="form-label">ชื่อระดับ</label><input class="form-control" id="new-level-name" placeholder="เช่น ปวส. เทียบโอน"></div>
+  <div class="form-actions">
+    <button class="btn btn-ghost btn-sm" id="btn-cancel-level">ยกเลิก</button>
+    <button class="btn btn-primary btn-sm" id="btn-add-level">+ เพิ่มระดับ</button>
+  </div>
+</div>
+
+<!-- Add สาขาวิชา modal -->
+<div class="modal-overlay" id="branch-modal-overlay"></div>
+<div class="modal-box" id="branch-modal">
+  <h3>เพิ่มสาขาวิชา</h3>
+  <div class="form-group"><label class="form-label">ระดับ</label><select class="form-control" id="new-branch-level"></select></div>
+  <div class="form-group"><label class="form-label">รหัสสาขา</label><input class="form-control" id="new-branch-code" placeholder="BR7"></div>
+  <div class="form-group"><label class="form-label">ชื่อสาขา</label><input class="form-control" id="new-branch-name" placeholder="เช่น การบัญชี"></div>
+  <div class="form-group"><label class="form-label">ค่าสมัคร</label><input class="form-control" id="new-branch-fee" type="number" value="300"></div>
+  <div class="form-group"><label class="form-label">จำนวนรับ</label><input class="form-control" id="new-branch-max" type="number" value="30"></div>
+  <div class="form-actions">
+    <button class="btn btn-ghost btn-sm" id="btn-cancel-branch">ยกเลิก</button>
+    <button class="btn btn-primary btn-sm" id="btn-add-branch">+ เพิ่มสาขา</button>
   </div>
 </div>
 

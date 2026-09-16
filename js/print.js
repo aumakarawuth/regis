@@ -58,12 +58,15 @@ var _efldSeq = 0;
 
 // One editable cell: `part` is either a plain string (rendered as-is,
 // not editable — e.g. the space between first/last name) or
-// {value, table, col, id, newRowMeta}.
+// {value, table, col, id, newRowMeta, datepart}. `datepart` ('d'/'m'/'y')
+// marks one of a _efldDate()'s three boxes so _saveEdits() composes them
+// into one ISO date instead of concatenating their text.
 function _ecell(part, seq) {
   if (typeof part === 'string') return _esc(part);
   var attrs = ' class="ecell" contenteditable="true" data-table="' + part.table + '" data-col="' + part.col + '"' +
     ' data-id="' + (part.id || '') + '" data-seq="' + seq + '"';
   if (!part.id && part.newRowMeta) attrs += ' data-new="' + _esc(JSON.stringify(part.newRowMeta)).replace(/"/g, '&quot;') + '"';
+  if (part.datepart) attrs += ' data-datepart="' + part.datepart + '"';
   return '<span' + attrs + '>' + _esc(part.value) + '</span>';
 }
 
@@ -89,6 +92,29 @@ function _dateSlots(d) {
     }
   }
   return _fld(day, 'fld-date') + '/' + _fld(month, 'fld-date') + '/' + _fld(year, 'fld-date2');
+}
+
+// Editable version of _dateSlots — three independently-editable boxes
+// (day/month/Buddhist-era year), each tagged with data-datepart so
+// _saveEdits() composes them into one ISO date instead of concatenating
+// their text like a regular _efldGroup.
+function _efldDate(d, table, col, rowId, newRowMeta) {
+  var day = '', month = '', year = '';
+  if (d) {
+    var dt = new Date(d);
+    if (!isNaN(dt.getTime())) {
+      day = String(dt.getDate());
+      month = String(dt.getMonth() + 1);
+      year = String(dt.getFullYear() + 543);
+    }
+  }
+  var seq = _efldSeq++;
+  var box = function (value, sizeClass, part) {
+    return '<span class="fld editable ' + sizeClass + '">' +
+      _ecell({ value: value, table: table, col: col, id: rowId, newRowMeta: newRowMeta, datepart: part }, seq) +
+      '</span>';
+  };
+  return box(day, 'fld-date', 'd') + '/' + box(month, 'fld-date', 'm') + '/' + box(year, 'fld-date2', 'y');
 }
 
 // `edit`, when given ({table, col, id, newRowMeta}), makes each digit box
@@ -375,7 +401,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
         ' ',
         { value: s.lastName, table: 'students', col: 'last_name', id: s.id },
       ]) +
-      ' วัน/เดือน/ปีเกิด ' + _dateSlots(s.birthDate) +
+      ' วัน/เดือน/ปีเกิด ' + _efldDate(s.birthDate, 'students', 'birth_date', s.id) +
     '</div>' +
     '<div class="row indent">' + _enTitle(s.prefix) + ' ' + _efldGroup('', [
         { value: s.firstNameEn, table: 'students', col: 'first_name_en', id: s.id },
@@ -713,16 +739,32 @@ async function _saveEdits(studentId) {
     // was edited most recently" below — concatenating those together
     // would double the text instead of just picking one.
     const cells = Array.from(document.querySelectorAll('[contenteditable][data-table]'));
-    const seqGroups = new Map(); // key -> { table, col, id, isNew, meta, values: [] }
+    const seqGroups = new Map(); // key -> { table, col, id, isNew, meta, values: [], dateparts: {} }
     cells.forEach(el => {
       const table = el.dataset.table, col = el.dataset.col, id = el.dataset.id, seq = el.dataset.seq;
       const isNew = !id;
       const key = table + '|' + col + '|' + (id || el.dataset.new) + '|' + seq;
       if (!seqGroups.has(key)) {
-        seqGroups.set(key, { table, col, id: id || null, isNew, meta: isNew && el.dataset.new ? JSON.parse(el.dataset.new) : null, values: [] });
+        seqGroups.set(key, { table, col, id: id || null, isNew, meta: isNew && el.dataset.new ? JSON.parse(el.dataset.new) : null, values: [], dateparts: {} });
       }
-      seqGroups.get(key).values.push(el.textContent.trim());
+      const g = seqGroups.get(key);
+      const text = el.textContent.trim();
+      g.values.push(text);
+      if (el.dataset.datepart) g.dateparts[el.dataset.datepart] = text;
     });
+
+    // A _efldDate() group (day/month/Buddhist-year boxes) composes to one
+    // ISO date instead of concatenating its three boxes' text; an
+    // incomplete date is skipped rather than written as a bad partial
+    // string.
+    function _composedValue(g) {
+      if (Object.keys(g.dateparts).length === 0) return g.values.join('');
+      const { d, m, y } = g.dateparts;
+      if (!d || !m || !y) return undefined;
+      const ce = parseInt(y, 10) - 543;
+      if (!ce || !parseInt(d, 10) || !parseInt(m, 10)) return undefined;
+      return ce + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
 
     // Fold groups into per-row patches: existing rows by id, new rows by
     // table+meta (so e.g. father's first_name_en/last_name_en/id_card
@@ -734,7 +776,8 @@ async function _saveEdits(studentId) {
     const existingRows = new Map();
     const newRows = new Map();
     seqGroups.forEach(g => {
-      const value = g.values.join('');
+      const value = _composedValue(g);
+      if (value === undefined) return;
       if (g.isNew) {
         const key = g.table + '|' + JSON.stringify(g.meta);
         if (!newRows.has(key)) newRows.set(key, { table: g.table, meta: g.meta, patch: {} });

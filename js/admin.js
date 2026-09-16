@@ -998,7 +998,7 @@ const Admin = {
   async _loadCatalog() {
     const [{ data: levels }, { data: branches }, { data: rounds }] = await Promise.all([
       _sb.from('education_levels').select('id, code, name').order('code'),
-      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open').order('code'),
+      _sb.from('branches').select('id, code, name, level_id, max_students, fee, is_open, show_work_location').order('code'),
       _sb.from('program_rounds').select('id, branch_id, round_label, is_open'),
     ]);
     this.programLevels = levels || [];
@@ -1055,6 +1055,7 @@ const Admin = {
           </label>`;
         }).join('')}</td>
         <td><input type="checkbox" class="branch-open" ${b.is_open ? 'checked' : ''}></td>
+        <td><input type="checkbox" class="branch-work-location" ${b.show_work_location ? 'checked' : ''}></td>
         <td style="white-space:nowrap">${actionsCell}</td>
       </tr>
     `;
@@ -1065,6 +1066,7 @@ const Admin = {
       row.querySelector('.branch-fee').addEventListener('change', e => this._updateBranch(branchId, { fee: Number(e.target.value) || 0 }));
       row.querySelector('.branch-max').addEventListener('change', e => this._updateBranch(branchId, { max_students: Number(e.target.value) || 0 }));
       row.querySelector('.branch-open').addEventListener('change', e => this._updateBranch(branchId, { is_open: e.target.checked }));
+      row.querySelector('.branch-work-location').addEventListener('change', e => this._updateBranch(branchId, { show_work_location: e.target.checked }));
       row.querySelectorAll('.round-check').forEach(cb => {
         cb.addEventListener('change', e => this._toggleRound(branchId, e.target.dataset.round, e.target.checked));
       });

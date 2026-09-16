@@ -808,7 +808,7 @@ const API = {
   async getPrograms() {
     const { data: branches, error } = await _sb
       .from('branches')
-      .select('code, name, is_open, education_levels(code, name), program_rounds(id, round_label, is_open)')
+      .select('code, name, is_open, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
       .eq('is_open', true);
     if (error) throw error;
 
@@ -825,6 +825,7 @@ const API = {
         name: b.name,
         levelId: level ? level.code : '',
         isOpen: b.is_open,
+        showWorkLocation: !!b.show_work_location,
         programs: (b.program_rounds || [])
           .filter(r => r.is_open)
           .map(r => ({ programId: r.id, round: r.round_label })),
@@ -1279,12 +1280,12 @@ const Form = {
     locSel.onchange=()=>{this.data.workLocation=locSel.value;};
     this._updateStudyCategoryUI(document.getElementById('sel-branch').value);
   },
-  // "ธุรกิจค้าปลีก" / "การจัดการธุรกิจค้าปลีก" are the only branches with a
-  // กรุงเทพ/ต่างจังหวัด work-study split (matches print.js's PVCH_BRANCHES/
-  // PVS_BRANCHES "[กทม./ต่างจังหวัด]" naming).
-  _isRetailBranch(branchId){
+  // Which branches offer a กรุงเทพ/ต่างจังหวัด work-study split is now an
+  // admin-side toggle per branch (Programs page) instead of a hardcoded
+  // name match.
+  _showsWorkLocation(branchId){
     const branch=(this.programs.branches||[]).find(b=>b.id===branchId);
-    return !!branch && branch.name.indexOf('ค้าปลีก')!==-1;
+    return !!branch && !!branch.showWorkLocation;
   },
   _updateStudyCategoryUI(branchId){
     const cg=document.getElementById('study-category-group');
@@ -1295,7 +1296,7 @@ const Form = {
   },
   _updateWorkLocationUI(branchId){
     const lg=document.getElementById('work-location-group');
-    const show=this.data.studyCategory==='เรียนไปทำงานไป'&&this._isRetailBranch(branchId);
+    const show=this.data.studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId);
     if(show){lg.classList.remove('hidden');}else{lg.classList.add('hidden');this.data.workLocation='';document.getElementById('sel-work-location').value='';}
   },
   _populateLevels() {
@@ -1504,7 +1505,7 @@ const Form = {
       if(this.data.studyRound!=='afternoon'){
         const studyCategory=document.getElementById('sel-study-category').value;
         if(!studyCategory)return err('กรุณาเลือกหมวดการเรียน');
-        if(studyCategory==='เรียนไปทำงานไป'&&this._isRetailBranch(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกสถานที่ทำงาน');
+        if(studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกสถานที่ทำงาน');
       }
     }
     if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}

@@ -5,7 +5,7 @@
 
 const CONFIG = {
   // LINE LIFF
-  LIFF_ID: '2011646089-wtVXoLhu',         // ได้จาก LINE Developers Console
+  LIFF_ID: '2011646500-ET0zwCRy',         // ได้จาก LINE Developers Console
 
   // Supabase (Project Settings -> API)
   SUPABASE_URL: 'https://bfkklmixuqpwkjzglbpf.supabase.co',

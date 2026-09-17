@@ -155,7 +155,7 @@ function _plainBoxes(count, value) {
 }
 
 function _collegeSealHtml() {
-  return COLLEGE_SEAL_SVG;
+  return '<img class="seal" src="assets/logo.jpg" alt="ตราวิทยาลัย">';
 }
 
 // ---- CSS ----

@@ -517,7 +517,7 @@
   <!-- STEP 6 -->
   <div class="step-panel" id="step-6">
     <div class="step-heading"><div class="step-icon">🧑</div>ข้อมูลผู้ปกครอง</div>
-    <p class="text-sm text-muted" style="margin-bottom:16px">กรอกเฉพาะกรณีที่นักเรียนไม่ได้อยู่กับบิดา/มารดา — ข้ามได้หากไม่มีข้อมูล</p>
+    <p class="text-sm text-muted" id="step6-subtitle" style="margin-bottom:16px">กรอกเฉพาะกรณีที่นักเรียนไม่ได้อยู่กับบิดา/มารดา — ข้ามได้หากไม่มีข้อมูล</p>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <button id="btn-copy-father" class="btn btn-outline btn-sm" style="flex:1">📋 ดึงข้อมูลบิดา</button>
       <button id="btn-copy-mother" class="btn btn-outline btn-sm" style="flex:1">📋 ดึงข้อมูลมารดา</button>
@@ -568,10 +568,6 @@
       <p class="text-sm" style="margin-top:4px">ไม่ต้องแนบหลักฐานการชำระเงิน — กด "ถัดไป" เพื่อดำเนินการต่อ</p>
     </div>
     <div id="payment-normal-content">
-      <div style="background:#FEF3C7;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-        <span style="font-size:0.875rem;color:#92400E">💡 ชำระภายหลังได้ที่โรงเรียน</span>
-        <button id="btn-skip-payment" class="btn btn-sm" style="background:#92400E;color:#fff;white-space:nowrap;flex-shrink:0">ข้ามขั้นตอนนี้</button>
-      </div>
       <div class="qr-container">
         <p class="text-sm text-muted">สแกน QR Code PromptPay</p>
         <img id="promptpay-qr" alt="QR PromptPay" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block'">
@@ -1332,41 +1328,33 @@ const Form = {
     return p;
   },
   // ถึงแก่กรรมแล้ว/ไม่ทราบข้อมูล no longer hide+skip the fields — the
-  // section is mandatory now, so each option auto-fills only the fields
-  // it makes unanswerable and locks them (still visible, so it's clear
-  // what got filled and why):
-  //  - ไม่ทราบข้อมูล: every field → "-".
-  //  - ถึงแก่กรรมแล้ว: เลขบัตร/คำนำหน้า/ชื่อ/นามสกุล are still real,
-  //    required input (a deceased parent's identity is still on
-  //    record) — only ชื่อ-นามสกุล(อังกฤษ)/เบอร์โทร/อาชีพ get auto-filled.
-  // Mutually exclusive: ticking one clears the other, since
-  // "ไม่ทราบข้อมูลเลย" makes deceased-or-not moot.
-  _PARENT_AUTOFILL_FIELDS: ['idCard','prefix','firstName','lastName','firstNameEn','lastNameEn','phone','occupation'],
-  _PARENT_DECEASED_LOCK_FIELDS: ['firstNameEn','lastNameEn','phone','occupation'],
+  // section is mandatory now, so each option auto-fills the fields it
+  // makes unanswerable and locks them (still visible, so it's clear
+  // what got filled and why). Both options behave the same way: only
+  // คำนำหน้า/ชื่อ/นามสกุล stay real, required input — everything else
+  // (เลขบัตร/ชื่อ-นามสกุลอังกฤษ/เบอร์โทร/อาชีพ) auto-fills to "-"
+  // (อาชีพ → "ถึงแก่กรรม" for the deceased case). Mutually exclusive:
+  // ticking one clears the other.
+  _PARENT_LOCK_FIELDS: ['idCard','firstNameEn','lastNameEn','phone','occupation'],
   _applyParentAutoFill(p) {
-    const wasAuto=(v)=>v==='-'||v==='ถึงแก่กรรม';
     if(p.unknownInfo){
-      this._PARENT_AUTOFILL_FIELDS.forEach(f=>{p[f]='-';});
+      this._PARENT_LOCK_FIELDS.forEach(f=>{p[f]='-';});
     } else if(p.isDeceased){
-      this._PARENT_DECEASED_LOCK_FIELDS.forEach(f=>{p[f]='-';});
+      this._PARENT_LOCK_FIELDS.forEach(f=>{p[f]='-';});
       p.occupation='ถึงแก่กรรม';
-      ['idCard','prefix','firstName','lastName'].forEach(f=>{if(wasAuto(p[f]))p[f]='';});
     } else {
-      this._PARENT_AUTOFILL_FIELDS.forEach(f=>{if(wasAuto(p[f]))p[f]='';});
+      const wasAuto=(v)=>v==='-'||v==='ถึงแก่กรรม';
+      this._PARENT_LOCK_FIELDS.forEach(f=>{if(wasAuto(p[f]))p[f]='';});
     }
   },
   _renderParentCard(type,containerId) {
     const container=document.getElementById(containerId);container.innerHTML='';
     const p=this._getOrCreateParent(type);
     const idx=this.data.parents.indexOf(p);
-    const dis=(field)=>{
-      if(p.unknownInfo)return this._PARENT_AUTOFILL_FIELDS.includes(field);
-      if(p.isDeceased)return this._PARENT_DECEASED_LOCK_FIELDS.includes(field);
-      return false;
-    };
+    const dis=(field)=>(p.unknownInfo||p.isDeceased)&&this._PARENT_LOCK_FIELDS.includes(field);
     const attr=(field)=>dis(field)?'disabled':'';
     const card=document.createElement('div');card.className='parent-item';
-    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" id="${type}-isDeceased" name="${type}-isDeceased" autocomplete="off" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" id="${type}-unknownInfo" name="${type}-unknownInfo" autocomplete="off" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</div><div class="parent-info-fields"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" id="${type}-prefix" name="${type}-prefix" autocomplete="off" data-field="prefix" data-idx="${idx}" ${attr('prefix')}><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option><option value="-" ${p.prefix==='-'?'selected':''}>-</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช. <span class="required">*</span></label><input class="form-control" type="tel" maxlength="13" id="${type}-idCard" name="${type}-idCard" autocomplete="off" data-field="idCard" data-idx="${idx}" value="${p.idCard}" ${attr('idCard')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" type="text" id="${type}-firstName" name="${type}-firstName" autocomplete="off" data-field="firstName" data-idx="${idx}" value="${p.firstName}" ${attr('firstName')}></div><div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" type="text" id="${type}-lastName" name="${type}-lastName" autocomplete="off" data-field="lastName" data-idx="${idx}" value="${p.lastName}" ${attr('lastName')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" id="${type}-firstNameEn" name="${type}-firstNameEn" autocomplete="off" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}" ${attr('firstNameEn')}></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" id="${type}-lastNameEn" name="${type}-lastNameEn" autocomplete="off" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}" ${attr('lastNameEn')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร <span class="required">*</span></label><input class="form-control" type="tel" maxlength="10" id="${type}-phone" name="${type}-phone" autocomplete="off" data-field="phone" data-idx="${idx}" value="${p.phone}" ${attr('phone')}></div><div class="form-group"><label class="form-label">อาชีพ <span class="required">*</span></label><input class="form-control" type="text" id="${type}-occupation" name="${type}-occupation" autocomplete="off" data-field="occupation" data-idx="${idx}" value="${p.occupation}" ${attr('occupation')}></div></div></div></div>`;
+    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" id="${type}-isDeceased" name="${type}-isDeceased" autocomplete="off" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" id="${type}-unknownInfo" name="${type}-unknownInfo" autocomplete="off" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" id="${type}-prefix" name="${type}-prefix" autocomplete="off" data-field="prefix" data-idx="${idx}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช. <span class="required">*</span></label><input class="form-control" type="tel" maxlength="13" id="${type}-idCard" name="${type}-idCard" autocomplete="off" data-field="idCard" data-idx="${idx}" value="${p.idCard}" ${attr('idCard')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" type="text" id="${type}-firstName" name="${type}-firstName" autocomplete="off" data-field="firstName" data-idx="${idx}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" type="text" id="${type}-lastName" name="${type}-lastName" autocomplete="off" data-field="lastName" data-idx="${idx}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" id="${type}-firstNameEn" name="${type}-firstNameEn" autocomplete="off" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}" ${attr('firstNameEn')}></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" id="${type}-lastNameEn" name="${type}-lastNameEn" autocomplete="off" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}" ${attr('lastNameEn')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร <span class="required">*</span></label><input class="form-control" type="tel" maxlength="10" id="${type}-phone" name="${type}-phone" autocomplete="off" data-field="phone" data-idx="${idx}" value="${p.phone}" ${attr('phone')}></div><div class="form-group"><label class="form-label">อาชีพ <span class="required">*</span></label><input class="form-control" type="text" id="${type}-occupation" name="${type}-occupation" autocomplete="off" data-field="occupation" data-idx="${idx}" value="${p.occupation}" ${attr('occupation')}></div></div></div></div>`;
     container.appendChild(card);
     // isDeceased/unknownInfo now only ever patch the other fields'
     // value/disabled in place instead of rebuilding the whole card —
@@ -1382,7 +1370,7 @@ const Form = {
         this._applyParentAutoFill(p);
         card.querySelector('[data-field="isDeceased"]').checked=p.isDeceased;
         card.querySelector('[data-field="unknownInfo"]').checked=p.unknownInfo;
-        this._PARENT_AUTOFILL_FIELDS.forEach(f=>{
+        this._PARENT_LOCK_FIELDS.forEach(f=>{
           const input=card.querySelector(`[data-field="${f}"]`);
           input.value=p[f];input.disabled=dis(f);
         });
@@ -1394,10 +1382,9 @@ const Form = {
     const p=this.data.parents.find(pp=>pp.type===type);
     const label=type==='father'?'บิดา':'มารดา';
     if(!p)return `กรุณากรอกข้อมูล${label}`;
-    if(p.unknownInfo)return null; // every field auto-filled with "-"
-    if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก`;
     if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label}`;
-    if(p.isDeceased)return null; // เบอร์โทร/อาชีพ auto-filled
+    if(p.unknownInfo||p.isDeceased)return null; // เลขบัตร/เบอร์โทร/อาชีพ auto-filled
+    if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก`;
     if(!p.phone||p.phone.length!==10)return `กรุณากรอกเบอร์โทรของ${label}ให้ครบ 10 หลัก`;
     if(!p.occupation||!p.occupation.trim())return `กรุณากรอกอาชีพของ${label}`;
     return null;
@@ -1405,6 +1392,12 @@ const Form = {
 
   _initStep6() {
     ['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el&&this.data.guardian[f])el.value=this.data.guardian[f];});
+    const unreachable=(p)=>!p||p.isDeceased||p.unknownInfo;
+    const father=this.data.parents.find(p=>p.type==='father');
+    const mother=this.data.parents.find(p=>p.type==='mother');
+    document.getElementById('step6-subtitle').textContent=(unreachable(father)&&unreachable(mother))
+      ?'บิดาและมารดาไม่สามารถติดต่อได้ — จำเป็นต้องกรอกข้อมูลผู้ปกครอง ไม่สามารถข้ามได้'
+      :'กรอกเฉพาะกรณีที่นักเรียนไม่ได้อยู่กับบิดา/มารดา — ข้ามได้หากไม่มีข้อมูล';
     const canCopy=(type)=>{const p=this.data.parents.find(pp=>pp.type===type);return !!p&&!p.isDeceased&&!p.unknownInfo;};
     const btnFather=document.getElementById('btn-copy-father'),btnMother=document.getElementById('btn-copy-mother');
     btnFather.disabled=!canCopy('father');
@@ -1446,18 +1439,21 @@ const Form = {
     sync();
   },
 
+  _getApplicationFee() {
+    const branch=(this.programs.branches||[]).find(b=>b.id===this.data.branchId);
+    return (branch&&branch.fee!=null)?Number(branch.fee):CONFIG.APPLICATION_FEE;
+  },
   _initStep9() {
     document.getElementById('payment-dual-notice').classList.toggle('hidden',!this.isDual);
     document.getElementById('payment-normal-content').classList.toggle('hidden',this.isDual);
     if(this.isDual){this.data.payment.skipped=true;return;}
-    const amount=CONFIG.APPLICATION_FEE;
+    const amount=this._getApplicationFee();
     document.getElementById('payment-amount').textContent='฿'+amount.toLocaleString();
     document.getElementById('promptpay-qr').src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
     document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER;
-    const skipBtn=document.getElementById('btn-skip-payment');
-    if(skipBtn&&!skipBtn._bound){skipBtn._bound=true;skipBtn.onclick=()=>{this.data.payment.skipped=true;this.data.payment.slipBase64='';this._saveStep(this.currentStep);this._renderStep(this.currentStep+1);};}
+    this.data.payment.skipped=false;
     const slipCard=document.getElementById('slip-upload-card');
-    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this.data.payment.skipped=false;this._saveDraft();},true);slipCard._bound=true;}
+    if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this._saveDraft();},true);slipCard._bound=true;}
     if(this.data.payment.slipBase64){slipCard.classList.add('has-file');slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;slipCard.querySelector('.doc-preview').classList.remove('hidden');}
   },
 
@@ -1488,8 +1484,16 @@ const Form = {
       // the rest are blank until the applicant actually enters something.
       const g={};['idCard','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);g[f]=el?el.value.trim():'';});
       const anyFilled=Object.values(g).some(v=>v!=='');
-      if(anyFilled){
-        if(!g.firstName||!g.lastName)return err('กรุณากรอกชื่อ-นามสกุลผู้ปกครองให้ครบ หรือลบข้อมูลที่กรอกไว้ทั้งหมดถ้าไม่ต้องการระบุผู้ปกครอง');
+      // Neither parent is reachable (both ถึงแก่กรรมแล้ว/ไม่ทราบข้อมูล) —
+      // ผู้ปกครอง can no longer be skipped, since there'd be no adult on
+      // file to contact about this student at all.
+      const unreachable=(p)=>!p||p.isDeceased||p.unknownInfo;
+      const father=this.data.parents.find(p=>p.type==='father');
+      const mother=this.data.parents.find(p=>p.type==='mother');
+      const guardianRequired=unreachable(father)&&unreachable(mother);
+      if(guardianRequired&&!anyFilled)return err('บิดาและมารดาไม่สามารถติดต่อได้ กรุณากรอกข้อมูลผู้ปกครอง (จำเป็นต้องกรอก ไม่สามารถข้ามได้)');
+      if(anyFilled||guardianRequired){
+        if(!g.firstName||!g.lastName)return err('กรุณากรอกชื่อ-นามสกุลผู้ปกครองให้ครบ'+(guardianRequired?'':' หรือลบข้อมูลที่กรอกไว้ทั้งหมดถ้าไม่ต้องการระบุผู้ปกครอง'));
         if(g.phone.length!==10)return err('เบอร์โทรผู้ปกครองต้องมี 10 หลัก');
         if(!g.relation)return err('กรุณาเลือกความสัมพันธ์กับผู้ปกครอง');
         if(!g.address)return err('กรุณากรอกที่อยู่ผู้ปกครอง');
@@ -1497,7 +1501,7 @@ const Form = {
     }
     if(n===7){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
     if(n===8){if(!document.getElementById('chk-payment-terms').checked)return err('กรุณาติ๊กยอมรับเงื่อนไขการชำระเงินก่อน');}
-    if(n===9&&!this.isDual){if(!this.data.payment.skipped&&!this.data.payment.slipBase64)return err('กรุณาแนบหลักฐานชำระเงิน หรือกด "ข้ามขั้นตอนนี้" หากต้องการชำระภายหลัง');}
+    if(n===9&&!this.isDual){if(!this.data.payment.slipBase64)return err('กรุณาแนบหลักฐานชำระเงิน');}
     return true;
   },
 
@@ -1514,7 +1518,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:CONFIG.APPLICATION_FEE,slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:this._getApplicationFee(),slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         // submit_application() already created the student/enrollment row

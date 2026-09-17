@@ -224,12 +224,39 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
 .skeleton { background: linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%); background-size: 400px 100%; animation: shimmer 1.2s infinite; border-radius: 4px; }
+/* Backdrop behind the sidebar once it's toggled open on mobile — without
+   this the sidebar just floats over the page with no way to tell it's
+   modal, and no obvious way to dismiss it besides re-tapping ☰. */
+.sidebar-backdrop { position: fixed; inset: 0; background: rgba(6,20,31,0.5); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.sidebar-backdrop.open { opacity: 1; pointer-events: all; }
+@media (max-width: 900px) {
+  #btn-toggle-sidebar { display: inline-flex !important; }
+}
 @media (max-width: 720px) {
-  .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
-  .sidebar.open { transform: translateX(0); }
+  .sidebar { transform: translateX(-100%); transition: transform 0.2s; width: 260px; }
+  .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
   .main-content { margin-left: 0; }
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 0 12px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+  .topbar-title { font-size: 1rem; }
+  #topbar-date { display: none; }
+  .page-content { padding: 14px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px; gap: 10px; }
+  .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+  .stat-value { font-size: 1.4rem; }
+  .welcome-banner { padding: 18px 16px; }
+  .info-grid { grid-template-columns: 1fr; }
   .detail-panel { width: calc(100vw - 24px); max-height: calc(100vh - 24px); border-radius: var(--r-lg); }
+  .detail-body { padding: 16px; }
+  .detail-header, .detail-footer { padding: 14px 16px; }
+  .detail-footer { flex-direction: column; }
+  .detail-footer .btn { width: 100%; }
+  .toolbar { padding: 12px 14px; }
+  .card-header, .card-body { padding: 14px; }
+  .modal-box { width: calc(100vw - 24px); padding: 16px; }
+}
+@media (max-width: 420px) {
+  .stats-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -258,6 +285,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
 
 <!-- DASHBOARD -->
 <div id="admin-dashboard" class="admin-layout hidden">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span style="font-size:1.5rem">🏫</span>

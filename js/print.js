@@ -167,7 +167,7 @@ const FORM_CSS = [
   '.fill-form{font-size:1.08rem;height:280mm;display:flex;flex-direction:column;overflow:hidden}',
   '.fill-main{flex:0 0 auto}',
   '.finance-fill{position:relative;flex:1 1 auto;margin-top:6px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 23px,#888 23px 24px)}',
-  '.finance-box{position:absolute;top:0;left:0;right:0;border:2px solid #000;padding:8px 12px;text-align:center;background:#fff}',
+  '.finance-box{position:absolute;top:0;left:0;right:0;border:2px solid #000;padding:8px 12px;text-align:center;background:#fff;font-size:1.3em}',
   '.page{box-sizing:border-box;position:relative;width:100%;min-height:280mm;padding:15mm;page-break-after:always}',
   '.page:last-child{page-break-after:avoid}',
   '.cover-page{height:280mm}',
@@ -404,7 +404,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="section-title" style="margin-top:12px;margin-bottom:8px">1. สาขาวิชาที่สมัคร</div>' +
-    '<div class="row indent b" style="font-size:1.1em">' +
+    '<div class="row indent b" style="font-size:1.4em">' +
       'ระดับที่สมัคร ' + _esc(levelTitle) + ' รอบ ' + _esc(roundLabel) + ' สาขาวิชา ' + _esc(branchName) +
       (workLocation ? ' ' + _esc(workLocation) : '') +
     '</div>' +
@@ -597,7 +597,7 @@ async function _loadStudent(studentId) {
       nationality, ethnicity, religion, weight, height, blood_type,
       id_card, phone, birth_date, applied_at, education, old_school,
       addresses(id, province_text, district_text, subdistrict_text, zipcode, detail),
-      parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation),
+      parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation, is_deceased),
       guardians(id, id_card, prefix, first_name, last_name, phone, relation, address),
       enrollments(study_category, work_location, program_rounds(round_label, branches(name, education_levels(name)))),
       documents(id, doc_type, storage_path, uploaded_at)
@@ -615,7 +615,7 @@ function _camelPerson(row) {
   return {
     id: row.id, idCard: row.id_card, prefix: row.prefix, firstName: row.first_name, lastName: row.last_name,
     firstNameEn: row.first_name_en, lastNameEn: row.last_name_en,
-    phone: row.phone, occupation: row.occupation, relation: row.relation, address: row.address,
+    phone: row.phone, occupation: row.is_deceased ? 'ถึงแก่กรรม' : row.occupation, relation: row.relation, address: row.address,
   };
 }
 

@@ -686,7 +686,6 @@ const Admin = {
     el.onclick = null;
     el.innerHTML = `
       <select class="form-control" id="dp-edit-prefix" style="display:inline-block;width:auto;font-size:0.875rem;padding:4px 6px">
-        <option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option>
         <option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option>
       </select>
       <input class="form-control" id="dp-edit-firstName" placeholder="ชื่อ" style="display:inline-block;width:100px;font-size:0.875rem;padding:4px 6px">

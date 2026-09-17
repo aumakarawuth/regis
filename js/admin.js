@@ -611,8 +611,17 @@ const Admin = {
               <span>${_docLabel(t)}</span>
             </label>`).join('') +
         '</div>' +
-        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร (ถ้ามี) เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด"></textarea>' +
-        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+        '<div class="section-label" style="margin-top:10px;font-size:0.8125rem">✏️ หรือขอให้แก้ไขข้อมูลที่กรอกไว้แล้ว (ไม่ต้องอัปโหลดไฟล์)</div>' +
+        '<div class="doc-chips">' +
+          _EDIT_SECTION_TYPES.map(([v, label]) => `
+            <label class="doc-chip">
+              <input type="checkbox" class="dp-edit-section-check" value="${v}">
+              <span>${label}</span>
+            </label>`).join('') +
+        '</div>' +
+        '<div class="section-label" style="margin-top:10px;font-size:0.8125rem">💬 หรือส่งข้อความแจ้งเฉยๆ ก็ได้ (ไม่เลือกเอกสาร/หัวข้อด้านบนเลยก็ส่งได้ ถ้าพิมพ์ข้อความไว้)</div>' +
+        '<textarea class="form-control" id="dp-doc-request-note" placeholder="เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด / กรุณาอัปเดตเลขบัตร ปชช. พ่อ / เอกสารของคุณผ่านการตรวจสอบแล้ว"></textarea>' +
+        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งทาง LINE</button>' +
         '<div class="doc-request-history" id="dp-doc-requests"></div>' +
       '</div>';
 
@@ -806,46 +815,48 @@ const Admin = {
   async _sendDocRequest() {
     if (!this.currentStudent) return;
     const docTypes = Array.from(document.querySelectorAll('.dp-doc-request-check:checked')).map(el => el.value);
+    const editSections = Array.from(document.querySelectorAll('.dp-edit-section-check:checked')).map(el => el.value);
     const note = document.getElementById('dp-doc-request-note').value.trim();
-    if (!docTypes.length) return showToast('เลือกเอกสารที่ต้องการขอก่อน', 'error');
+    if (!docTypes.length && !editSections.length && !note) return showToast('เลือกเอกสาร/หัวข้อที่ต้องการให้แก้ไข หรือพิมพ์ข้อความอย่างน้อยหนึ่งอย่าง', 'error');
 
     const btn = document.getElementById('dp-btn-send-doc-request');
     const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'กำลังส่ง...';
     const { data, error } = await _sb.functions.invoke('send-document-request', {
-      body: { studentId: this.currentStudent.id, docTypes, note },
+      body: { studentId: this.currentStudent.id, docTypes, editSections, note },
     });
     btn.disabled = false;
     btn.textContent = originalLabel;
     if (error) return showToast('ส่งคำขอล้มเหลว: ' + error.message, 'error');
     if (data && data.success === false) return showToast(data.message || 'ส่งคำขอล้มเหลว', 'error');
 
-    document.querySelectorAll('.dp-doc-request-check:checked').forEach(el => el.checked = false);
+    document.querySelectorAll('.dp-doc-request-check:checked, .dp-edit-section-check:checked').forEach(el => el.checked = false);
     document.getElementById('dp-doc-request-note').value = '';
-    showToast(data && data.skipped ? data.message : 'ส่งคำขอเอกสารทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
+    showToast(data && data.skipped ? data.message : 'ส่งคำขอทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
     this._loadDocRequests(this.currentStudent.id);
   },
 
   async _loadDocRequests(studentId) {
     const el = document.getElementById('dp-doc-requests');
     const { data, error } = await _sb.from('document_requests')
-      .select('id, doc_types, note, status, requested_at, resolved_at')
+      .select('id, doc_types, edit_sections, note, status, requested_at, resolved_at')
       .eq('student_id', studentId)
       .order('requested_at', { ascending: false });
     if (error) { el.innerHTML = '<p class="doc-request-history-empty">โหลดประวัติคำขอเอกสารไม่สำเร็จ</p>'; return; }
 
+    const sectionLabel = v => (_EDIT_SECTION_TYPES.find(([val]) => val === v) || [v, v])[1];
     el.innerHTML = (data && data.length)
       ? data.map(r => `
         <div class="doc-request-item">
           <div class="doc-request-item-top">
             <span class="doc-request-item-meta">
-              <span class="badge ${r.status === 'resolved' ? 'badge-success' : 'badge-warning'}">${r.status === 'resolved' ? '✓ ครบแล้ว' : '⏳ รอเอกสาร'}</span>
+              <span class="badge ${r.status === 'resolved' ? 'badge-success' : 'badge-warning'}">${r.status === 'resolved' ? '✓ ครบแล้ว' : '⏳ รอดำเนินการ'}</span>
               · ${_thDate(r.requested_at)}
             </span>
             ${r.status === 'pending' ? `<button class="btn btn-outline btn-sm" data-resolve-request="${r.id}">ทำเครื่องหมายว่าครบแล้ว</button>` : ''}
           </div>
-          <div class="doc-request-item-docs">${r.doc_types.map(t => `<span>${_docLabel(t)}</span>`).join('')}</div>
+          <div class="doc-request-item-docs">${(r.doc_types || []).map(t => `<span>${_docLabel(t)}</span>`).join('')}${(r.edit_sections || []).map(v => `<span>✏️ ${sectionLabel(v)}</span>`).join('')}</div>
           ${r.note ? `<div class="doc-request-item-note">"${_esc(r.note)}"</div>` : ''}
         </div>`).join('')
       : '<p class="doc-request-history-empty">ยังไม่มีคำขอเอกสาร</p>';
@@ -1394,6 +1405,13 @@ const Admin = {
 function _statusBadge(s) { return { pending: 'badge-warning', verified: 'badge-success', rejected: 'badge-danger' }[s] || 'badge-gray'; }
 function _statusLabel(s) { return { pending: 'รอตรวจ', verified: 'ผ่านแล้ว', rejected: 'ปฏิเสธ' }[s] || s || '—'; }
 const _DOC_REQUEST_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back', 'payment_slip'];
+// Maps to the apply.html edit-mode step each section deep-links to
+// (see apply.html's _EDIT_SECTION_STEPS) — order here is also the
+// order the applicant walks through them if more than one is picked.
+const _EDIT_SECTION_TYPES = [
+  ['personal', 'ข้อมูลส่วนตัว'], ['address', 'ที่อยู่'], ['father', 'ข้อมูลบิดา'],
+  ['mother', 'ข้อมูลมารดา'], ['guardian', 'ข้อมูลผู้ปกครอง'],
+];
 function _docLabel(t) {
   return {
     id_card_front: 'บัตร ปชช. ด้านหน้า', id_card_back: 'บัตร ปชช. ด้านหลัง',

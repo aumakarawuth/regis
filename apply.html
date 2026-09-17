@@ -1332,21 +1332,19 @@ const Form = {
     return p;
   },
   // ถึงแก่กรรมแล้ว/ไม่ทราบข้อมูล no longer hide+skip the fields — the
-  // section is mandatory now, so each option instead auto-fills the
-  // fields it makes unanswerable and locks them (still visible, so it's
-  // clear what got filled and why), while เลขบัตร ปชช./คำนำหน้า stay real
-  // user input for "ถึงแก่กรรมแล้ว" — a deceased parent still has a real
-  // ID card on record. Mutually exclusive: ticking one clears the other,
-  // since "ไม่ทราบข้อมูลเลย" makes deceased-or-not moot.
-  _PARENT_AUTOFILL_FIELDS: ['idCard','firstName','lastName','phone','occupation'],
+  // section is mandatory now, so each option instead auto-fills every
+  // field with "-" (occupation gets "ถึงแก่กรรม" for the deceased case)
+  // and locks them (still visible, so it's clear what got filled and
+  // why). Mutually exclusive: ticking one clears the other, since
+  // "ไม่ทราบข้อมูลเลย" makes deceased-or-not moot.
+  _PARENT_AUTOFILL_FIELDS: ['idCard','prefix','firstName','lastName','phone','occupation'],
   _applyParentAutoFill(p) {
-    const wasAuto=(v)=>v==='-'||v==='ถึงแก่กรรม';
     if(p.unknownInfo){
-      p.idCard='-';p.firstName='-';p.lastName='-';p.phone='-';p.occupation='-';
+      p.idCard='-';p.prefix='-';p.firstName='-';p.lastName='-';p.phone='-';p.occupation='-';
     } else if(p.isDeceased){
-      p.firstName='-';p.lastName='-';p.phone='-';p.occupation='ถึงแก่กรรม';
-      if(wasAuto(p.idCard))p.idCard='';
+      p.idCard='-';p.prefix='-';p.firstName='-';p.lastName='-';p.phone='-';p.occupation='ถึงแก่กรรม';
     } else {
+      const wasAuto=(v)=>v==='-'||v==='ถึงแก่กรรม';
       this._PARENT_AUTOFILL_FIELDS.forEach(f=>{if(wasAuto(p[f]))p[f]='';});
     }
   },
@@ -1355,13 +1353,12 @@ const Form = {
     const p=this._getOrCreateParent(type);
     const idx=this.data.parents.indexOf(p);
     const dis=(field)=>{
-      if(p.unknownInfo)return this._PARENT_AUTOFILL_FIELDS.includes(field);
-      if(p.isDeceased)return ['firstName','lastName','phone','occupation'].includes(field);
+      if(p.unknownInfo||p.isDeceased)return this._PARENT_AUTOFILL_FIELDS.includes(field);
       return false;
     };
     const attr=(field)=>dis(field)?'disabled':'';
     const card=document.createElement('div');card.className='parent-item';
-    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" data-field="prefix" data-idx="${idx}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช. <span class="required">*</span></label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${idx}" value="${p.idCard}" ${attr('idCard')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" type="text" data-field="firstName" data-idx="${idx}" value="${p.firstName}" ${attr('firstName')}></div><div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" type="text" data-field="lastName" data-idx="${idx}" value="${p.lastName}" ${attr('lastName')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร <span class="required">*</span></label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${idx}" value="${p.phone}" ${attr('phone')}></div><div class="form-group"><label class="form-label">อาชีพ <span class="required">*</span></label><input class="form-control" type="text" data-field="occupation" data-idx="${idx}" value="${p.occupation}" ${attr('occupation')}></div></div></div></div>`;
+    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" data-field="prefix" data-idx="${idx}" ${attr('prefix')}><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option><option value="-" ${p.prefix==='-'?'selected':''}>-</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช. <span class="required">*</span></label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${idx}" value="${p.idCard}" ${attr('idCard')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" type="text" data-field="firstName" data-idx="${idx}" value="${p.firstName}" ${attr('firstName')}></div><div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" type="text" data-field="lastName" data-idx="${idx}" value="${p.lastName}" ${attr('lastName')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร <span class="required">*</span></label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${idx}" value="${p.phone}" ${attr('phone')}></div><div class="form-group"><label class="form-label">อาชีพ <span class="required">*</span></label><input class="form-control" type="text" data-field="occupation" data-idx="${idx}" value="${p.occupation}" ${attr('occupation')}></div></div></div></div>`;
     container.appendChild(card);
     // isDeceased/unknownInfo now only ever patch the other fields'
     // value/disabled in place instead of rebuilding the whole card —
@@ -1389,9 +1386,8 @@ const Form = {
     const p=this.data.parents.find(pp=>pp.type===type);
     const label=type==='father'?'บิดา':'มารดา';
     if(!p)return `กรุณากรอกข้อมูล${label}`;
-    if(p.unknownInfo)return null; // every field auto-filled with "-"
+    if(p.unknownInfo||p.isDeceased)return null; // every field auto-filled with "-"
     if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก`;
-    if(p.isDeceased)return null; // name/phone/occupation auto-filled
     if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label}`;
     if(!p.phone||p.phone.length!==10)return `กรุณากรอกเบอร์โทรของ${label}ให้ครบ 10 หลัก`;
     if(!p.occupation||!p.occupation.trim())return `กรุณากรอกอาชีพของ${label}`;

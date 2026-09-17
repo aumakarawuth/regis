@@ -48,7 +48,7 @@ const API = {
       _sb.from('education_levels').select('code, name').order('code'),
       _sb
         .from('branches')
-        .select('code, name, is_open, sort_order, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
+        .select('code, name, fee, is_open, sort_order, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
         .eq('is_open', true)
         .order('sort_order'),
     ]);
@@ -61,6 +61,7 @@ const API = {
       return {
         id: b.code,
         name: b.name,
+        fee: b.fee,
         levelId: level ? level.code : '',
         isOpen: b.is_open,
         showStudyCategory: !!b.show_study_category,

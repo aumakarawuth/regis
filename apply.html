@@ -547,6 +547,21 @@
 
   <!-- STEP 8 -->
   <div class="step-panel" id="step-8">
+    <div class="step-heading"><div class="step-icon">📍</div>เงื่อนไขและรายละเอียดการชำระเงิน</div>
+    <div class="card" style="line-height:1.8">
+      <p class="fw-600" style="margin-bottom:10px">📍เงื่อนไขและรายละเอียดการชำระเงิน</p>
+      <p style="margin-bottom:10px">1. อัตราค่าเล่าเรียนสามารถแบ่งชำระเป็นงวดได้ โดยนับงวดแรกเป็นวันลงทะเบียนสมัครเรียนพร้อมมอบตัว 2,000 บาท</p>
+      <p style="margin-bottom:10px">2. ระดับปวช. หากผู้ที่สมัครเรียนมีอายุเกิน 24 ปี จะไม่ได้รับสิทธิ์อุดหนุนจากรัฐบาล ทางวิทยาลัยจะขอเพิ่มค่าธรรมเนียมการศึกษาอีก 3,000 บาท/ ภาคเรียน</p>
+      <p>3. ระดับปวส. หากผู้ที่สมัครเรียนจบระดับชั้น มัธยมศึกษาตอนปลาย หรือเทียบเท่า ม.6 จะมีค่าลงทะเบียนเรียน Summer ในช่วงจบระดับชั้น ปวส.1 ขึ้น ปวส.2 จำนวน 4,000 บาท</p>
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;cursor:pointer">
+      <input type="checkbox" id="chk-payment-terms" style="margin-top:3px;width:18px;height:18px;flex-shrink:0">
+      <span>ข้าพเจ้าได้อ่านและยอมรับเงื่อนไขและรายละเอียดการชำระเงินข้างต้นแล้ว</span>
+    </label>
+  </div>
+
+  <!-- STEP 9 -->
+  <div class="step-panel" id="step-9">
     <div class="step-heading"><div class="step-icon">💳</div>ชำระค่าสมัคร</div>
     <div id="payment-dual-notice" class="hidden" style="background:#DBEAFE;border-radius:10px;padding:16px;text-align:center;color:#1E40AF">
       <p class="fw-600">🏭 หลักสูตรทวิภาคีไม่ต้องชำระค่าสมัคร</p>
@@ -577,8 +592,8 @@
     </div>
   </div>
 
-  <!-- STEP 9 -->
-  <div class="step-panel" id="step-9">
+  <!-- STEP 10 -->
+  <div class="step-panel" id="step-10">
     <div class="step-heading"><div class="step-icon">✅</div>ตรวจสอบก่อนส่ง</div>
     <div id="review-content"></div>
     <div class="card mt-4" style="background:#FEF3C7">
@@ -1187,7 +1202,7 @@ const Form = {
   currentStep:1, isDual:false,
   data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',weight:'',height:'',bloodType:'',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
-  get totalSteps(){return 9;},
+  get totalSteps(){return 10;},
 
   async init() {
     const user=LIFF&&LIFF.getUser?LIFF.getUser():JSON.parse(sessionStorage.getItem('lineUser')||'null');
@@ -1276,11 +1291,13 @@ const Form = {
     document.getElementById('progress-fill').style.width=pct+'%';
     document.getElementById('step-current').textContent=n;
     document.getElementById('step-total').textContent=this.totalSteps;
-    const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา','ข้อมูลมารดา','ผู้ปกครอง','เอกสารประกอบ','ชำระเงิน','ตรวจสอบและส่ง'];
+    const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา','ข้อมูลมารดา','ผู้ปกครอง','เอกสารประกอบ','เงื่อนไขการชำระเงิน','ชำระเงิน','ตรวจสอบและส่ง'];
     document.getElementById('step-title-text').textContent=titles[n]||'';
     document.getElementById('btn-back').textContent=n===1?'🗑️ ล้าง':'← ย้อนกลับ';
-    document.getElementById('btn-next').textContent=n===this.totalSteps?'✅ ส่งใบสมัคร':'ถัดไป →';
-    const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8(),9:()=>this._initStep9()};
+    const btnNext=document.getElementById('btn-next');
+    btnNext.textContent=n===8?'รับทราบ':(n===this.totalSteps?'✅ ส่งใบสมัคร':'ถัดไป →');
+    btnNext.disabled=false;
+    const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8(),9:()=>this._initStep9(),10:()=>this._initStep10()};
     if(initMap[n])await initMap[n]();
     window.scrollTo({top:0,behavior:'smooth'});
   },
@@ -1520,7 +1537,17 @@ const Form = {
     });
   },
 
+  // ผู้สมัครต้องติ๊กยอมรับเงื่อนไขก่อนถึงจะกด "รับทราบ" (ปุ่มถัดไปที่ใช้ร่วมกับ
+  // ทุกขั้นตอน) ได้ — ปุ่มเองก็ disabled ไว้จนกว่าจะติ๊ก ไม่ใช่แค่โชว์ error ตอนกด
   _initStep8() {
+    const chk=document.getElementById('chk-payment-terms');
+    const btnNext=document.getElementById('btn-next');
+    const sync=()=>{btnNext.disabled=!chk.checked;};
+    chk.onchange=sync;
+    sync();
+  },
+
+  _initStep9() {
     document.getElementById('payment-dual-notice').classList.toggle('hidden',!this.isDual);
     document.getElementById('payment-normal-content').classList.toggle('hidden',this.isDual);
     if(this.isDual){this.data.payment.skipped=true;return;}
@@ -1535,7 +1562,7 @@ const Form = {
     if(this.data.payment.slipBase64){slipCard.classList.add('has-file');slipCard.querySelector('.doc-preview').src=this.data.payment.slipBase64;slipCard.querySelector('.doc-preview').classList.remove('hidden');}
   },
 
-  _initStep9() {
+  _initStep10() {
     const d=this.data;
     document.getElementById('review-content').innerHTML=`<div class="review-section"><h3>หลักสูตรที่เลือก</h3><div class="review-row"><span class="review-key">รอบเรียน</span><span class="review-val">${d.studyRoundName}</span></div><div class="review-row"><span class="review-key">ระดับ</span><span class="review-val">${d.levelName}</span></div><div class="review-row"><span class="review-key">สาขา</span><span class="review-val">${d.branchName}</span></div><div class="review-row"><span class="review-key">หมวดการเรียน</span><span class="review-val">${d.studyCategory}</span></div>${d.workLocation?`<div class="review-row"><span class="review-key">ทวิภาคี</span><span class="review-val">${d.workLocation}</span></div>`:''}</div><div class="review-section"><h3>ข้อมูลส่วนตัว</h3><div class="review-row"><span class="review-key">ชื่อ-นามสกุล</span><span class="review-val">${d.prefix}${d.firstName} ${d.lastName}</span></div><div class="review-row"><span class="review-key">เลขบัตร ปชช.</span><span class="review-val">${d.idCard}</span></div><div class="review-row"><span class="review-key">วันเกิด</span><span class="review-val">${d.birthDate}</span></div><div class="review-row"><span class="review-key">เบอร์โทร</span><span class="review-val">${d.phone}</span></div><div class="review-row"><span class="review-key">วุฒิการศึกษา</span><span class="review-val">${d.education}</span></div><div class="review-row"><span class="review-key">โรงเรียนเดิม</span><span class="review-val">${d.oldSchool}</span></div></div><div class="review-section"><h3>เอกสาร</h3>${Object.keys(d.documents).map(k=>`<div class="review-row"><span class="review-key">${_docLabel(k)}</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ อัปโหลดแล้ว</span></span></div>`).join('')}${!d.payment.skipped&&d.payment.slipBase64?'<div class="review-row"><span class="review-key">สลิปชำระ</span><span class="review-val"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">✓ แนบแล้ว</span></span></div>':''}${d.payment.skipped?'<div class="review-row"><span class="review-key">ชำระเงิน</span><span class="review-val" style="color:var(--clr-text-muted)">ชำระภายหลังที่โรงเรียน</span></div>':''}</div>`;
   },
@@ -1570,7 +1597,8 @@ const Form = {
       }
     }
     if(n===7){const required=['id_card_front','id_card_back','house_reg','edu_cert_front','edu_cert_back'];for(const r of required){if(!this.data.documents[r])return err('กรุณาอัปโหลด '+_docLabel(r));}}
-    if(n===8&&!this.isDual){if(!this.data.payment.skipped&&!this.data.payment.slipBase64)return err('กรุณาแนบหลักฐานชำระเงิน หรือกด "ข้ามขั้นตอนนี้" หากต้องการชำระภายหลัง');}
+    if(n===8){if(!document.getElementById('chk-payment-terms').checked)return err('กรุณาติ๊กยอมรับเงื่อนไขการชำระเงินก่อน');}
+    if(n===9&&!this.isDual){if(!this.data.payment.skipped&&!this.data.payment.slipBase64)return err('กรุณาแนบหลักฐานชำระเงิน หรือกด "ข้ามขั้นตอนนี้" หากต้องการชำระภายหลัง');}
     return true;
   },
 

@@ -24,6 +24,11 @@ const CONFIG = {
   // Admin
   ADMIN_PASSWORDS: ['admin1234'],        // ในระบบจริงใช้ Token / OAuth
 
+  // Web Push (admin dashboard "🔔 เปิดการแจ้งเตือน") — public key only,
+  // safe to ship to the browser. Must match the VAPID_PUBLIC_KEY secret
+  // set on the notify-new-application edge function.
+  VAPID_PUBLIC_KEY: 'BJO1y1KYT2AzZMReHJzvI_O1eaI7P5oukrah2nsXFBw3qpimu179dMlYVYklBsdb7SM8I6uJV1z4ZkObrrpE5EE',
+
   // ปีการศึกษา
   ACADEMIC_YEAR: 2569,
 };

@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0EA5E9">
+<link rel="apple-touch-icon" href="assets/mascot-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -279,7 +284,23 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
       <input class="form-control" id="admin-password" type="password" placeholder="กรอกรหัสผ่าน">
     </div>
     <button id="btn-admin-login" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
+    <p style="margin-top:14px;text-align:center"><a href="#" id="link-forgot-password" style="font-size:0.8125rem;color:var(--primary);text-decoration:none">ลืมรหัสผ่าน?</a></p>
     <p id="login-error" class="hidden" style="margin-top:12px;color:var(--danger);font-size:0.8125rem;text-align:center"></p>
+  </div>
+</div>
+
+<!-- RESET PASSWORD (landed here from the reset-password email link) -->
+<div id="reset-password-wrap" class="login-wrap hidden">
+  <div class="login-box">
+    <div class="login-logo">🔑</div>
+    <h2>ตั้งรหัสผ่านใหม่</h2>
+    <p>กรอกรหัสผ่านใหม่สำหรับบัญชีนี้</p>
+    <div class="form-group">
+      <label class="form-label">รหัสผ่านใหม่</label>
+      <input class="form-control" id="reset-new-password" type="password" placeholder="อย่างน้อย 6 ตัวอักษร">
+    </div>
+    <button id="btn-reset-password" class="btn btn-primary btn-full">บันทึกรหัสผ่านใหม่</button>
+    <p id="reset-error" class="hidden" style="margin-top:12px;color:var(--danger);font-size:0.8125rem;text-align:center"></p>
   </div>
 </div>
 
@@ -303,6 +324,7 @@ tbody td { padding: 13px 14px; vertical-align: middle; }
       <div class="nav-item" id="nav-refresh"><span>🔄</span> รีเฟรชข้อมูล</div>
     </nav>
     <div class="sidebar-footer">
+      <button class="btn btn-outline btn-sm" id="btn-enable-push" style="width:100%;margin-bottom:10px">🔔 เปิดการแจ้งเตือน</button>
       <div class="sidebar-user">
         <div class="user-dot"></div>
         <span id="sb-admin-label">Admin</span>

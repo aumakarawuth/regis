@@ -194,6 +194,7 @@
     .form-label{font-size:0.875rem;font-weight:600;color:var(--clr-text)}
     .required{color:var(--clr-danger);margin-left:2px}
     .form-control{width:100%;padding:var(--sp-3) var(--sp-4);border:1.5px solid var(--clr-border);border-radius:var(--r-md);background:var(--clr-surface);color:var(--clr-text);font-size:1rem;transition:border-color var(--transition);-webkit-appearance:none;appearance:none}
+    .form-control:disabled{background:#F1F3F5;color:var(--clr-text-muted);cursor:not-allowed}
     .form-control:focus{outline:none;border-color:var(--clr-primary);box-shadow:0 0 0 3px rgba(14,165,233,0.12)}
     select.form-control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
     .card{background:var(--clr-surface);border-radius:var(--r-lg);padding:var(--sp-5);box-shadow:var(--shadow-sm);border:1px solid var(--clr-border)}
@@ -406,7 +407,7 @@
         </div>
       </div>
       <div class="form-group" id="level-group" style="opacity:0.4;pointer-events:none">
-        <label class="form-label">ระดับการศึกษา <span class="required">*</span></label>
+        <label class="form-label">สมัครเข้าระดับการศึกษา <span class="required">*</span></label>
         <select class="form-control" id="sel-level"><option value="">-- เลือกรอบก่อน --</option></select>
       </div>
       <div class="form-group" id="branch-group" style="opacity:0.4;pointer-events:none">
@@ -446,7 +447,7 @@
            _onNationalityChange(). -->
       <div class="form-group hidden" id="idcard-note" style="margin-top:-8px"><span style="font-size:0.8125rem;color:var(--muted)">สัญชาติที่ไม่ใช่ไทย ไม่บังคับรูปแบบ 13 หลัก — กรอกเลขบัตรชมพูหรือเลขพาสปอร์ตได้</span></div>
       <div class="field-row">
-        <div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" id="inp-prefix"><option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></div>
+        <div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" id="inp-prefix"><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></div>
       </div>
       <div class="field-row">
         <div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" id="inp-firstName" type="text" placeholder="ชื่อ"></div>
@@ -502,14 +503,14 @@
   <!-- STEP 4 -->
   <div class="step-panel" id="step-4">
     <div class="step-heading"><div class="step-icon">👨</div>ข้อมูลบิดา</div>
-    <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่ทราบข้อมูล</p>
+    <p class="text-sm text-muted" style="margin-bottom:16px">จำเป็นต้องกรอกข้อมูล — หากถึงแก่กรรมแล้วหรือไม่ทราบข้อมูล กรุณาติ๊กตัวเลือกด้านล่าง</p>
     <div id="parent-father-container"></div>
   </div>
 
   <!-- STEP 5 -->
   <div class="step-panel" id="step-5">
     <div class="step-heading"><div class="step-icon">👩</div>ข้อมูลมารดา</div>
-    <p class="text-sm text-muted" style="margin-bottom:16px">ข้ามได้หากไม่ทราบข้อมูล</p>
+    <p class="text-sm text-muted" style="margin-bottom:16px">จำเป็นต้องกรอกข้อมูล — หากถึงแก่กรรมแล้วหรือไม่ทราบข้อมูล กรุณาติ๊กตัวเลือกด้านล่าง</p>
     <div id="parent-mother-container"></div>
   </div>
 
@@ -1054,7 +1055,7 @@ const DraftDB = {
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'เด็กชาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',weight:'',height:'',bloodType:'',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'นาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',weight:'',height:'',bloodType:'',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 10;},
 
@@ -1330,46 +1331,85 @@ const Form = {
     }
     return p;
   },
+  // ถึงแก่กรรมแล้ว/ไม่ทราบข้อมูล no longer hide+skip the fields — the
+  // section is mandatory now, so each option instead auto-fills the
+  // fields it makes unanswerable and locks them (still visible, so it's
+  // clear what got filled and why), while เลขบัตร ปชช./คำนำหน้า stay real
+  // user input for "ถึงแก่กรรมแล้ว" — a deceased parent still has a real
+  // ID card on record. Mutually exclusive: ticking one clears the other,
+  // since "ไม่ทราบข้อมูลเลย" makes deceased-or-not moot.
+  _PARENT_AUTOFILL_FIELDS: ['idCard','firstName','lastName','phone','occupation'],
+  _applyParentAutoFill(p) {
+    const wasAuto=(v)=>v==='-'||v==='ถึงแก่กรรม';
+    if(p.unknownInfo){
+      p.idCard='-';p.firstName='-';p.lastName='-';p.phone='-';p.occupation='-';
+    } else if(p.isDeceased){
+      p.firstName='-';p.lastName='-';p.phone='-';p.occupation='ถึงแก่กรรม';
+      if(wasAuto(p.idCard))p.idCard='';
+    } else {
+      this._PARENT_AUTOFILL_FIELDS.forEach(f=>{if(wasAuto(p[f]))p[f]='';});
+    }
+  },
   _renderParentCard(type,containerId) {
     const container=document.getElementById(containerId);container.innerHTML='';
     const p=this._getOrCreateParent(type);
     const idx=this.data.parents.indexOf(p);
-    const skip=p.isDeceased||p.unknownInfo;
+    const dis=(field)=>{
+      if(p.unknownInfo)return this._PARENT_AUTOFILL_FIELDS.includes(field);
+      if(p.isDeceased)return ['firstName','lastName','phone','occupation'].includes(field);
+      return false;
+    };
+    const attr=(field)=>dis(field)?'disabled':'';
     const card=document.createElement('div');card.className='parent-item';
-    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields${skip?' hidden':''}"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า</label><select class="form-control" data-field="prefix" data-idx="${idx}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช.</label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${idx}" value="${p.idCard}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ</label><input class="form-control" type="text" data-field="firstName" data-idx="${idx}" value="${p.firstName}"></div><div class="form-group"><label class="form-label">นามสกุล</label><input class="form-control" type="text" data-field="lastName" data-idx="${idx}" value="${p.lastName}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${idx}" value="${p.phone}"></div><div class="form-group"><label class="form-label">อาชีพ</label><input class="form-control" type="text" data-field="occupation" data-idx="${idx}" value="${p.occupation}"></div></div></div></div>`;
+    card.innerHTML=`<div class="field-stack"><div class="field-row"><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="isDeceased" data-idx="${idx}" ${p.isDeceased?'checked':''}> ถึงแก่กรรมแล้ว</label><label style="display:flex;align-items:center;gap:8px;font-size:0.875rem"><input type="checkbox" data-field="unknownInfo" data-idx="${idx}" ${p.unknownInfo?'checked':''}> ไม่ทราบข้อมูล</label></div><div class="parent-info-fields"><div class="field-row"><div class="form-group"><label class="form-label">คำนำหน้า <span class="required">*</span></label><select class="form-control" data-field="prefix" data-idx="${idx}"><option value="นาย" ${p.prefix==='นาย'?'selected':''}>นาย</option><option value="นาง" ${p.prefix==='นาง'?'selected':''}>นาง</option><option value="นางสาว" ${p.prefix==='นางสาว'?'selected':''}>นางสาว</option></select></div><div class="form-group"><label class="form-label">เลขบัตร ปชช. <span class="required">*</span></label><input class="form-control" type="tel" maxlength="13" data-field="idCard" data-idx="${idx}" value="${p.idCard}" ${attr('idCard')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ <span class="required">*</span></label><input class="form-control" type="text" data-field="firstName" data-idx="${idx}" value="${p.firstName}" ${attr('firstName')}></div><div class="form-group"><label class="form-label">นามสกุล <span class="required">*</span></label><input class="form-control" type="text" data-field="lastName" data-idx="${idx}" value="${p.lastName}" ${attr('lastName')}></div></div><div class="field-row"><div class="form-group"><label class="form-label">ชื่อ (อังกฤษ)</label><input class="form-control" type="text" data-field="firstNameEn" data-idx="${idx}" value="${p.firstNameEn||''}"></div><div class="form-group"><label class="form-label">นามสกุล (อังกฤษ)</label><input class="form-control" type="text" data-field="lastNameEn" data-idx="${idx}" value="${p.lastNameEn||''}"></div></div><div class="field-row"><div class="form-group"><label class="form-label">เบอร์โทร <span class="required">*</span></label><input class="form-control" type="tel" maxlength="10" data-field="phone" data-idx="${idx}" value="${p.phone}" ${attr('phone')}></div><div class="form-group"><label class="form-label">อาชีพ <span class="required">*</span></label><input class="form-control" type="text" data-field="occupation" data-idx="${idx}" value="${p.occupation}" ${attr('occupation')}></div></div></div></div>`;
     container.appendChild(card);
-    // isDeceased/unknownInfo only ever toggle the info-fields section's
-    // visibility, so just flip the class in place instead of rebuilding the
-    // whole card — replacing a checkbox's own DOM node from inside its own
+    // isDeceased/unknownInfo now only ever patch the other fields'
+    // value/disabled in place instead of rebuilding the whole card —
+    // replacing a checkbox's own DOM node from inside its own
     // still-bubbling 'change' event is what made rapid taps misbehave
     // (the label's synthetic click can end up toggling the just-removed node).
     container.querySelectorAll('[data-field]').forEach(el=>{el.addEventListener('change',()=>{
       const field=el.dataset.field;
       this.data.parents[idx][field]=el.type==='checkbox'?el.checked:el.value;
+      if(field==='isDeceased'&&p.isDeceased)p.unknownInfo=false;
+      if(field==='unknownInfo'&&p.unknownInfo)p.isDeceased=false;
       if(field==='isDeceased'||field==='unknownInfo'){
-        card.querySelector('.parent-info-fields').classList.toggle('hidden',p.isDeceased||p.unknownInfo);
+        this._applyParentAutoFill(p);
+        card.querySelector('[data-field="isDeceased"]').checked=p.isDeceased;
+        card.querySelector('[data-field="unknownInfo"]').checked=p.unknownInfo;
+        this._PARENT_AUTOFILL_FIELDS.forEach(f=>{
+          const input=card.querySelector(`[data-field="${f}"]`);
+          input.value=p[f];input.disabled=dis(f);
+        });
       }
       this._saveDraft();
     });});
   },
   _validateParent(type) {
     const p=this.data.parents.find(pp=>pp.type===type);
-    if(!p||p.isDeceased||p.unknownInfo)return null;
     const label=type==='father'?'บิดา':'มารดา';
-    if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
-    if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label} หรือติ๊ก "ไม่ทราบข้อมูล" หากไม่ทราบ`;
-    if(p.phone&&p.phone.length!==10)return `เบอร์โทรของ${label}ต้องมี 10 หลัก`;
+    if(!p)return `กรุณากรอกข้อมูล${label}`;
+    if(p.unknownInfo)return null; // every field auto-filled with "-"
+    if(!p.idCard||p.idCard.length!==13)return `กรุณากรอกเลขบัตร ปชช. ของ${label}ให้ครบ 13 หลัก`;
+    if(p.isDeceased)return null; // name/phone/occupation auto-filled
+    if(!p.firstName.trim()||!p.lastName.trim())return `กรุณากรอกชื่อ-นามสกุลของ${label}`;
+    if(!p.phone||p.phone.length!==10)return `กรุณากรอกเบอร์โทรของ${label}ให้ครบ 10 หลัก`;
+    if(!p.occupation||!p.occupation.trim())return `กรุณากรอกอาชีพของ${label}`;
     return null;
   },
 
   _initStep6() {
     ['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el&&this.data.guardian[f])el.value=this.data.guardian[f];});
-    document.getElementById('btn-copy-father').onclick=()=>this._copyParent('father');
-    document.getElementById('btn-copy-mother').onclick=()=>this._copyParent('mother');
+    const canCopy=(type)=>{const p=this.data.parents.find(pp=>pp.type===type);return !!p&&!p.isDeceased&&!p.unknownInfo;};
+    const btnFather=document.getElementById('btn-copy-father'),btnMother=document.getElementById('btn-copy-mother');
+    btnFather.disabled=!canCopy('father');
+    btnMother.disabled=!canCopy('mother');
+    btnFather.onclick=()=>this._copyParent('father');
+    btnMother.onclick=()=>this._copyParent('mother');
   },
   _copyParent(type) {
     const parent=this.data.parents.find(p=>p.type===type);
-    if(!parent||parent.isDeceased||parent.unknownInfo){showToast('ไม่มีข้อมูล'+(type==='father'?'บิดา':'มารดา')+'ให้ดึง','warning');return;}
+    if(!parent||parent.isDeceased||parent.unknownInfo)return;
     ['idCard','prefix','firstName','lastName','phone'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el){el.value=parent[f];this.data.guardian[f]=parent[f];}});
     document.getElementById('grd-relation').value=type==='father'?'บิดา':'มารดา';
     this.data.guardian.relation=type==='father'?'บิดา':'มารดา';

@@ -1339,6 +1339,8 @@ const Admin = {
     const pageTitles = { overview: 'ภาพรวม', students: 'รายชื่อผู้สมัคร', programs: 'จัดการหลักสูตร', reports: 'รายงาน', staff: 'เจ้าหน้าที่' };
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
       item.onclick = async () => {
+        document.querySelector('.sidebar').classList.remove('open');
+        document.getElementById('sidebar-backdrop').classList.remove('open');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         item.classList.add('active');
         const page = item.dataset.page;
@@ -1390,7 +1392,12 @@ const Admin = {
     document.getElementById('btn-refresh-list').onclick = () => this._refreshAll();
     document.getElementById('nav-refresh').onclick = () => this._refreshAll();
     document.getElementById('btn-logout').onclick = async () => { await _sb.auth.signOut(); location.reload(); };
-    document.getElementById('btn-toggle-sidebar').onclick = () => document.querySelector('.sidebar').classList.toggle('open');
+    const closeSidebar = () => { document.querySelector('.sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('open'); };
+    document.getElementById('btn-toggle-sidebar').onclick = () => {
+      document.querySelector('.sidebar').classList.toggle('open');
+      document.getElementById('sidebar-backdrop').classList.toggle('open');
+    };
+    document.getElementById('sidebar-backdrop').onclick = closeSidebar;
     document.getElementById('btn-close-detail').onclick = () => this._closeDetail();
     document.getElementById('detail-overlay').onclick = () => this._closeDetail();
     document.getElementById('dp-btn-approve').onclick = () => this._updateStatus('verified');

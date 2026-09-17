@@ -403,13 +403,13 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       '<span class="b">วันที่สมัคร</span> ' + _dateSlots(s.applyDate) +
     '</div>' +
 
-    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">1. สาขาวิชาที่สมัคร</div>' +
+    '<div class="section-title" style="margin-top:12px;margin-bottom:8px">1. สาขาวิชาที่สมัคร</div>' +
     '<div class="row indent b" style="font-size:1.1em">' +
       'ระดับที่สมัคร ' + _esc(levelTitle) + ' รอบ ' + _esc(roundLabel) + ' สาขาวิชา ' + _esc(branchName) +
       (workLocation ? ' ' + _esc(workLocation) : '') +
     '</div>' +
 
-    '<div class="section-title" style="border-bottom:1.5px solid #000;padding-bottom:2px;margin-top:12px;margin-bottom:8px">2. ข้อมูลส่วนตัว</div>' +
+    '<div class="section-title" style="border-top:1.5px solid #000;padding-top:8px;margin-top:12px;margin-bottom:8px">2. ข้อมูลส่วนตัว</div>' +
     '<div class="row indent">' +
       'ชื่อ-นามสกุล ' + _efldGroup('fld-xl', [
         { value: s.prefix, table: 'students', col: 'prefix', id: s.id },

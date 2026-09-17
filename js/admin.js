@@ -403,7 +403,12 @@ const Admin = {
     this.filtered = this.students.slice();
     this._populateBranchFilter();
     this.page = 1;
-    this._renderTable();
+    // Not rendering here on purpose — _loadStudents() only ever runs
+    // inside _loadAll(), which calls _populateYearFilter() right after
+    // (that's what does the real render, already filtered to the right
+    // year). Rendering this unfiltered `this.filtered` first made every
+    // years-old application flash on screen for a moment before the
+    // year filter kicked in and replaced it.
   },
 
   // The year students are stamped with (app_config.current_admission_year)

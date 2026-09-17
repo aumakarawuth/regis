@@ -656,7 +656,9 @@ const CONFIG = {
   ADMIN_PASSWORDS: ['admin1234'],
   ACADEMIC_YEAR: 2569,
 };
-
+</script>
+<script src="js/api.js"></script>
+<script>
 // ============================================================
 // TOAST
 // ============================================================
@@ -781,161 +783,14 @@ function _setBar(percent, detail) {
   if (pctEl)    pctEl.textContent = percent + '%';
 }
 
-// ============================================================
-// API — Supabase
-// ============================================================
-const _sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-// Storage RLS scopes document/payment-slip uploads to the uploader's own
-// auth.uid() (see supabase/migrations/0005_storage_owner_scoped.sql) — a
-// plain anon-key request has no auth.uid() at all, so uploads need a real
-// (if anonymous) Supabase Auth session first. Kicked off at Form.init()
-// so it's already resolved by the time the user reaches document upload;
-// submitApplication() awaits this same promise as a safety net.
-let _anonSessionPromise = null;
-function _ensureAnonSession() {
-  if (!_anonSessionPromise) {
-    _anonSessionPromise = _sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) return session;
-      return _sb.auth.signInAnonymously().then(({ data, error }) => {
-        if (error) throw error;
-        return data.session;
-      });
-    }).catch(err => {
-      // Don't cache a failed attempt for the rest of this page's life —
-      // apply.html never reloads between steps, so a transient failure
-      // (or "anonymous sign-ins" not being enabled yet at page-load time)
-      // would otherwise permanently block uploads for this session even
-      // after the setting is fixed. Clearing lets the next call retry.
-      _anonSessionPromise = null;
-      throw err;
-    });
-  }
-  return _anonSessionPromise;
-}
-
-function _base64ToBlob(base64, mimeType) {
-  const byteChars = atob(base64);
-  const bytes = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
-  return new Blob([bytes], { type: mimeType });
-}
-
-const API = {
-  // Shape matches the old Programs.gs getPrograms(): { levels, branches }
-  // where each branch has .programs = [{ programId, round }].
-  async getPrograms() {
-    const [{ data: levelRows, error: levelError }, { data: branches, error }] = await Promise.all([
-      // Fetched separately (ordered by code — LV1/ปวช. before LV2/ปวส.)
-      // rather than derived from "first branch seen", so the level
-      // order can never depend on branch sort_order or query order.
-      _sb.from('education_levels').select('code, name').order('code'),
-      _sb
-        .from('branches')
-        .select('code, name, is_open, sort_order, show_study_category, show_work_location, education_levels(code, name), program_rounds(id, round_label, is_open)')
-        .eq('is_open', true)
-        .order('sort_order'),
-    ]);
-    if (levelError) throw levelError;
-    if (error) throw error;
-
-    const levels = (levelRows || []).map(l => ({ id: l.code, name: l.name }));
-    const branchList = (branches || []).map(b => {
-      const level = b.education_levels;
-      return {
-        id: b.code,
-        name: b.name,
-        levelId: level ? level.code : '',
-        isOpen: b.is_open,
-        showStudyCategory: !!b.show_study_category,
-        showWorkLocation: !!b.show_work_location,
-        programs: (b.program_rounds || [])
-          .filter(r => r.is_open)
-          .map(r => ({ programId: r.id, round: r.round_label })),
-      };
-    });
-
-    return { success: true, data: { levels, branches: branchList } };
-  },
-
-  // payload is the same shape Students.gs's submitApplication(body) used
-  // to take. The RPC handles student/address/parents/guardian/enrollment
-  // atomically; documents + payment slip are uploaded here afterwards.
-  async submitApplication(payload) {
-    const { data: rpcResult, error: rpcError } = await _sb.rpc('submit_application', {
-      payload: {
-        lineUserId: payload.lineUserId,
-        displayName: payload.displayName,
-        program: payload.program,
-        personal: payload.personal,
-        address: payload.address,
-        parents: payload.parents,
-        guardian: payload.guardian,
-      },
-    });
-    if (rpcError) throw rpcError;
-    if (!rpcResult.success) return rpcResult;
-
-    // Safety net — normally already resolved from Form.init(). Storage
-    // uploads need this session; the application record itself doesn't,
-    // so a failure here still leaves the submission successful overall.
-    await _ensureAnonSession().catch(err => console.warn('Anonymous session unavailable, uploads will fail:', err));
-
-    const studentId = rpcResult.studentId;
-
-    // Documents + payment slip upload independently of each other — run
-    // them concurrently instead of one-at-a-time so total wait time is
-    // roughly the slowest single upload rather than the sum of all of
-    // them (this was the main reason submitting felt slow on mobile data).
-    const docUploads = (payload.documents || []).map(async (doc) => {
-      try {
-        const blob = _base64ToBlob(doc.base64Data, doc.mimeType || 'image/jpeg');
-        const storagePath = `${studentId}/${doc.type}.jpg`;
-        const { error: upErr } = await _sb.storage.from('documents').upload(storagePath, blob, {
-          contentType: doc.mimeType || 'image/jpeg',
-          upsert: true,
-        });
-        if (upErr) throw upErr;
-
-        const { error: dbErr } = await _sb.from('documents').insert({
-          student_id: studentId,
-          doc_type: doc.type,
-          storage_path: storagePath,
-        });
-        if (dbErr) throw dbErr;
-        return { type: doc.type, success: true };
-      } catch (err) {
-        return { type: doc.type, success: false, error: err.message };
-      }
-    });
-
-    const paymentUpload = (payload.payment && payload.payment.slipBase64) ? (async () => {
-      try {
-        const blob = _base64ToBlob(payload.payment.slipBase64, 'image/jpeg');
-        const storagePath = `${studentId}/slip.jpg`;
-        const { error: upErr } = await _sb.storage.from('payment-slips').upload(storagePath, blob, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
-        if (upErr) throw upErr;
-
-        const { error: dbErr } = await _sb.from('payments').insert({
-          student_id: studentId,
-          amount: payload.payment.amount || 0,
-          method: 'promptpay',
-          storage_path: storagePath,
-        });
-        if (dbErr) throw dbErr;
-      } catch (err) {
-        console.error('Payment slip upload error:', err);
-      }
-    })() : Promise.resolve();
-
-    const [docResults] = await Promise.all([Promise.all(docUploads), paymentUpload]);
-
-    return { success: true, applicationNo: rpcResult.applicationNo, studentId, documents: docResults };
-  },
-};
+// API — now loaded from js/api.js (see the <script> include near the
+// bottom of this file) instead of a separate inline copy. That external
+// copy is the one index.html also uses, and had since picked up fixes
+// (upsert-based document/payment saves so a retry doesn't hit a
+// duplicate-key error, and returning paymentError so the retry-on-
+// partial-failure logic in _submit() below actually has something to
+// check) that this inline copy never got — one implementation instead
+// of two that could silently drift apart again.
 
 // ============================================================
 // ADDRESS

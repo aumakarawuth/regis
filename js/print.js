@@ -209,6 +209,14 @@ const FORM_CSS = [
   '.fill-form .fld-xl{flex:3.6 1 120px}',
   '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
   '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
+  // A row with fewer fields (e.g. the old-school ตำบล/อำเภอ/จังหวัด row —
+  // 3 fields) has more leftover row width per field than a row with more
+  // fields sharing the same size class (e.g. the 4-field home-address
+  // row just below it), so equal flex-grow alone stretches its boxes
+  // wider and leaves the two rows' columns out of vertical alignment.
+  // fld-nogrow pins a field to its class's own min-width instead of
+  // growing to fill whatever room this particular row has spare.
+  '.fill-form .fld-nogrow{flex:0 0 auto}',
 
   '.idwrap{display:inline-block;vertical-align:middle}',
   '.idbox{display:inline-block;width:15px;height:18px;border:1px solid #000;font-weight:700;font-size:11px;text-align:center;line-height:18px;vertical-align:middle}',
@@ -377,9 +385,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
       ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) +
       '</div>' +
       '<div class="row indent">' +
-        'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-md', 'students', 'old_school_subdistrict', s.id) +
-        ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-md', 'students', 'old_school_district', s.id) +
-        ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
+        'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-md fld-nogrow', 'students', 'old_school_subdistrict', s.id) +
+        ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-md fld-nogrow', 'students', 'old_school_district', s.id) +
+        ' จังหวัด ' + _efld(s.educationProvince, 'fld-md fld-nogrow', 'students', 'education_province', s.id) +
       '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +

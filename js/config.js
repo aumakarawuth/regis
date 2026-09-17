@@ -25,7 +25,7 @@ const CONFIG = {
   ADMIN_PASSWORDS: ['admin1234'],        // ในระบบจริงใช้ Token / OAuth
 
   // ปีการศึกษา
-  ACADEMIC_YEAR: 2569,
+  ACADEMIC_YEAR: 2570,
 };
 
 // อย่า export ถ้าใช้ใน plain HTML — ใช้ CONFIG object โดยตรง

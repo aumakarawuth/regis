@@ -15,6 +15,10 @@
 
 alter table document_requests add column if not exists edit_sections text[];
 
+-- Adding a column to the return table shape requires dropping first —
+-- Postgres won't let create-or-replace change a function's OUT columns.
+drop function if exists get_document_requests(text);
+
 create or replace function get_document_requests(p_line_user_id text)
 returns table (
   id uuid,

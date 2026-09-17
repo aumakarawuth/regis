@@ -53,23 +53,57 @@ function docRow(label: string) {
   };
 }
 
-function buildFlex(applicationNo: string, docTypes: string[], note: string | null) {
+const EDIT_SECTION_LABELS: Record<string, string> = {
+  personal: 'ข้อมูลส่วนตัว', address: 'ที่อยู่', father: 'ข้อมูลบิดา', mother: 'ข้อมูลมารดา', guardian: 'ข้อมูลผู้ปกครอง',
+};
+function editSectionLabel(s: string) { return EDIT_SECTION_LABELS[s] || s; }
+
+function buildFlex(applicationNo: string, docTypes: string[], editSections: string[], note: string | null, requestId: string) {
+  const hasDocs = docTypes.length > 0;
+  const hasEdits = editSections.length > 0;
   const body: any[] = [
     { type: 'text', text: 'เลขที่ใบสมัคร', color: '#6B7280', size: 'xs' },
     { type: 'text', text: applicationNo, weight: 'bold', size: 'lg', color: '#F59E0B' },
     { type: 'separator', margin: 'md' },
-    { type: 'text', text: 'กรุณาอัปโหลดเอกสารเพิ่มเติม', size: 'sm', color: '#6B7280', margin: 'md' },
-    { type: 'box', layout: 'vertical', spacing: 'sm', margin: 'sm', contents: docTypes.map(t => docRow(docLabel(t))) },
   ];
+  if (hasDocs) {
+    body.push({ type: 'text', text: 'กรุณาอัปโหลดเอกสารเพิ่มเติม', size: 'sm', color: '#6B7280', margin: 'md' });
+    body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'sm', contents: docTypes.map(t => docRow(docLabel(t))) });
+  }
+  if (hasEdits) {
+    body.push({ type: 'text', text: 'กรุณาแก้ไขข้อมูลต่อไปนี้', size: 'sm', color: '#6B7280', margin: 'md' });
+    body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'sm', contents: editSections.map(s => docRow(editSectionLabel(s))) });
+  }
   if (note && note.trim()) {
     body.push({ type: 'separator', margin: 'md' });
     body.push({ type: 'text', text: 'หมายเหตุจากเจ้าหน้าที่', size: 'xs', color: '#6B7280', margin: 'md' });
     body.push({ type: 'text', text: note, wrap: true, size: 'sm' });
   }
 
+  // An edit-sections request deep-links straight into apply.html's edit
+  // mode, scoped to just those step(s) — LINE forwards any query params
+  // appended after the LIFF id through to the endpoint URL. A doc-types
+  // request still just reopens the LIFF app itself; index.html's own
+  // "ต้องอัปโหลดเอกสารเพิ่มเติม" card (already wired to docTypes there)
+  // handles picking the right upload flow.
+  const footerButtons: any[] = [];
+  if (hasEdits) {
+    const sectionsParam = encodeURIComponent(editSections.join(','));
+    footerButtons.push({
+      type: 'button', style: 'primary', color: '#F59E0B', height: 'sm',
+      action: { type: 'uri', label: '✏️ แก้ไขข้อมูล', uri: `https://liff.line.me/${LIFF_ID}?mode=edit&sections=${sectionsParam}&reqId=${requestId}` },
+    });
+  }
+  if (hasDocs) {
+    footerButtons.push({
+      type: 'button', style: hasEdits ? 'secondary' : 'primary', color: hasEdits ? undefined : '#F59E0B', height: 'sm',
+      action: { type: 'uri', label: '📤 อัปโหลดเอกสาร', uri: `https://liff.line.me/${LIFF_ID}` },
+    });
+  }
+
   return {
     type: 'flex',
-    altText: `ขอเอกสารเพิ่มเติม — เลขที่ใบสมัคร ${applicationNo}`,
+    altText: `${hasEdits && !hasDocs ? 'ขอให้แก้ไขข้อมูล' : 'ขอเอกสารเพิ่มเติม'} — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
       header: {
@@ -79,7 +113,7 @@ function buildFlex(applicationNo: string, docTypes: string[], note: string | nul
             type: 'box', layout: 'vertical', spacing: 'xs', flex: 4,
             contents: [
               { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FEF3C7', size: 'xs', weight: 'bold', wrap: true },
-              { type: 'text', text: '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
+              { type: 'text', text: hasEdits && !hasDocs ? '✏️ กรุณาแก้ไขข้อมูล' : '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
             ],
           },
           {
@@ -89,15 +123,7 @@ function buildFlex(applicationNo: string, docTypes: string[], note: string | nul
         ],
       },
       body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px', contents: body },
-      footer: {
-        type: 'box', layout: 'vertical', paddingAll: '12px',
-        contents: [
-          {
-            type: 'button', style: 'primary', color: '#F59E0B', height: 'sm',
-            action: { type: 'uri', label: '📤 อัปโหลดเอกสาร', uri: `https://liff.line.me/${LIFF_ID}` },
-          },
-        ],
-      },
+      footer: { type: 'box', layout: 'vertical', paddingAll: '12px', spacing: 'sm', contents: footerButtons },
     },
   };
 }
@@ -128,9 +154,11 @@ Deno.serve(async (req) => {
     if (!staffRow) return json({ success: false, message: 'ไม่มีสิทธิ์แอดมิน' }, 403);
   }
 
-  const { studentId, docTypes, note } = await req.json().catch(() => ({}));
-  if (!studentId || !Array.isArray(docTypes) || docTypes.length === 0) {
-    return json({ success: false, message: 'studentId and docTypes required' }, 400);
+  const { studentId, docTypes, editSections, note } = await req.json().catch(() => ({}));
+  const docTypesArr = Array.isArray(docTypes) ? docTypes : [];
+  const editSectionsArr = Array.isArray(editSections) ? editSections : [];
+  if (!studentId || (docTypesArr.length === 0 && editSectionsArr.length === 0)) {
+    return json({ success: false, message: 'studentId and docTypes/editSections required' }, 400);
   }
 
   const { data: student, error } = await supabase
@@ -140,12 +168,13 @@ Deno.serve(async (req) => {
     .single();
   if (error || !student) return json({ success: false, message: 'student not found' }, 404);
 
-  const { error: insertErr } = await supabase.from('document_requests').insert({
+  const { data: inserted, error: insertErr } = await supabase.from('document_requests').insert({
     student_id: studentId,
-    doc_types: docTypes,
+    doc_types: docTypesArr,
+    edit_sections: editSectionsArr.length ? editSectionsArr : null,
     note: note || null,
     requested_by: user.id,
-  });
+  }).select('id').single();
   if (insertErr) return json({ success: false, message: `บันทึกคำขอล้มเหลว: ${insertErr.message}` }, 500);
 
   if (!student.line_user_id) {
@@ -160,7 +189,7 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       to: student.line_user_id,
-      messages: [buildFlex(student.application_no, docTypes, note)],
+      messages: [buildFlex(student.application_no, docTypesArr, editSectionsArr, note, inserted.id)],
     }),
   });
 

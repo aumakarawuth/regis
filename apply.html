@@ -1059,6 +1059,23 @@ const Form = {
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 10;},
 
+  // Editing an already-submitted application (index.html's "แก้ไขใบสมัคร"
+  // button, or a deep-linked doc-request "แก้ไขข้อมูล" button) skips the
+  // photo/document and payment steps entirely — nothing there needs to
+  // change, and re-walking them would ask for re-uploads that already
+  // exist. _EDIT_SECTION_STEPS is also how a deep-linked request scopes
+  // the wizard down to just the step(s) staff asked to be fixed.
+  _EDIT_SECTION_STEPS:{personal:2,address:3,father:4,mother:5,guardian:6},
+  isEditMode:false, editSections:null, editReqId:null, editStudentId:null,
+  get _visibleSteps(){
+    if(!this.isEditMode)return null;
+    if(this.editSections&&this.editSections.length){
+      const steps=this.editSections.map(s=>this._EDIT_SECTION_STEPS[s]).filter(Boolean);
+      return steps.length?[...new Set(steps)].sort((a,b)=>a-b):[1,2,3,4,5,6];
+    }
+    return [1,2,3,4,5,6];
+  },
+
   async init() {
     const user=LIFF&&LIFF.getUser?LIFF.getUser():JSON.parse(sessionStorage.getItem('lineUser')||'null');
     if(!user){location.href='index.html';return;}
@@ -1070,18 +1087,61 @@ const Form = {
     // โหลดหลักสูตร — mode=program
     await this._loadPrograms();
     this._bindNav();
-    const draft=await this._loadDraft();
+
+    const params=new URLSearchParams(location.search);
     let startStep=1;
-    if(draft&&draft.data){
-      Object.assign(this.data,draft.data,{lineUserId:this.data.lineUserId,displayName:this.data.displayName,pictureUrl:this.data.pictureUrl});
-      this.isDual=draft.isDual||false;
-      startStep=Math.min(Math.max(draft.currentStep||1,1),this.totalSteps);
-      showToast('กู้คืนข้อมูลที่กรอกไว้ก่อนหน้า','success');
+    if(params.get('mode')==='edit'){
+      this.editReqId=params.get('reqId')||null;
+      const sectionsParam=params.get('sections');
+      this.editSections=sectionsParam?sectionsParam.split(',').filter(Boolean):null;
+      this.isEditMode=await this._loadForEdit();
     }
-    window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')this._persistCurrentStep();});
-    window.addEventListener('pagehide',()=>this._persistCurrentStep());
+    if(!this.isEditMode){
+      const draft=await this._loadDraft();
+      if(draft&&draft.data){
+        Object.assign(this.data,draft.data,{lineUserId:this.data.lineUserId,displayName:this.data.displayName,pictureUrl:this.data.pictureUrl});
+        this.isDual=draft.isDual||false;
+        startStep=Math.min(Math.max(draft.currentStep||1,1),this.totalSteps);
+        showToast('กู้คืนข้อมูลที่กรอกไว้ก่อนหน้า','success');
+      }
+    }
+    window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&!this.isEditMode)this._persistCurrentStep();});
+    window.addEventListener('pagehide',()=>{if(!this.isEditMode)this._persistCurrentStep();});
     document.getElementById('inp-nationality').addEventListener('change',()=>this._onNationalityChange());
-    this._renderStep(startStep);
+    this._renderStep(this.isEditMode?this._visibleSteps[0]:startStep);
+  },
+  // Prefills this.data from the applicant's existing application instead
+  // of the usual empty/drafted state — same field names as get_document_
+  // requests' payload shape, minus documents/payment (untouched by edit
+  // mode). Returns false (and falls back to the normal fresh-apply flow)
+  // if nothing was found to edit.
+  async _loadForEdit() {
+    try {
+      showLoading('กำลังโหลดข้อมูลใบสมัครเดิม...');
+      const app=await API.getApplicationForEdit(this.data.lineUserId);
+      if(!app){showToast('ไม่พบใบสมัครของคุณ','error');return false;}
+      this.editStudentId=app.studentId;
+      const p=app.program||{};
+      this.data.levelId=p.levelId||'';
+      this.data.branchId=p.branchId||'';
+      this.data.selectedProgramId=p.programId||'';
+      this.data.studyCategory=p.studyCategory||'';
+      this.data.workLocation=p.workLocation||'';
+      const roundCode=Object.keys(ROUND_CODE_TO_LABEL).find(k=>ROUND_CODE_TO_LABEL[k]===p.roundLabel)||'';
+      this.data.studyRound=roundCode;
+      this.data.studyRoundName={morning:'รอบเช้า',afternoon:'รอบบ่าย',dual:'ทวิภาคี'}[roundCode]||'';
+      this.isDual=roundCode==='dual';
+      Object.assign(this.data,app.personal||{});
+      const a=app.address||{};
+      this.data.addrProvince=a.province||'';this.data.addrDistrict=a.district||'';this.data.addrSubDistrict=a.subDistrict||'';
+      this.data.addrZipcode=a.zipcode||'';this.data.addrDetail=a.detail||'';
+      this.data.parents=(app.parents||[]).map(pp=>({...pp}));
+      this.data.guardian=(app.guardian&&app.guardian.firstName)?{...app.guardian}:{};
+      return true;
+    } catch(err) {
+      showToast('โหลดข้อมูลใบสมัครล้มเหลว: '+err.message,'error');
+      return false;
+    } finally { hideLoading(); }
   },
   // บัตรชมพู/พาสปอร์ตของนักเรียนต่างชาติไม่ใช่ตัวเลขไทย 13 หลักเสมอไป
   // (พาสปอร์ตมีตัวอักษรปนด้วย) — คลาย maxlength/inputmode ของช่องเลขบัตร
@@ -1123,8 +1183,28 @@ const Form = {
     document.getElementById('btn-next').onclick=()=>this.next();
     document.getElementById('btn-back').onclick=()=>this.back();
   },
-  next(){if(!this._validate(this.currentStep))return;this._saveStep(this.currentStep);if(this.currentStep<this.totalSteps)this._renderStep(this.currentStep+1);else this._submit();},
-  back(){if(this.currentStep>1)this._renderStep(this.currentStep-1);else if(confirm('ล้างข้อมูลที่เลือกไว้ในขั้นตอนนี้?'))this._clearStep1();},
+  next(){
+    if(!this._validate(this.currentStep))return;
+    this._saveStep(this.currentStep);
+    const steps=this._visibleSteps;
+    if(steps){
+      const idx=steps.indexOf(this.currentStep);
+      if(idx<steps.length-1)this._renderStep(steps[idx+1]);
+      else this._submit();
+      return;
+    }
+    if(this.currentStep<this.totalSteps)this._renderStep(this.currentStep+1);else this._submit();
+  },
+  back(){
+    const steps=this._visibleSteps;
+    if(steps){
+      const idx=steps.indexOf(this.currentStep);
+      if(idx>0)this._renderStep(steps[idx-1]);
+      else if(confirm('ยกเลิกการแก้ไขและกลับไปหน้าหลัก?'))location.href='index.html';
+      return;
+    }
+    if(this.currentStep>1)this._renderStep(this.currentStep-1);else if(confirm('ล้างข้อมูลที่เลือกไว้ในขั้นตอนนี้?'))this._clearStep1();
+  },
   _clearStep1(){
     Object.assign(this.data,{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:''});
     this.isDual=false;
@@ -1142,15 +1222,19 @@ const Form = {
     this.currentStep=n;
     document.querySelectorAll('.step-panel').forEach(el=>el.classList.remove('active'));
     const panel=document.getElementById('step-'+n);if(panel)panel.classList.add('active');
-    const pct=((n-1)/(this.totalSteps-1))*100;
+    const steps=this._visibleSteps;
+    const idx=steps?steps.indexOf(n):n-1;
+    const total=steps?steps.length:this.totalSteps;
+    const pct=total>1?(idx/(total-1))*100:100;
     document.getElementById('progress-fill').style.width=pct+'%';
-    document.getElementById('step-current').textContent=n;
-    document.getElementById('step-total').textContent=this.totalSteps;
+    document.getElementById('step-current').textContent=idx+1;
+    document.getElementById('step-total').textContent=total;
     const titles=['','เลือกหลักสูตร','ข้อมูลส่วนตัว','ที่อยู่','ข้อมูลบิดา','ข้อมูลมารดา','ผู้ปกครอง','เอกสารประกอบ','เงื่อนไขการชำระเงิน','ชำระเงิน','ตรวจสอบและส่ง'];
-    document.getElementById('step-title-text').textContent=titles[n]||'';
-    document.getElementById('btn-back').textContent=n===1?'🗑️ ล้าง':'← ย้อนกลับ';
+    document.getElementById('step-title-text').textContent=(this.isEditMode?'แก้ไข: ':'')+(titles[n]||'');
+    document.getElementById('btn-back').textContent=(idx===0)?(this.isEditMode?'ยกเลิก':'🗑️ ล้าง'):'← ย้อนกลับ';
     const btnNext=document.getElementById('btn-next');
-    btnNext.textContent=n===8?'รับทราบ':(n===this.totalSteps?'✅ ส่งใบสมัคร':'ถัดไป →');
+    const isLast=steps?idx===steps.length-1:n===this.totalSteps;
+    btnNext.textContent=this.isEditMode?(isLast?'💾 บันทึกการแก้ไข':'ถัดไป →'):(n===8?'รับทราบ':(isLast?'✅ ส่งใบสมัคร':'ถัดไป →'));
     btnNext.disabled=false;
     const initMap={1:()=>this._initStep1(),2:()=>this._initStep2(),3:()=>this._initStep3(),4:()=>this._initStep4(),5:()=>this._initStep5(),6:()=>this._initStep6(),7:()=>this._initStep7(),8:()=>this._initStep8(),9:()=>this._initStep9(),10:()=>this._initStep10()};
     if(initMap[n])await initMap[n]();
@@ -1312,7 +1396,28 @@ const Form = {
     try{const pvs=await Address.loadProvinces();pvs.forEach(p=>{provSel.appendChild(new Option(p.name,p.id));});if(this.data.educationProvinceId)provSel.value=this.data.educationProvinceId;}catch(e){}
   },
 
+  // Address ids only ever come from picking a dropdown in this same
+  // session (or a resumed local draft) — get_application_for_edit only
+  // has the saved province/district/subdistrict *names* (that's all
+  // submit_application ever persisted), so an edit-mode prefill has
+  // text but no ids yet. Resolve them once by name before binding the
+  // selects, so the edit flow shows the applicant's actual address
+  // instead of three blank dropdowns.
+  async _resolveAddressIdsByName() {
+    if(this.data.addrProvinceId||!this.data.addrProvince)return;
+    const province=Address.provinces.find(p=>p.name===this.data.addrProvince);
+    if(!province)return;
+    this.data.addrProvinceId=province.id;
+    const districts=await Address.loadDistricts(province.id);
+    const district=districts.find(d=>d.name===this.data.addrDistrict);
+    if(!district)return;
+    this.data.addrDistrictId=district.id;
+    const subs=await Address.loadSubDistricts(district.id);
+    const sub=subs.find(s=>s.name===this.data.addrSubDistrict);
+    if(sub)this.data.addrSubDistrictId=sub.id;
+  },
   async _initStep3() {
+    await this._resolveAddressIdsByName();
     await Address.bindAddressSelects(
       {provinceSelect:document.getElementById('addr-province'),districtSelect:document.getElementById('addr-district'),subDistrictSelect:document.getElementById('addr-subdistrict'),zipcodeInput:document.getElementById('addr-zipcode')},
       {provinceId:this.data.addrProvinceId,districtId:this.data.addrDistrictId,subDistrictId:this.data.addrSubDistrictId},
@@ -1510,6 +1615,7 @@ const Form = {
   },
 
   async _submit() {
+    if(this.isEditMode)return this._submitEdit();
     // mode=submit → spinner + ข้อความส่งใบสมัคร
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
@@ -1556,6 +1662,33 @@ const Form = {
       }
       else throw new Error(res.message||'เกิดข้อผิดพลาด');
     } catch(err){hideLoading();showToast('ส่งใบสมัครล้มเหลว: '+err.message,'error');}
+  },
+
+  // Edit-mode's "submit" — updates the existing student row via
+  // update_application() (matched server-side by lineUserId) instead of
+  // submit_application()'s INSERT, which is what used to trip the
+  // duplicate-id-card check against the applicant's own record. Never
+  // touches documents/payment — those steps aren't part of edit mode.
+  async _submitEdit() {
+    showLoading('กำลังบันทึกการแก้ไข...','submit');
+    try {
+      const payload={
+        lineUserId:this.data.lineUserId,
+        program:{programId:this.data.selectedProgramId,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},
+        personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},
+        address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},
+        parents:this.data.parents,
+        guardian:this.data.guardian,
+      };
+      const res=await API.updateApplication(payload);
+      hideLoading();
+      if(!res.success)throw new Error(res.message||'บันทึกการแก้ไขล้มเหลว');
+      if(this.editReqId){
+        API.resolveDocumentRequest(this.editReqId,this.data.lineUserId).catch(err=>console.warn('resolveDocumentRequest failed:',err));
+      }
+      showToast('บันทึกการแก้ไขเรียบร้อยแล้ว','success');
+      location.href='index.html';
+    } catch(err){hideLoading();showToast('บันทึกการแก้ไขล้มเหลว: '+err.message,'error');}
   },
 
   _showSuccess(appNo) {

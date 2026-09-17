@@ -191,6 +191,30 @@ const API = {
     };
   },
 
+  // ---- Edit an already-submitted application (text fields only —
+  // documents/payment are untouched, see apply.html's edit mode) ----
+  async getApplicationForEdit(lineUserId) {
+    if (!lineUserId) return null;
+    const { data, error } = await _sb.rpc('get_application_for_edit', { p_line_user_id: lineUserId });
+    if (error) throw error;
+    return data || null;
+  },
+
+  async updateApplication(payload) {
+    const { data, error } = await _sb.rpc('update_application', {
+      payload: {
+        lineUserId: payload.lineUserId,
+        program: payload.program,
+        personal: payload.personal,
+        address: payload.address,
+        parents: payload.parents,
+        guardian: payload.guardian,
+      },
+    });
+    if (error) throw error;
+    return data;
+  },
+
   // ---------- Document Requests (admin asking for missing/incomplete docs) ----------
   async getDocumentRequests(lineUserId) {
     if (!lineUserId) return [];

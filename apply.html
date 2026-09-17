@@ -479,6 +479,7 @@
       </div>
       <div class="form-group"><label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label><input class="form-control" id="inp-phone" type="tel" maxlength="10" placeholder="0812345678" inputmode="numeric"></div>
       <div class="form-group"><label class="form-label">วุฒิการศึกษาล่าสุด <span class="required">*</span></label><select class="form-control" id="inp-education"><option value="">-- เลือก --</option></select></div>
+      <div class="form-group hidden" id="old-branch-group"><label class="form-label">สาขาเดิม (ปวช.) <span class="required">*</span></label><input class="form-control" id="inp-oldBranch" type="text" placeholder="เช่น พณิชยการ, ช่างยนต์"></div>
       <div class="form-group"><label class="form-label">โรงเรียน/สถาบันเดิม <span class="required">*</span></label><input class="form-control" id="inp-oldSchool" type="text" placeholder="ชื่อโรงเรียน"></div>
       <div class="form-group"><label class="form-label">จังหวัดที่ศึกษา</label><select class="form-control" id="inp-educationProvince"><option value="">-- เลือกจังหวัด --</option></select></div>
       <div class="field-row">
@@ -1047,7 +1048,7 @@ const DraftDB = {
 // ============================================================
 const Form = {
   currentStep:1, isDual:false,
-  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'นาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',weight:'',height:'',bloodType:'',phone:'',education:'',oldSchool:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
+  data:{studyRound:'',studyRoundName:'',levelId:'',levelName:'',branchId:'',branchName:'',selectedProgramId:'',studyCategory:'',workLocation:'',idCard:'',prefix:'นาย',firstName:'',lastName:'',birthDate:'',nationality:'ไทย',ethnicity:'ไทย',religion:'พุทธ',weight:'',height:'',bloodType:'',phone:'',education:'',oldSchool:'',oldBranch:'',educationProvince:'',educationProvinceId:'',addrProvince:'',addrDistrict:'',addrSubDistrict:'',addrProvinceId:'',addrDistrictId:'',addrSubDistrictId:'',addrZipcode:'',addrDetail:'',parents:[],guardian:{},documents:{},payment:{slipBase64:'',skipped:false},lineUserId:'',displayName:'',pictureUrl:''},
   programs:{levels:[],branches:[],rounds:[]},
   get totalSteps(){return 10;},
 
@@ -1324,7 +1325,7 @@ const Form = {
   _roundLabel(round){return ROUND_CODE_TO_LABEL[round]||round;},
 
   _initStep2() {
-    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','weight','height','bloodType','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
+    ['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','weight','height','bloodType','phone','education','oldSchool','oldBranch','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el&&this.data[f])el.value=this.data[f];});
     this._onNationalityChange();
     this._populateBirthDateSelects();
     this._updateEducationOptions();
@@ -1381,6 +1382,15 @@ const Form = {
     if(levelName.includes('ปวส')){[['ม.6','มัธยมศึกษาตอนปลาย (ม.6)'],['ปวช.','ปวช.']].forEach(([v,l])=>sel.add(new Option(l,v)));}
     else{sel.add(new Option('มัธยมศึกษาตอนต้น (ม.3)','ม.3'));}
     if(this.data.education)sel.value=this.data.education;
+    this._updateOldBranchUI();
+    sel.onchange=()=>{this.data.education=sel.value;this._updateOldBranchUI();};
+  },
+  // "สาขาเดิม" only makes sense for a ปวส. applicant who graduated ปวช. —
+  // a ม.6/ม.3 graduate has no prior สาขา to name.
+  _updateOldBranchUI() {
+    const show=this.data.education==='ปวช.';
+    document.getElementById('old-branch-group').classList.toggle('hidden',!show);
+    if(!show){this.data.oldBranch='';document.getElementById('inp-oldBranch').value='';}
   },
   async _loadEduProvinces() {
     const provSel=document.getElementById('inp-educationProvince');
@@ -1575,7 +1585,7 @@ const Form = {
         if(studyCategory==='เรียนไปทำงานไป (ทวิภาคี)'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกทวิภาคี');
       }
     }
-    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-nationality').value==='ไทย'){if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');}if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
+    if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];if(document.getElementById('inp-education').value==='ปวช.')required.push(['oldBranch','สาขาเดิม']);for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-nationality').value==='ไทย'){if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');}if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}
     if(n===3){if(!document.getElementById('addr-province').value)return err('กรุณาเลือกจังหวัด');if(!document.getElementById('addr-district').value)return err('กรุณาเลือกอำเภอ/เขต');if(!document.getElementById('addr-subdistrict').value)return err('กรุณาเลือกตำบล/แขวง');if(!document.getElementById('addr-detail').value.trim())return err('กรุณากรอกรายละเอียดที่อยู่');}
     if(n===4){const msg=this._validateParent('father');if(msg)return err(msg);}
     if(n===5){const msg=this._validateParent('mother');if(msg)return err(msg);}
@@ -1607,7 +1617,7 @@ const Form = {
 
   _saveStep(n) {
     if(n===1){const lv=document.getElementById('sel-level'),br=document.getElementById('sel-branch');this.data.levelId=lv.value;this.data.levelName=lv.options[lv.selectedIndex]?.text||'';this.data.branchId=br.value;this.data.branchName=(br.options[br.selectedIndex]?.text||'').replace(/\s*\(รับ.+\)/,'');this.data.studyCategory=document.getElementById('sel-study-category').value;this.data.workLocation=document.getElementById('sel-work-location').value;}
-    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','weight','height','bloodType','phone','education','oldSchool','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvinceId=ep?ep.value:'';this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
+    if(n===2){['idCard','prefix','firstName','lastName','nationality','ethnicity','religion','weight','height','bloodType','phone','education','oldSchool','oldBranch','firstNameEn','lastNameEn'].forEach(f=>{const el=document.getElementById('inp-'+f);if(el)this.data[f]=el.value;});const ep=document.getElementById('inp-educationProvince');this.data.educationProvinceId=ep?ep.value:'';this.data.educationProvince=(ep&&ep.value)?ep.options[ep.selectedIndex].text:'';this.data.birthDate=this._getBirthDateISO();}
     if(n===3){const pv=document.getElementById('addr-province'),ds=document.getElementById('addr-district'),ss=document.getElementById('addr-subdistrict');this.data.addrProvince=pv.options[pv.selectedIndex]?.text||'';this.data.addrDistrict=ds.options[ds.selectedIndex]?.text||'';this.data.addrSubDistrict=ss.options[ss.selectedIndex]?.text||'';this.data.addrProvinceId=pv.value;this.data.addrDistrictId=ds.value;this.data.addrSubDistrictId=ss.value;this.data.addrZipcode=document.getElementById('addr-zipcode').value;this.data.addrDetail=document.getElementById('addr-detail').value;}
     if(n===6){['idCard','prefix','firstName','lastName','phone','relation','address'].forEach(f=>{const el=document.getElementById('grd-'+f);if(el)this.data.guardian[f]=el.value;});}
     this._saveDraft();
@@ -1619,7 +1629,7 @@ const Form = {
     showLoading('กำลังส่งใบสมัคร...', 'submit');
     try {
       const docs=Object.entries(this.data.documents).map(([type,base64])=>({type,base64Data:base64.split(',')[1],mimeType:'image/jpeg',fileName:`${this.data.idCard}_${type}.jpg`}));
-      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:this._getApplicationFee(),slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
+      const payload={lineUserId:this.data.lineUserId,displayName:this.data.displayName,program:{levelId:this.data.levelId,branchId:this.data.branchId,programId:this.data.selectedProgramId,studyRound:this.data.studyRound,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,oldBranch:this.data.oldBranch||'',educationProvince:this.data.educationProvince},address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},parents:this.data.parents,guardian:this.data.guardian,documents:docs,payment:this.isDual?{isDual:true}:{amount:this._getApplicationFee(),slipBase64:this.data.payment.slipBase64?.split(',')[1]||'',slipFileName:`${this.data.idCard}_payment_slip.jpg`}};
       const res=await API.submitApplication(payload);
       if(res.success){
         // submit_application() already created the student/enrollment row
@@ -1674,7 +1684,7 @@ const Form = {
       const payload={
         lineUserId:this.data.lineUserId,
         program:{programId:this.data.selectedProgramId,studyCategory:this.data.studyCategory,workLocation:this.data.workLocation},
-        personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,educationProvince:this.data.educationProvince},
+        personal:{idCard:this.data.idCard,prefix:this.data.prefix,firstName:this.data.firstName,lastName:this.data.lastName,firstNameEn:this.data.firstNameEn||'',lastNameEn:this.data.lastNameEn||'',birthDate:this.data.birthDate,nationality:this.data.nationality,ethnicity:this.data.ethnicity,religion:this.data.religion,weight:this.data.weight,height:this.data.height,bloodType:this.data.bloodType,phone:this.data.phone,education:this.data.education,oldSchool:this.data.oldSchool,oldBranch:this.data.oldBranch||'',educationProvince:this.data.educationProvince},
         address:{province:this.data.addrProvince,district:this.data.addrDistrict,subDistrict:this.data.addrSubDistrict,zipcode:this.data.addrZipcode,detail:this.data.addrDetail},
         parents:this.data.parents,
         guardian:this.data.guardian,

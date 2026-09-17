@@ -45,9 +45,29 @@ const Admin = {
       new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     document.getElementById('sb-school').textContent = CONFIG.SCHOOL_NAME || 'Admin';
 
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW register failed:', err));
+    }
+
     document.getElementById('btn-admin-login').onclick = () => this._login();
     document.getElementById('admin-password').addEventListener('keydown', e => { if (e.key === 'Enter') this._login(); });
     document.getElementById('admin-email').addEventListener('keydown', e => { if (e.key === 'Enter') this._login(); });
+    document.getElementById('link-forgot-password').onclick = e => { e.preventDefault(); this._forgotPassword(); };
+    document.getElementById('btn-reset-password').onclick = () => this._submitNewPassword();
+    document.getElementById('reset-new-password').addEventListener('keydown', e => { if (e.key === 'Enter') this._submitNewPassword(); });
+
+    // A password-reset email link lands back here with a recovery token
+    // in the URL — supabase-js exchanges it automatically and fires this
+    // event instead of a normal sign-in, so the reset form (not the
+    // dashboard) needs to show even though a "session" now exists.
+    _sb.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        hideLoading();
+        document.getElementById('admin-login').classList.add('hidden');
+        document.getElementById('admin-dashboard').classList.add('hidden');
+        document.getElementById('reset-password-wrap').classList.remove('hidden');
+      }
+    });
 
     // #admin-login starts hidden (see admin.html) so a page refresh with
     // an already-valid session doesn't flash the login form for the
@@ -62,6 +82,34 @@ const Admin = {
     }
     hideLoading();
     document.getElementById('admin-login').classList.remove('hidden');
+  },
+
+  async _forgotPassword() {
+    const email = document.getElementById('admin-email').value.trim();
+    if (!email) return showToast('กรุณากรอกอีเมลที่ใช้เข้าสู่ระบบก่อน', 'error');
+    showLoading('กำลังส่งอีเมล...');
+    const { error } = await _sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    hideLoading();
+    if (error) return showToast('ส่งอีเมลล้มเหลว: ' + error.message, 'error');
+    showToast('ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว กรุณาตรวจสอบกล่องจดหมาย', 'success', 5000);
+  },
+
+  async _submitNewPassword() {
+    const pw = document.getElementById('reset-new-password').value;
+    const errEl = document.getElementById('reset-error');
+    errEl.classList.add('hidden');
+    if (!pw || pw.length < 6) return showToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+    showLoading('กำลังบันทึก...');
+    const { error } = await _sb.auth.updateUser({ password: pw });
+    hideLoading();
+    if (error) {
+      errEl.textContent = 'บันทึกล้มเหลว: ' + error.message;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    showToast('ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว กรุณาเข้าสู่ระบบอีกครั้ง', 'success');
+    await _sb.auth.signOut();
+    location.href = location.pathname;
   },
 
   // Returns 'admin', 'staff', or null. Full admins (admin_users) can do
@@ -1398,6 +1446,8 @@ const Admin = {
       document.getElementById('sidebar-backdrop').classList.toggle('open');
     };
     document.getElementById('sidebar-backdrop').onclick = closeSidebar;
+    document.getElementById('btn-enable-push').onclick = () => this._enablePushNotifications();
+    this._refreshPushButtonState();
     document.getElementById('btn-close-detail').onclick = () => this._closeDetail();
     document.getElementById('detail-overlay').onclick = () => this._closeDetail();
     document.getElementById('dp-btn-approve').onclick = () => this._updateStatus('verified');
@@ -1406,9 +1456,70 @@ const Admin = {
     document.getElementById('dp-btn-print').onclick = () => this._printStudent();
     document.getElementById('dp-btn-delete').onclick = () => this._deleteApplication();
   },
+
+  // ---- Web Push (new-application notifications) ----
+  // Reflects whether THIS browser/device already has an active push
+  // subscription — doesn't touch Notification.permission itself, since
+  // requesting that here (just from loading the dashboard) would be a
+  // permission prompt the admin never asked for.
+  async _refreshPushButtonState() {
+    const btn = document.getElementById('btn-enable-push');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { btn.disabled = true; btn.textContent = '🔔 เบราว์เซอร์นี้ไม่รองรับ'; return; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) { btn.textContent = '✅ เปิดการแจ้งเตือนแล้ว'; btn.disabled = true; }
+    } catch (e) { /* SW not ready yet — leave the button as-is */ }
+  },
+
+  async _enablePushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return showToast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนแบบ push', 'error');
+    }
+    const btn = document.getElementById('btn-enable-push');
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return showToast('ไม่ได้รับอนุญาตให้แจ้งเตือน', 'warning');
+
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: _urlBase64ToUint8Array(CONFIG.VAPID_PUBLIC_KEY),
+        });
+      }
+      const { data: { user } } = await _sb.auth.getUser();
+      const subJson = sub.toJSON();
+      const { error } = await _sb.from('push_subscriptions').upsert({
+        user_id: user.id,
+        endpoint: sub.endpoint,
+        p256dh: subJson.keys.p256dh,
+        auth_key: subJson.keys.auth,
+        user_agent: navigator.userAgent,
+      }, { onConflict: 'endpoint' });
+      if (error) throw error;
+
+      btn.textContent = '✅ เปิดการแจ้งเตือนแล้ว';
+      btn.disabled = true;
+      showToast('เปิดการแจ้งเตือนสำหรับอุปกรณ์นี้แล้ว', 'success');
+    } catch (err) {
+      showToast('เปิดการแจ้งเตือนล้มเหลว: ' + err.message, 'error');
+    }
+  },
 };
 
 // ---- Helpers ----
+// PushManager.subscribe()'s applicationServerKey wants a raw Uint8Array,
+// not the base64url string VAPID keys are normally shared as.
+function _urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
 function _statusBadge(s) { return { pending: 'badge-warning', verified: 'badge-success', rejected: 'badge-danger' }[s] || 'badge-gray'; }
 function _statusLabel(s) { return { pending: 'รอตรวจ', verified: 'ผ่านแล้ว', rejected: 'ปฏิเสธ' }[s] || s || '—'; }
 const _DOC_REQUEST_TYPES = ['id_card_front', 'id_card_back', 'house_reg', 'edu_cert_front', 'edu_cert_back', 'payment_slip'];

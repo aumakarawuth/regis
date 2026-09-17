@@ -1,0 +1,15 @@
+{
+  "name": "Regis Admin — วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์",
+  "short_name": "Regis Admin",
+  "description": "ระบบจัดการการรับสมัครนักเรียน",
+  "start_url": "/admin.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B2436",
+  "theme_color": "#0EA5E9",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "assets/admin-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/admin-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

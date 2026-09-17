@@ -500,7 +500,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
     '</div>' +
-    '<div class="finance-fill"><div class="finance-box"><b>รับเงินค่าลงทะเบียนและค่าธรรมเนียมการศึกษา</b><br>ใบเสร็จ เลขที่...................................&emsp;วันที่ ............/............/...............</div></div>' +
+    '<div class="finance-fill"><div class="finance-box"><b>รับเงินค่าลงทะเบียนและค่าธรรมเนียมการศึกษา</b><br><br>ใบเสร็จ เลขที่...................................&emsp;วันที่ ............/............/...............</div></div>' +
   '</div>';
 }
 

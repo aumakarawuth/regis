@@ -11,8 +11,8 @@ const CONFIG = {
   SUPABASE_URL: 'https://bfkklmixuqpwkjzglbpf.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma2tsbWl4dXFwd2tqemdsYnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDYyNTksImV4cCI6MjEwMzIyMjI1OX0.KrvgkzeBAd2ASIizubx6tpOwwPG7iSfzNBRd8ABPZyo', // anon/public key — ปลอดภัยที่ใช้ฝั่ง client (RLS คุมสิทธิ์)
 
-  // PromptPay
-  PROMPTPAY_NUMBER: '0812345678',        // เบอร์หรือเลขบัตรประชาชน
+  // ค่าสมัคร — QR โอนเงินเป็นภาพนิ่งที่ assets/payment-qr.jpg (บัญชีธนาคาร
+  // ของวิทยาลัยโดยตรง ไม่ใช่ QR PromptPay ที่ฝังจำนวนเงินอัตโนมัติ)
   APPLICATION_FEE: 300,                  // ค่าสมัคร (บาท)
 
   // School Info

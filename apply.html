@@ -569,11 +569,8 @@
     </div>
     <div id="payment-normal-content">
       <div class="qr-container">
-        <p class="text-sm text-muted">สแกน QR Code PromptPay</p>
-        <img id="promptpay-qr" alt="QR PromptPay" onerror="this.style.display='none';document.getElementById('qr-fallback').style.display='block'">
-        <div id="qr-fallback" style="display:none;padding:16px;background:var(--clr-bg);border-radius:8px;text-align:center">
-          <p class="text-sm">PromptPay: <strong id="pp-number"></strong></p>
-        </div>
+        <p class="text-sm text-muted">สแกน QR โอนเงินเข้าบัญชีวิทยาลัย</p>
+        <img id="payment-qr" src="assets/payment-qr.jpg" alt="QR โอนเงิน" style="max-width:280px;width:100%;border-radius:12px">
         <div class="payment-amount" id="payment-amount">฿300</div>
         <p class="text-xs text-muted mt-2">ค่าสมัครเรียน (ไม่คืนเงิน)</p>
       </div>
@@ -647,7 +644,6 @@ const CONFIG = {
   LIFF_ID: '2011646500-ET0zwCRy',
   SUPABASE_URL: 'https://bfkklmixuqpwkjzglbpf.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma2tsbWl4dXFwd2tqemdsYnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDYyNTksImV4cCI6MjEwMzIyMjI1OX0.KrvgkzeBAd2ASIizubx6tpOwwPG7iSfzNBRd8ABPZyo',
-  PROMPTPAY_NUMBER: '0812345678',
   APPLICATION_FEE: 300,
   SCHOOL_NAME: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์',
   ADMIN_PASSWORDS: ['admin1234'],
@@ -1554,8 +1550,6 @@ const Form = {
     if(this.isDual){this.data.payment.skipped=true;return;}
     const amount=this._getApplicationFee();
     document.getElementById('payment-amount').textContent='฿'+amount.toLocaleString();
-    document.getElementById('promptpay-qr').src=`https://promptpay.io/${CONFIG.PROMPTPAY_NUMBER}/${amount}.png`;
-    document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER;
     this.data.payment.skipped=false;
     const slipCard=document.getElementById('slip-upload-card');
     if(!slipCard._bound){initDocUpload(slipCard,'payment_slip',(_,base64)=>{this.data.payment.slipBase64=base64;this._saveDraft();},true);slipCard._bound=true;}
@@ -1713,7 +1707,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
   const user=LIFF.requireUser();if(!user)return;
   const nameEl=document.getElementById('header-name');if(nameEl)nameEl.textContent=user.displayName||'ผู้สมัคร';
   const avatarEl=document.getElementById('header-avatar');if(avatarEl&&user.pictureUrl){avatarEl.src=user.pictureUrl;avatarEl.style.display='block';}
-  document.getElementById('pp-number').textContent=CONFIG.PROMPTPAY_NUMBER||'';
   await Form.init();
 });
 </script>

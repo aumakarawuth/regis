@@ -372,7 +372,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.6') !== -1) + ' ม.6 ' +
-      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _fld(isPvchGrad ? s.education : '', 'fld-sm') +
+      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _efld(isPvchGrad ? s.oldBranch : '', 'fld-sm', 'students', 'old_branch', s.id) +
       ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) + '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
@@ -435,10 +435,15 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     eduRow +
+    // This is the OLD SCHOOL's ตำบล/อำเภอ/จังหวัด, not the student's home
+    // address — apply.html never collects the school's subdistrict/
+    // district at all (only its จังหวัด, via "จังหวัดที่ศึกษา"), so those
+    // two stay blank instead of wrongly reusing addr.* (the home address,
+    // rendered again just below under "4. ที่อยู่ปัจจุบัน").
     '<div class="row indent">' +
-      'ตำบล/แขวง ' + _efld(addr.subDistrict, 'fld-md', 'addresses', 'subdistrict_text', addr.id) +
-      ' อำเภอ/เขต ' + _efld(addr.district, 'fld-md', 'addresses', 'district_text', addr.id) +
-      ' จังหวัด ' + _efld(addr.province, 'fld-md', 'addresses', 'province_text', addr.id) +
+      'ตำบล/แขวง ' + _fld('', 'fld-md') +
+      ' อำเภอ/เขต ' + _fld('', 'fld-md') +
+      ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
     '</div>' +
     '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
     transferRow +
@@ -595,7 +600,7 @@ async function _loadStudent(studentId) {
     .select(`
       id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
       nationality, ethnicity, religion, weight, height, blood_type,
-      id_card, phone, birth_date, applied_at, education, old_school,
+      id_card, phone, birth_date, applied_at, education, old_school, old_branch, education_province,
       addresses(id, province_text, district_text, subdistrict_text, zipcode, detail),
       parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation, is_deceased),
       guardians(id, id_card, prefix, first_name, last_name, phone, relation, address),
@@ -676,6 +681,7 @@ async function init() {
     nationality: s.nationality, ethnicity: s.ethnicity, religion: s.religion,
     weight: s.weight, height: s.height, bloodType: s.blood_type,
     birthDate: s.birth_date, phone: s.phone, education: s.education, oldSchool: s.old_school,
+    oldBranch: s.old_branch, educationProvince: s.education_province,
     applyDate: s.applied_at, applicationNo: s.application_no,
   };
 

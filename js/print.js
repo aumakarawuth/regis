@@ -413,7 +413,12 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="section-title" style="margin-top:12px;margin-bottom:8px">1. สาขาวิชาที่สมัคร</div>' +
     '<div class="row indent b" style="font-size:1.4em">' +
       'ระดับที่สมัคร ' + _esc(levelTitle) + ' รอบ ' + _esc(roundLabel) + ' สาขาวิชา ' + _esc(branchName) +
-      (workLocation ? ' (' + _esc(workLocation) + ')' : '') +
+      // workLocation ("ทวิภาคีกรุงเทพ/ปริมณฑล" / "ทวิภาคีต่างจังหวัด") is only
+      // collected when the branch has the work-location sub-field toggled
+      // on, so it can be blank even for a genuine ทวิภาคี application —
+      // fall back to studyCategory ("เรียนไปทำงานไป (ทวิภาคี)") so the
+      // application still shows *something* ทวิภาคี-related in that case.
+      (workLocation ? ' (' + _esc(workLocation) + ')' : (studyCategory ? ' (' + _esc(studyCategory) + ')' : '')) +
     '</div>' +
 
     '<div class="section-title" style="border-top:1.5px solid #000;padding-top:8px;margin-top:12px;margin-bottom:8px">2. ข้อมูลส่วนตัว</div>' +

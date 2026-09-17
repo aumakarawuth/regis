@@ -1398,15 +1398,16 @@ const Form = {
   async _resolveAddressIdsByName() {
     if(this.data.addrProvinceId||!this.data.addrProvince)return;
     const province=Address.provinces.find(p=>p.name===this.data.addrProvince);
-    if(!province)return;
+    if(!province){showToast('ไม่พบจังหวัด "'+this.data.addrProvince+'" ในระบบ กรุณาเลือกที่อยู่ใหม่อีกครั้ง','warning',5000);return;}
     this.data.addrProvinceId=province.id;
     const districts=await Address.loadDistricts(province.id);
     const district=districts.find(d=>d.name===this.data.addrDistrict);
-    if(!district)return;
+    if(!district){showToast('ไม่พบอำเภอ/เขต "'+this.data.addrDistrict+'" กรุณาเลือกที่อยู่ใหม่อีกครั้ง','warning',5000);return;}
     this.data.addrDistrictId=district.id;
     const subs=await Address.loadSubDistricts(district.id);
     const sub=subs.find(s=>s.name===this.data.addrSubDistrict);
     if(sub)this.data.addrSubDistrictId=sub.id;
+    else showToast('ไม่พบตำบล/แขวง "'+this.data.addrSubDistrict+'" กรุณาเลือกที่อยู่ใหม่อีกครั้ง','warning',5000);
   },
   async _initStep3() {
     await this._resolveAddressIdsByName();

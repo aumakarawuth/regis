@@ -49,12 +49,19 @@ const Admin = {
     document.getElementById('admin-password').addEventListener('keydown', e => { if (e.key === 'Enter') this._login(); });
     document.getElementById('admin-email').addEventListener('keydown', e => { if (e.key === 'Enter') this._login(); });
 
+    // #admin-login starts hidden (see admin.html) so a page refresh with
+    // an already-valid session doesn't flash the login form for the
+    // ~one round-trip getSession()/_checkAccess() takes to resolve —
+    // that flash read as "got logged out, then logged back in".
+    showLoading('กำลังตรวจสอบสิทธิ์...');
     const { data: { session } } = await _sb.auth.getSession();
     if (session) {
       const access = await this._checkAccess();
-      if (access) { this._showDashboard(access); return; }
+      if (access) { hideLoading(); this._showDashboard(access); return; }
       await _sb.auth.signOut();
     }
+    hideLoading();
+    document.getElementById('admin-login').classList.remove('hidden');
   },
 
   // Returns 'admin', 'staff', or null. Full admins (admin_users) can do

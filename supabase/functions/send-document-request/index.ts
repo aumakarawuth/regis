@@ -58,13 +58,23 @@ const EDIT_SECTION_LABELS: Record<string, string> = {
 };
 function editSectionLabel(s: string) { return EDIT_SECTION_LABELS[s] || s; }
 
+// Header background as a light-to-dark amber gradient (LINE Flex boxes
+// support a `background` gradient object instead of a flat
+// `backgroundColor`) instead of the previous solid #F59E0B — gives the
+// card some depth instead of a flat color block.
+const HEADER_GRADIENT = {
+  type: 'linearGradient', angle: '135deg',
+  startColor: '#FCD34D', centerColor: '#F59E0B', endColor: '#D97706', centerPosition: '55%',
+};
+
 function buildFlex(applicationNo: string, docTypes: string[], editSections: string[], note: string | null, requestId: string) {
   const hasDocs = docTypes.length > 0;
   const hasEdits = editSections.length > 0;
+  const hasGeneral = !hasDocs && !hasEdits;
   const body: any[] = [
-    { type: 'text', text: 'เลขที่ใบสมัคร', color: '#6B7280', size: 'xs' },
-    { type: 'text', text: applicationNo, weight: 'bold', size: 'lg', color: '#F59E0B' },
-    { type: 'separator', margin: 'md' },
+    { type: 'text', text: 'เลขที่ใบสมัคร', color: '#9A6A00', size: 'xs' },
+    { type: 'text', text: applicationNo, weight: 'bold', size: 'lg', color: '#D97706' },
+    { type: 'separator', margin: 'md', color: '#FDE9C2' },
   ];
   if (hasDocs) {
     body.push({ type: 'text', text: 'กรุณาอัปโหลดเอกสารเพิ่มเติม', size: 'sm', color: '#6B7280', margin: 'md' });
@@ -74,10 +84,22 @@ function buildFlex(applicationNo: string, docTypes: string[], editSections: stri
     body.push({ type: 'text', text: 'กรุณาแก้ไขข้อมูลต่อไปนี้', size: 'sm', color: '#6B7280', margin: 'md' });
     body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'sm', contents: editSections.map(s => docRow(editSectionLabel(s))) });
   }
+  if (hasGeneral) {
+    body.push({ type: 'text', text: 'ข้อความจากเจ้าหน้าที่', size: 'sm', color: '#6B7280', margin: 'md' });
+  }
   if (note && note.trim()) {
-    body.push({ type: 'separator', margin: 'md' });
-    body.push({ type: 'text', text: 'หมายเหตุจากเจ้าหน้าที่', size: 'xs', color: '#6B7280', margin: 'md' });
-    body.push({ type: 'text', text: note, wrap: true, size: 'sm' });
+    if (!hasGeneral) {
+      body.push({ type: 'separator', margin: 'md', color: '#FDE9C2' });
+      body.push({ type: 'text', text: 'หมายเหตุจากเจ้าหน้าที่', size: 'xs', color: '#6B7280', margin: 'md' });
+    }
+    // A light gradient card behind the note text instead of plain white
+    // — the one place in the body that most benefits from some depth,
+    // since it's the actual message staff typed and should stand out.
+    body.push({
+      type: 'box', layout: 'vertical', margin: hasGeneral ? 'sm' : 'sm', paddingAll: '12px', cornerRadius: 'md',
+      background: { type: 'linearGradient', angle: '145deg', startColor: '#FFFBEB', endColor: '#FEF3C7' },
+      contents: [{ type: 'text', text: note, wrap: true, size: 'sm', color: '#78350F' }],
+    });
   }
 
   // An edit-sections request deep-links straight into apply.html's edit
@@ -85,7 +107,9 @@ function buildFlex(applicationNo: string, docTypes: string[], editSections: stri
   // appended after the LIFF id through to the endpoint URL. A doc-types
   // request still just reopens the LIFF app itself; index.html's own
   // "ต้องอัปโหลดเอกสารเพิ่มเติม" card (already wired to docTypes there)
-  // handles picking the right upload flow.
+  // handles picking the right upload flow. A general (note-only) request
+  // has nothing to fill in on apply.html at all — its button just opens
+  // the LIFF app's normal status screen.
   const footerButtons: any[] = [];
   if (hasEdits) {
     const sectionsParam = encodeURIComponent(editSections.join(','));
@@ -100,20 +124,26 @@ function buildFlex(applicationNo: string, docTypes: string[], editSections: stri
       action: { type: 'uri', label: '📤 อัปโหลดเอกสาร', uri: `https://liff.line.me/${LIFF_ID}` },
     });
   }
+  if (hasGeneral) {
+    footerButtons.push({
+      type: 'button', style: 'primary', color: '#F59E0B', height: 'sm',
+      action: { type: 'uri', label: '📱 เปิดแอปสมัครเรียน', uri: `https://liff.line.me/${LIFF_ID}` },
+    });
+  }
 
   return {
     type: 'flex',
-    altText: `${hasEdits && !hasDocs ? 'ขอให้แก้ไขข้อมูล' : 'ขอเอกสารเพิ่มเติม'} — เลขที่ใบสมัคร ${applicationNo}`,
+    altText: `${hasGeneral ? 'ข้อความจากเจ้าหน้าที่' : (hasEdits && !hasDocs ? 'ขอให้แก้ไขข้อมูล' : 'ขอเอกสารเพิ่มเติม')} — เลขที่ใบสมัคร ${applicationNo}`,
     contents: {
       type: 'bubble',
       header: {
-        type: 'box', layout: 'horizontal', backgroundColor: '#F59E0B', paddingAll: '16px', alignItems: 'center',
+        type: 'box', layout: 'horizontal', background: HEADER_GRADIENT, paddingAll: '16px', alignItems: 'center',
         contents: [
           {
             type: 'box', layout: 'vertical', spacing: 'xs', flex: 4,
             contents: [
-              { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FEF3C7', size: 'xs', weight: 'bold', wrap: true },
-              { type: 'text', text: hasEdits && !hasDocs ? '✏️ กรุณาแก้ไขข้อมูล' : '📋 ขอเอกสารเพิ่มเติม', color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
+              { type: 'text', text: 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์', color: '#FFF7E6', size: 'xs', weight: 'bold', wrap: true },
+              { type: 'text', text: hasGeneral ? '📢 แจ้งเตือนจากเจ้าหน้าที่' : (hasEdits && !hasDocs ? '✏️ กรุณาแก้ไขข้อมูล' : '📋 ขอเอกสารเพิ่มเติม'), color: '#ffffff', weight: 'bold', size: 'lg', wrap: true },
             ],
           },
           {
@@ -123,7 +153,11 @@ function buildFlex(applicationNo: string, docTypes: string[], editSections: stri
         ],
       },
       body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '20px', contents: body },
-      footer: { type: 'box', layout: 'vertical', paddingAll: '12px', spacing: 'sm', contents: footerButtons },
+      footer: {
+        type: 'box', layout: 'vertical', paddingAll: '12px', spacing: 'sm',
+        background: { type: 'linearGradient', angle: '180deg', startColor: '#FFFFFF', endColor: '#FFFBEB' },
+        contents: footerButtons,
+      },
     },
   };
 }
@@ -157,8 +191,13 @@ Deno.serve(async (req) => {
   const { studentId, docTypes, editSections, note } = await req.json().catch(() => ({}));
   const docTypesArr = Array.isArray(docTypes) ? docTypes : [];
   const editSectionsArr = Array.isArray(editSections) ? editSections : [];
-  if (!studentId || (docTypesArr.length === 0 && editSectionsArr.length === 0)) {
-    return json({ success: false, message: 'studentId and docTypes/editSections required' }, 400);
+  const noteText = typeof note === 'string' ? note.trim() : '';
+  // A request no longer has to be about documents or an edit-mode
+  // deep-link at all — staff can also just send a plain text notice
+  // (e.g. "เอกสารของคุณผ่านการตรวจสอบแล้ว") with nothing for the
+  // applicant to upload or fix.
+  if (!studentId || (docTypesArr.length === 0 && editSectionsArr.length === 0 && !noteText)) {
+    return json({ success: false, message: 'studentId and docTypes/editSections/note required' }, 400);
   }
 
   const { data: student, error } = await supabase

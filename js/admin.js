@@ -619,8 +619,9 @@ const Admin = {
               <span>${label}</span>
             </label>`).join('') +
         '</div>' +
-        '<textarea class="form-control" id="dp-doc-request-note" placeholder="หมายเหตุถึงผู้สมัคร เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด / กรุณาอัปเดตเลขบัตร ปชช. พ่อ"></textarea>' +
-        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งขอเอกสารทาง LINE</button>' +
+        '<div class="section-label" style="margin-top:10px;font-size:0.8125rem">💬 หรือส่งข้อความแจ้งเฉยๆ ก็ได้ (ไม่เลือกเอกสาร/หัวข้อด้านบนเลยก็ส่งได้ ถ้าพิมพ์ข้อความไว้)</div>' +
+        '<textarea class="form-control" id="dp-doc-request-note" placeholder="เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด / กรุณาอัปเดตเลขบัตร ปชช. พ่อ / เอกสารของคุณผ่านการตรวจสอบแล้ว"></textarea>' +
+        '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งทาง LINE</button>' +
         '<div class="doc-request-history" id="dp-doc-requests"></div>' +
       '</div>';
 
@@ -816,7 +817,7 @@ const Admin = {
     const docTypes = Array.from(document.querySelectorAll('.dp-doc-request-check:checked')).map(el => el.value);
     const editSections = Array.from(document.querySelectorAll('.dp-edit-section-check:checked')).map(el => el.value);
     const note = document.getElementById('dp-doc-request-note').value.trim();
-    if (!docTypes.length && !editSections.length) return showToast('เลือกเอกสารหรือหัวข้อที่ต้องการให้แก้ไขก่อน', 'error');
+    if (!docTypes.length && !editSections.length && !note) return showToast('เลือกเอกสาร/หัวข้อที่ต้องการให้แก้ไข หรือพิมพ์ข้อความอย่างน้อยหนึ่งอย่าง', 'error');
 
     const btn = document.getElementById('dp-btn-send-doc-request');
     const originalLabel = btn.textContent;

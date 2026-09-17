@@ -1196,6 +1196,16 @@ const Admin = {
     window.open(`print.html?studentId=${this.currentStudent.id}`, '_blank');
   },
 
+  // Generates one combined print-ready page for every application
+  // currently showing under the active tab/search/branch/year filters
+  // (this.filtered), instead of opening print.html once per student.
+  _printAllFiltered() {
+    const ids = (this.filtered || []).map(s => s.id);
+    if (!ids.length) return showToast('ไม่มีใบสมัครที่ตรงกับตัวกรองปัจจุบัน', 'error');
+    if (ids.length > 60 && !confirm(`กำลังจะสร้าง PDF ของใบสมัคร ${ids.length} ใบ อาจใช้เวลาสักครู่ ดำเนินการต่อ?`)) return;
+    window.open(`print.html?studentIds=${ids.join(',')}`, '_blank');
+  },
+
   // ---------- Programs (education_levels / branches / program_rounds) ----------
   async _loadCatalog() {
     const [{ data: levels }, { data: branches }, { data: rounds }] = await Promise.all([
@@ -1436,6 +1446,7 @@ const Admin = {
     document.getElementById('btn-add-year').onclick = () => this._addYearOption();
     document.getElementById('btn-set-admission-year').onclick = () => this._setAdmissionYear();
     document.getElementById('btn-export-csv').onclick = () => this._exportCSV();
+    document.getElementById('btn-print-all').onclick = () => this._printAllFiltered();
     document.getElementById('nav-export').onclick = () => this._exportCSV();
     document.getElementById('btn-refresh-list').onclick = () => this._refreshAll();
     document.getElementById('nav-refresh').onclick = () => this._refreshAll();

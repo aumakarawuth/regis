@@ -43,6 +43,8 @@ function json(body: unknown, status = 200) {
 const SCHOOL_NAME = 'วิทยาลัยเทคโนโลยีจรัลสนิทวงศ์';
 const SCHOOL_PHONE = '02-4346155';
 const SCHOOL_LINE = '@ctc.bangkok';
+const CONTACT_PHONE = '0955530645';
+const CONTACT_NAME = 'พี่แพนด้า';
 const MASCOT_ICON_URL = 'https://regis-aumakarawuths-projects.vercel.app/assets/mascot-icon.png';
 
 const PRIMARY = '#0EA5E9';
@@ -126,6 +128,10 @@ function buildFlex(opts: {
           {
             type: 'button', style: 'primary', color: PRIMARY, height: 'sm',
             action: { type: 'uri', label: '🔍 ตรวจสอบสถานะการสมัคร', uri: `https://liff.line.me/${LIFF_ID}` },
+          },
+          {
+            type: 'button', style: 'secondary', height: 'sm',
+            action: { type: 'uri', label: `📞 โทร. ${CONTACT_PHONE} (${CONTACT_NAME})`, uri: `tel:${CONTACT_PHONE}` },
           },
           {
             type: 'text', align: 'center', size: 'xxs', color: '#9CA3AF',

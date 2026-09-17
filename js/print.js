@@ -227,7 +227,7 @@ const FORM_CSS = [
 
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
-  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:34mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:2mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
   '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
@@ -333,15 +333,16 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
   var nameFld = '<span class="fld fld-lg name-fld" style="font-size:' + _nameFontSize(fullName) + '">' + _esc(fullName) + '</span>';
   return '<div class="page cover-page">' +
     '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    // ปวช.'s extraRow has an extra "ทุนสัณห์ พรนิมิตร" checkbox that ปวส.'s
-    // doesn't, so without a fixed reserved width the two templates'
-    // "รหัสประจำตัว" boxes land at different horizontal positions.
-    // min-width pins both to the ปวช. (longer) width so they always align.
-    '<div class="row"><span class="extra-row">' + extraRow + '</span>&emsp;รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></div>' +
+    // The idbox row is rendered by .big-idcode as an absolutely-positioned
+    // overlay anchored at a near-zero-width inline point (so it doesn't
+    // stretch the row), which only works if whatever comes right after it
+    // in the flow starts far enough right to clear the boxes — hence the
+    // fixed min-width wrapper reserving their actual rendered width before
+    // extraRow begins.
+    '<div class="row"><span style="display:inline-block;min-width:300px">รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></span>' + extraRow + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
-      _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') + '&emsp;' +
-      _chk(false) + ' กรอกประวัติ' + _fld('', 'fld-md') +
+      _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') +
     '</div>' +
     '<div class="photo-box">รูปถ่าย<br>1" หรือ 2"</div>' +
     '<div class="seal-wrap">' + _collegeSealHtml() + '</div>' +
@@ -370,10 +371,16 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
   var eduRow;
   if (isPvs) {
     var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
-    eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
-      _chk(edu.indexOf('ม.6') !== -1) + ' ม.6 ' +
-      _chk(isPvchGrad) + ' ปวช. สาขา (ระบุ) ' + _efld(isPvchGrad ? s.oldBranch : '', 'fld-sm', 'students', 'old_branch', s.id) +
-      ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) + '</div>';
+    var levelGradText = isPvchGrad ? 'ปวช.' : (edu.indexOf('ม.6') !== -1 ? 'ม.6' : edu);
+    eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' + _esc(levelGradText) +
+      (isPvchGrad ? ' สาขา ' + _efld(s.oldBranch, 'fld-sm', 'students', 'old_branch', s.id) : '') +
+      ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) +
+      ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
+      '</div>' +
+      '<div class="row indent">' +
+        'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-md', 'students', 'old_school_subdistrict', s.id) +
+        ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-md', 'students', 'old_school_district', s.id) +
+      '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.3') !== -1) + ' ม.3' +
@@ -406,7 +413,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '<div class="section-title" style="margin-top:12px;margin-bottom:8px">1. สาขาวิชาที่สมัคร</div>' +
     '<div class="row indent b" style="font-size:1.4em">' +
       'ระดับที่สมัคร ' + _esc(levelTitle) + ' รอบ ' + _esc(roundLabel) + ' สาขาวิชา ' + _esc(branchName) +
-      (workLocation ? ' ' + _esc(workLocation) : '') +
+      (workLocation ? ' (' + _esc(workLocation) + ')' : '') +
     '</div>' +
 
     '<div class="section-title" style="border-top:1.5px solid #000;padding-top:8px;margin-top:12px;margin-bottom:8px">2. ข้อมูลส่วนตัว</div>' +
@@ -435,16 +442,6 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     eduRow +
-    // This is the OLD SCHOOL's ตำบล/อำเภอ/จังหวัด, not the student's home
-    // address — apply.html never collects the school's subdistrict/
-    // district at all (only its จังหวัด, via "จังหวัดที่ศึกษา"), so those
-    // two stay blank instead of wrongly reusing addr.* (the home address,
-    // rendered again just below under "4. ที่อยู่ปัจจุบัน").
-    '<div class="row indent">' +
-      'ตำบล/แขวง ' + _fld('', 'fld-md') +
-      ' อำเภอ/เขต ' + _fld('', 'fld-md') +
-      ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
-    '</div>' +
     '<div class="row indent">&#8211; กรณีโอนมา จากวิทยาลัย ' + _fld('', 'fld-lg') + ' สาขาวิชา ' + _fld('', 'fld-lg') + '</div>' +
     transferRow +
 
@@ -601,6 +598,7 @@ async function _loadStudent(studentId) {
       id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
       nationality, ethnicity, religion, weight, height, blood_type,
       id_card, phone, birth_date, applied_at, education, old_school, old_branch, education_province,
+      old_school_subdistrict, old_school_district,
       addresses(id, province_text, district_text, subdistrict_text, zipcode, detail),
       parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation, is_deceased),
       guardians(id, id_card, prefix, first_name, last_name, phone, relation, address),
@@ -637,8 +635,9 @@ async function init() {
   const root = document.getElementById('root');
   const params = new URLSearchParams(location.search);
   const studentId = params.get('studentId');
+  const studentIds = (params.get('studentIds') || '').split(',').map(v => v.trim()).filter(Boolean);
 
-  if (!studentId) { root.textContent = 'ไม่พบ studentId'; return; }
+  if (!studentId && !studentIds.length) { root.textContent = 'ไม่พบ studentId'; return; }
 
   const { data: { session } } = await _sb.auth.getSession();
   if (!session || !(await _isAdmin())) {
@@ -648,13 +647,40 @@ async function init() {
 
   root.textContent = 'กำลังโหลดข้อมูล...';
 
-  let s;
-  try {
-    s = await _loadStudent(studentId);
-  } catch (err) {
-    root.textContent = 'ไม่พบข้อมูลนักเรียน: ' + err.message;
-    return;
+  const ids = studentIds.length ? studentIds : [studentId];
+  let formsHtml = '';
+  let lastTitle = '';
+  for (const id of ids) {
+    let html;
+    try {
+      html = await _buildStudentFormHtml(id);
+    } catch (err) {
+      html = '<div class="page">ไม่พบข้อมูลนักเรียน (' + _esc(id) + '): ' + _esc(err.message) + '</div>';
+    }
+    formsHtml += html.html;
+    lastTitle = html.title || lastTitle;
   }
+
+  document.title = ids.length > 1 ? 'ใบสมัครหลายฉบับ (' + ids.length + ' ใบ)' : lastTitle;
+  const style = document.createElement('style');
+  style.textContent = FORM_CSS;
+  document.head.appendChild(style);
+
+  root.innerHTML =
+    '<button class="print-btn no-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    (ids.length > 1 ? '' : '<button class="save-btn no-print" id="btn-save">💾 บันทึกการแก้ไข</button>') +
+    formsHtml;
+
+  document.getElementById('btn-print').onclick = () => window.print();
+  if (ids.length <= 1) document.getElementById('btn-save').onclick = () => _saveEdits(studentId);
+  _wireIdBoxInput();
+}
+
+// Loads one student and builds their form HTML — shared by both the
+// single-student view (?studentId=) and the bulk view (?studentIds=a,b,c)
+// used by admin.js's "🖨️ สร้าง PDF ทั้งหมด" button.
+async function _buildStudentFormHtml(studentId) {
+  const s = await _loadStudent(studentId);
 
   const addrRow = Array.isArray(s.addresses) ? s.addresses[0] : s.addresses;
   const addr = {
@@ -682,24 +708,14 @@ async function init() {
     weight: s.weight, height: s.height, bloodType: s.blood_type,
     birthDate: s.birth_date, phone: s.phone, education: s.education, oldSchool: s.old_school,
     oldBranch: s.old_branch, educationProvince: s.education_province,
+    oldSchoolSubDistrict: s.old_school_subdistrict, oldSchoolDistrict: s.old_school_district,
     applyDate: s.applied_at, applicationNo: s.application_no,
   };
 
   const docs = await _signDocUrls(s.documents || []);
-
-  document.title = 'ใบสมัคร ' + (isPvs ? 'ปวส.' : 'ปวช.') + ' — ' + (student.applicationNo || '');
-  const style = document.createElement('style');
-  style.textContent = FORM_CSS;
-  document.head.appendChild(style);
-
-  root.innerHTML =
-    '<button class="print-btn no-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
-    '<button class="save-btn no-print" id="btn-save">💾 บันทึกการแก้ไข</button>' +
-    _buildFormHtml(isPvs, student, addr, father, mother, guardian, docs, branchName, enroll?.program_rounds?.round_label, enroll?.study_category, enroll?.work_location);
-
-  document.getElementById('btn-print').onclick = () => window.print();
-  document.getElementById('btn-save').onclick = () => _saveEdits(studentId);
-  _wireIdBoxInput();
+  const title = 'ใบสมัคร ' + (isPvs ? 'ปวส.' : 'ปวช.') + ' — ' + (student.applicationNo || '');
+  const html = _buildFormHtml(isPvs, student, addr, father, mother, guardian, docs, branchName, enroll?.program_rounds?.round_label, enroll?.study_category, enroll?.work_location);
+  return { html, title };
 }
 
 // Each id-card digit box is its own contenteditable span (see

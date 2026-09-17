@@ -418,15 +418,15 @@
         <select class="form-control" id="sel-study-category">
           <option value="">-- เลือกหมวดการเรียน --</option>
           <option value="เรียน จ-ศ">เรียน จ-ศ</option>
-          <option value="เรียนไปทำงานไป">เรียนไปทำงานไป</option>
+          <option value="เรียนไปทำงานไป (ทวิภาคี)">เรียนไปทำงานไป (ทวิภาคี)</option>
         </select>
       </div>
       <div class="form-group hidden" id="work-location-group">
         <label class="form-label">ทวิภาคี <span class="required">*</span></label>
         <select class="form-control" id="sel-work-location">
           <option value="">-- เลือกทวิภาคี --</option>
-          <option value="ทวิกรุงเทพ">ทวิกรุงเทพ</option>
-          <option value="ทวิต่างจังหวัด">ทวิต่างจังหวัด</option>
+          <option value="ทวิภาคีกรุงเทพ/ปริมณฑล">ทวิภาคีกรุงเทพ/ปริมณฑล</option>
+          <option value="ทวิภาคีต่างจังหวัด">ทวิภาคีต่างจังหวัด</option>
         </select>
       </div>
       <div class="card" style="background:var(--clr-primary-light)">
@@ -1337,7 +1337,7 @@ const Form = {
   },
   _updateWorkLocationUI(branchId){
     const lg=document.getElementById('work-location-group');
-    const show=this.data.studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId);
+    const show=this.data.studyCategory==='เรียนไปทำงานไป (ทวิภาคี)'&&this._showsWorkLocation(branchId);
     if(show){lg.classList.remove('hidden');}else{lg.classList.add('hidden');this.data.workLocation='';document.getElementById('sel-work-location').value='';}
   },
   _populateLevels() {
@@ -1550,7 +1550,7 @@ const Form = {
       if(this.data.studyRound!=='afternoon'&&this._showsStudyCategory(branchId)){
         const studyCategory=document.getElementById('sel-study-category').value;
         if(!studyCategory)return err('กรุณาเลือกหมวดการเรียน');
-        if(studyCategory==='เรียนไปทำงานไป'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกทวิภาคี');
+        if(studyCategory==='เรียนไปทำงานไป (ทวิภาคี)'&&this._showsWorkLocation(branchId)&&!document.getElementById('sel-work-location').value)return err('กรุณาเลือกทวิภาคี');
       }
     }
     if(n===2){const required=[['idCard','เลขบัตรประชาชน'],['firstName','ชื่อ'],['lastName','นามสกุล'],['weight','น้ำหนัก'],['height','ส่วนสูง'],['phone','เบอร์โทร'],['education','วุฒิการศึกษา'],['oldSchool','โรงเรียนเดิม']];for(const[id,label]of required){const el=document.getElementById('inp-'+id);if(!el||!el.value.trim())return err('กรุณากรอก'+label);}if(document.getElementById('inp-nationality').value==='ไทย'){if(document.getElementById('inp-idCard').value.length!==13)return err('เลขบัตรประชาชนต้องมี 13 หลัก');if(!this._isValidThaiId(document.getElementById('inp-idCard').value))return err('เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');}if(document.getElementById('inp-phone').value.length!==10)return err('เบอร์โทรต้องมี 10 หลัก');if(!this._getBirthDateISO())return err('กรุณาเลือกวันเกิดให้ครบ');}

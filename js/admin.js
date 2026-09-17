@@ -1375,7 +1375,6 @@ const Admin = {
     document.getElementById('dp-btn-reject').onclick = () => this._updateStatus('rejected');
     document.getElementById('dp-btn-pending').onclick = () => this._updateStatus('pending');
     document.getElementById('dp-btn-print').onclick = () => this._printStudent();
-    document.getElementById('dp-btn-regen-pdf').onclick = () => this._printStudent();
     document.getElementById('dp-btn-delete').onclick = () => this._deleteApplication();
   },
 };

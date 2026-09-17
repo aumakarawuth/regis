@@ -227,7 +227,7 @@ const FORM_CSS = [
 
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
-  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:2mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
+  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
   '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
@@ -333,13 +333,13 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
   var nameFld = '<span class="fld fld-lg name-fld" style="font-size:' + _nameFontSize(fullName) + '">' + _esc(fullName) + '</span>';
   return '<div class="page cover-page">' +
     '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
-    // The idbox row is rendered by .big-idcode as an absolutely-positioned
-    // overlay anchored at a near-zero-width inline point (so it doesn't
-    // stretch the row), which only works if whatever comes right after it
-    // in the flow starts far enough right to clear the boxes — hence the
-    // fixed min-width wrapper reserving their actual rendered width before
-    // extraRow begins.
-    '<div class="row"><span style="display:inline-block;min-width:300px">รหัสประจำตัว <span class="big-idcode">' + _plainBoxes(11) + '</span></span>' + extraRow + '</div>' +
+    // Plain inline boxes (not the .big-idcode overlay style) so this row
+    // takes up real, normal flow width — the enlarged .big-idcode variant
+    // is an absolutely-positioned overlay anchored at a near-zero-width
+    // point, which only avoids clobbering neighboring rows/columns when
+    // nothing else shares its row; here it sits next to extraRow and,
+    // above it, the ชื่อ-นามสกุล row, so it needs to occupy real space.
+    '<div class="row">รหัสประจำตัว ' + _plainBoxes(11) + '&emsp;' + extraRow + '</div>' +
     '<div class="row">' +
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') +
@@ -375,11 +375,11 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' + _esc(levelGradText) +
       (isPvchGrad ? ' สาขา ' + _efld(s.oldBranch, 'fld-sm', 'students', 'old_branch', s.id) : '') +
       ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) +
-      ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
       '</div>' +
       '<div class="row indent">' +
         'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-md', 'students', 'old_school_subdistrict', s.id) +
         ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-md', 'students', 'old_school_district', s.id) +
+        ' จังหวัด ' + _efld(s.educationProvince, 'fld-md', 'students', 'education_province', s.id) +
       '</div>';
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +

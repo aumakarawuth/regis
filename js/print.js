@@ -228,7 +228,7 @@ const FORM_CSS = [
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
   '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-  '.seal-wrap{position:absolute;top:38%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+  '.seal-wrap{position:absolute;top:50%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
   '.seal{width:104mm;height:auto;display:block;margin:0 auto}',
@@ -253,6 +253,11 @@ const FORM_CSS = [
   '@media print{.fld.editable{background:transparent}}',
   '@media screen{.idwrap.editable .idbox{cursor:text;background:#FFF3B0}.idwrap.editable .idbox:hover{background:#FFE580}.idwrap.editable .idbox:focus{outline:2px solid #0066cc;outline-offset:-2px;background:#fff}}',
   '@media print{.idwrap.editable .idbox{background:transparent}}',
+  // Long-line editable field — a block-level contenteditable spanning a
+  // whole .row (not the usual inline-block .fld box) for continuation
+  // text like the guardian address's second line, which needs to look
+  // like one uninterrupted dotted line, not a boxed field.
+  '@media screen{.line-editable{cursor:text;background:#FFF3B0}.line-editable:hover{background:#FFE580}.line-editable:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
@@ -487,12 +492,25 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
         ' ',
         { value: guardian.lastName, table: 'guardians', col: 'last_name', id: guardian.id, newRowMeta: { student_id: s.id } },
       ]) + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
-    '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' + _efld(guardian.address, 'fld-xl', 'guardians', 'address', guardian.id, {student_id: s.id}) + '</div>' +
-    // Blank continuation line for a long guardian address — one solid
-    // dotted line spanning the same width as the row above, with no gap
-    // at the start (a hidden label there previously left a visible break
-    // before the dots began).
-    '<div class="row indent" style="border-bottom:1px dotted #000;height:1.3em"></div>' +
+    (function () {
+      // The guardian address's continuation line shares its _efldSeq
+      // with the address field above (both same table/col/id) so
+      // _saveEdits() concatenates whatever's typed on either line into
+      // one guardians.address string, instead of the second line
+      // silently overwriting the first (or being ignored).
+      var addrSeq = _efldSeq++;
+      var addrMeta = { student_id: s.id };
+      var line1 = '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' +
+        '<span class="fld editable fld-xl">' + _ecell({ value: guardian.address, table: 'guardians', col: 'address', id: guardian.id, newRowMeta: addrMeta }, addrSeq) + '</span>' +
+        '</div>';
+      // Blank continuation line for a long guardian address — one solid
+      // dotted line spanning the same width as the row above, contenteditable
+      // so staff can keep typing the address onto it.
+      var line2 = '<div class="row indent ecell line-editable" contenteditable="true" data-table="guardians" data-col="address" data-id="' + (guardian.id || '') + '" data-seq="' + addrSeq + '"' +
+        (!guardian.id ? ' data-new="' + _esc(JSON.stringify(addrMeta)).replace(/"/g, '&quot;') + '"' : '') +
+        ' style="border-bottom:1px dotted #000;height:1.3em"></div>';
+      return line1 + line2;
+    })() +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +

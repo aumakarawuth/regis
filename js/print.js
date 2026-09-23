@@ -228,7 +228,7 @@ const FORM_CSS = [
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
   '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-  '.seal-wrap{position:absolute;top:50%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+  '.seal-wrap{position:absolute;top:44%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
   '.seal{width:104mm;height:auto;display:block;margin:0 auto}',

@@ -246,6 +246,11 @@ const FORM_CSS = [
   '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:20px;padding-top:20px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
   '.sig-blank{display:inline-block;width:200px;border-bottom:1px dotted #000;height:2.6em;vertical-align:bottom;margin:0 4px}',
+  // The blank-name placeholder under a signature (ผู้รับสมัคร/ฝ่ายการเงิน,
+  // and ผู้ปกครอง when no name is on file) used to be a fixed string of
+  // dots — fine as a print-only placeholder, but far too short to
+  // actually hand-write a full name into. A sized box gives real room.
+  '.name-blank{display:inline-block;width:220px;border-bottom:1px dotted #000;height:1.3em;vertical-align:bottom}',
 
   // Single responsive bottom bar instead of two independently-positioned
   // fixed buttons — on narrow mobile widths, two (or three, once the back
@@ -505,13 +510,14 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
         ' ',
         { value: guardian.lastName, table: 'guardians', col: 'last_name', id: guardian.id, newRowMeta: { student_id: s.id } },
       ]) + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
-    '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' +
-      // fld-addr reserves two lines' worth of height up front (instead of
-      // the default single-line fld box) so a long address wraps onto a
-      // visible second line by itself — .fld already wraps normally, it
-      // just never had the height to show it.
-      _efld(guardian.address, 'fld-xl fld-addr', 'guardians', 'address', guardian.id, {student_id: s.id}) +
-    '</div>' +
+    '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + '</div>' +
+    // ที่อยู่ gets its own full-width row (same pattern as "4. ที่อยู่
+    // ปัจจุบัน" below, a single fld-xl item alone in its row) instead of
+    // sharing a row with เกี่ยวข้องเป็น/โทรศัพท์ — as one of several flex
+    // siblings on that row it rendered with no visible border and no
+    // wrapping room; alone in its own row, flex-grow reliably gives it
+    // the full row width the way it already does for ที่อยู่ปัจจุบัน.
+    '<div class="row indent">ที่อยู่ ' + _efld(guardian.address, 'fld-xl fld-addr', 'guardians', 'address', guardian.id, {student_id: s.id}) + '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +
@@ -519,9 +525,9 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
 
     '<div class="sig-grid">' +
       '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + (guardianSignName ? _esc(guardianSignName) : '............................................') + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(............................................)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + (guardianSignName ? _esc(guardianSignName) : '<span class="name-blank"></span>') + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(<span class="name-blank"></span>)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(<span class="name-blank"></span>)<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +

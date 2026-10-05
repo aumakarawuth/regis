@@ -243,9 +243,9 @@ const FORM_CSS = [
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
   '.sig-grid{margin-top:16px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:20px;padding-top:20px;line-height:1.6}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:20px;padding-top:12px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.sig-blank{display:inline-block;width:200px;border-bottom:1px dotted #000;height:2.6em;vertical-align:bottom;margin:0 4px}',
+  '.sig-blank{display:inline-block;width:200px;border-bottom:1px dotted #000;height:1.6em;vertical-align:bottom;margin:0 4px}',
   // The blank-name placeholder under a signature (ผู้รับสมัคร/ฝ่ายการเงิน,
   // and ผู้ปกครอง when no name is on file) used to be a fixed string of
   // dots — fine as a print-only placeholder, but far too short to

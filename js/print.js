@@ -231,7 +231,7 @@ const FORM_CSS = [
   '.seal-wrap{position:absolute;top:44%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
-  '.seal{width:150mm;height:auto;display:block;margin:0 auto}',
+  '.seal{width:135mm;height:auto;display:block;margin:0 auto}',
   '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
   '.cover-center h2{font-size:1.932rem;margin:2px 0}',
   '.cover-center .en{font-size:1.428rem}',

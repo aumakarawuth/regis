@@ -1476,6 +1476,18 @@ const Admin = {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       return showToast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนแบบ push', 'error');
     }
+    // iOS/iPadOS Safari only ever delivers Web Push to a page launched
+    // from its installed Home Screen icon — subscribing from a normal
+    // Safari tab succeeds (permission granted, subscription saved) but
+    // notifications then silently never arrive, with no error anywhere
+    // in the pipeline to catch. Warn up front instead of letting the
+    // admin think it's broken days later.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (isIOS && !isStandalone) {
+      const proceed = confirm('บน iPhone/iPad การแจ้งเตือนจะทำงานได้ก็ต่อเมื่อเปิดหน้านี้จากไอคอนที่ "เพิ่มลงในหน้าจอโฮม" เท่านั้น (เปิดผ่าน Safari ธรรมดาจะกดเปิดได้แต่จะไม่มีการแจ้งเตือนเข้ามาจริง)\n\nวิธีเพิ่ม: กดปุ่มแชร์ (กล่องมีลูกศรชี้ขึ้น) แล้วเลือก "เพิ่มลงในหน้าจอโฮม" จากนั้นเปิดแอปจากไอคอนนั้นแทน\n\nกด OK เพื่อเปิดแจ้งเตือนต่อถึงอย่างนั้น หรือ Cancel เพื่อไปเพิ่มไอคอนก่อน');
+      if (!proceed) return;
+    }
     const btn = document.getElementById('btn-enable-push');
     try {
       const permission = await Notification.requestPermission();

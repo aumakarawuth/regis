@@ -272,7 +272,6 @@ const FORM_CSS = [
   // text like the guardian address's second line, which needs to look
   // like one uninterrupted dotted line, not a boxed field.
   '.fld.fld-addr{white-space:normal;word-break:break-word;text-align:left}',
-  '@media screen{.fld.editable.fld-addr{min-height:2.6em}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',

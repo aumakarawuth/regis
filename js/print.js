@@ -228,7 +228,7 @@ const FORM_CSS = [
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
   '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#000}',
-  '.seal-wrap{position:absolute;top:34%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+  '.seal-wrap{position:absolute;top:44%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
   '.seal{width:104mm;height:auto;display:block;margin:0 auto}',
@@ -266,8 +266,8 @@ const FORM_CSS = [
   // whole .row (not the usual inline-block .fld box) for continuation
   // text like the guardian address's second line, which needs to look
   // like one uninterrupted dotted line, not a boxed field.
-  '@media screen{.line-editable{cursor:text;background:#FFF3B0}.line-editable:hover{background:#FFE580}.line-editable:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
-  '.addr-multiline{display:block;width:100%;min-height:2.6em;line-height:1.3em;white-space:pre-wrap;word-break:break-word;border-bottom:1px dotted #000;padding:0 2px}',
+  '.fld.fld-addr{white-space:normal;word-break:break-word;text-align:left}',
+  '@media screen{.fld.editable.fld-addr{min-height:2.6em}}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
@@ -505,17 +505,13 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
         ' ',
         { value: guardian.lastName, table: 'guardians', col: 'last_name', id: guardian.id, newRowMeta: { student_id: s.id } },
       ]) + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
-    (function () {
-      var relocPhone = '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่</div>';
-      // One real multi-line contenteditable block (not a single-line .fld
-      // box) so a long address actually wraps onto the blank line below
-      // by itself — previously this was two separately-typed boxes that
-      // never auto-wrapped into each other.
-      var addrBlock = '<div class="row indent addr-multiline line-editable" contenteditable="true" data-table="guardians" data-col="address" data-id="' + (guardian.id || '') + '"' +
-        (!guardian.id ? ' data-new="' + _esc(JSON.stringify({ student_id: s.id })).replace(/"/g, '&quot;') + '"' : '') +
-        '>' + _esc(guardian.address) + '</div>';
-      return relocPhone + addrBlock;
-    })() +
+    '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' +
+      // fld-addr reserves two lines' worth of height up front (instead of
+      // the default single-line fld box) so a long address wraps onto a
+      // visible second line by itself — .fld already wraps normally, it
+      // just never had the height to show it.
+      _efld(guardian.address, 'fld-xl fld-addr', 'guardians', 'address', guardian.id, {student_id: s.id}) +
+    '</div>' +
 
     '<div class="row" style="margin-top:8px">' +
       '&emsp;&emsp;&emsp;ยินยอมให้นักศึกษาในความปกครอง อยู่ในความดูแลและปฏิบัติตามระเบียบของวิทยาลัยฯ ทุกประการ และขอมอบตัวเข้าศึกษาในวิทยาลัยเทคโนโลยีจรัลสนิทวงศ์' +

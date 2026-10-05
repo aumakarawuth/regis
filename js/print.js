@@ -227,15 +227,15 @@ const FORM_CSS = [
 
   '.top-row{}',
   '.top-row .name-fld{font-size:1.3rem;font-weight:700}',
-  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#555}',
-  '.seal-wrap{position:absolute;top:44%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
+  '.photo-box{width:86px;height:104px;border:1px solid #000;position:absolute;top:20mm;right:15mm;display:flex;align-items:center;justify-content:center;font-size:0.75rem;text-align:center;color:#000}',
+  '.seal-wrap{position:absolute;top:34%;left:15mm;right:15mm;transform:translateY(-50%);text-align:center}',
   '.bottom-block{position:absolute;bottom:15mm;left:15mm;right:15mm}',
   '.cover-center{text-align:center}',
   '.seal{width:104mm;height:auto;display:block;margin:0 auto}',
   '.cover-center h1{font-size:2.856rem;margin:2px 0 0}',
   '.cover-center h2{font-size:1.932rem;margin:2px 0}',
   '.cover-center .en{font-size:1.428rem}',
-  '.cover-center .addr{font-size:1.344rem;color:#222;margin-top:3px;line-height:1.4}',
+  '.cover-center .addr{font-size:1.344rem;color:#000;margin-top:3px;line-height:1.4}',
   '.hr{border:none;border-top:1.5px solid #000;margin:8px 0 6px}',
 
   '.section-title{font-weight:700;margin:6px 0 4px;font-size:1.08em}',
@@ -243,12 +243,21 @@ const FORM_CSS = [
   '.checklist>div{display:inline-block;width:49%;vertical-align:top;white-space:nowrap;margin-bottom:3px}',
 
   '.sig-grid{margin-top:16px;text-align:center}',
-  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:14px;padding-top:10px;line-height:1.6}',
+  '.sig-grid>div{display:inline-block;width:48%;vertical-align:top;margin-bottom:20px;padding-top:20px;line-height:1.6}',
   '.sig-line{border-bottom:1px solid #000;height:34px;margin:0 10px}',
-  '.sig-blank{display:inline-block;width:180px;border-bottom:1px dotted #000;height:1.4em;vertical-align:bottom;margin:0 4px}',
+  '.sig-blank{display:inline-block;width:200px;border-bottom:1px dotted #000;height:2.6em;vertical-align:bottom;margin:0 4px}',
 
-  '.print-btn{position:fixed;bottom:16px;right:16px;background:#009900;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
-  '.save-btn{position:fixed;bottom:16px;right:170px;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:999}',
+  // Single responsive bottom bar instead of two independently-positioned
+  // fixed buttons — on narrow mobile widths, two (or three, once the back
+  // button was added) separately-fixed buttons at hardcoded right offsets
+  // started overlapping/running off-screen, which is part of why mobile
+  // admins reported tapping "print" and seeing nothing happen.
+  '.action-bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:10px 16px;background:rgba(255,255,255,.92);box-shadow:0 -2px 14px rgba(0,0,0,.15);z-index:999}',
+  '.action-btn{border:none;border-radius:8px;padding:10px 16px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;color:#fff;white-space:nowrap}',
+  '.action-btn.btn-back{background:#6B7280}',
+  '.action-btn.btn-save{background:#0066cc}',
+  '.action-btn.btn-print{background:#009900}',
+  '@media (max-width:480px){.action-bar{justify-content:stretch}.action-btn{flex:1 1 auto}}',
   '@media screen{.fld.editable{cursor:text;background:#FFF3B0;border-radius:2px}.fld.editable:hover{background:#FFE580}.ecell:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
   '@media print{.fld.editable{background:transparent}}',
   '@media screen{.idwrap.editable .idbox{cursor:text;background:#FFF3B0}.idwrap.editable .idbox:hover{background:#FFE580}.idwrap.editable .idbox:focus{outline:2px solid #0066cc;outline-offset:-2px;background:#fff}}',
@@ -258,19 +267,22 @@ const FORM_CSS = [
   // text like the guardian address's second line, which needs to look
   // like one uninterrupted dotted line, not a boxed field.
   '@media screen{.line-editable{cursor:text;background:#FFF3B0}.line-editable:hover{background:#FFE580}.line-editable:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
+  '.addr-multiline{display:block;width:100%;min-height:2.6em;line-height:1.3em;white-space:pre-wrap;word-break:break-word;border-bottom:1px dotted #000;padding:0 2px}',
 
   '.doc-page{padding:10px 0;min-height:273mm;display:table;width:100%}',
   '.doc-page-inner{display:table-cell;vertical-align:middle;text-align:center}',
   '.doc-page-content{display:inline-block;text-align:center}',
   '.doc-title{font-weight:700;font-size:1.05rem;margin-bottom:12px}',
   '.doc-img{max-width:94%;max-height:210mm;width:auto;height:auto;border:1px solid #ccc;display:block;margin:0 auto}',
+  '.img-tools{text-align:center;margin-top:6px}',
+  '.img-filter-btn{background:#374151;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-family:inherit;font-size:0.8rem;cursor:pointer}',
   '.doc-placeholder{width:80%;height:150mm;margin:20px auto;border:1px dashed #bbb;color:#aaa;line-height:150mm}',
   '.idcard-stack{}',
   '.idcard-item{margin-bottom:8mm}',
   '.idcard-item:last-child{margin-bottom:0}',
   '.idcard-img{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #ccc;display:block;margin:0 auto;background:#fff}',
   '.idcard-placeholder{width:85.6mm;height:54mm;border:1px dashed #bbb;color:#aaa;font-size:0.75rem;line-height:54mm;margin:0 auto}',
-  '.idcard-cap{font-size:0.75rem;color:#555;margin-top:2mm}',
+  '.idcard-cap{font-size:0.75rem;color:#000;margin-top:2mm}',
   '.stamp-wrap{text-align:right;padding-right:24px;margin-top:14px}',
   '.stamp{display:inline-block;border:2.5px solid #CC0000;border-radius:8px;padding:5px 18px;color:#CC0000;font-weight:700}',
   '.doc-sig{margin-top:8px}',
@@ -337,7 +349,7 @@ function _nameFontSize(name) {
 function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRow) {
   var nameFld = '<span class="fld fld-lg name-fld" style="font-size:' + _nameFontSize(fullName) + '">' + _esc(fullName) + '</span>';
   return '<div class="page cover-page">' +
-    '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-sm') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
+    '<div class="top-row">ชื่อ-นามสกุล ' + nameFld + '&emsp;ห้อง ' + _fld('', 'fld-md') + '&emsp;รอบ ' + _fld(roundLabel, 'fld-sm') + '</div>' +
     // Plain inline boxes (not the .big-idcode overlay style) so this row
     // takes up real, normal flow width — the enlarged .big-idcode variant
     // is an absolutely-positioned overlay anchored at a near-zero-width
@@ -349,6 +361,7 @@ function _coverPage(levelLabel, fullName, roundLabel, s, checklistItems, extraRo
       _chk(false) + ' บันทึก DATA' + _fld('', 'fld-md') + '&emsp;' +
       _chk(false) + ' บันทึก SISA' + _fld('', 'fld-md') +
     '</div>' +
+    '<div class="row">หมายเหตุ ' + _fld('', 'fld-xl') + '</div>' +
     '<div class="photo-box">รูปถ่าย<br>1" หรือ 2"</div>' +
     '<div class="seal-wrap">' + _collegeSealHtml() + '</div>' +
     '<div class="bottom-block">' +
@@ -493,23 +506,15 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
         { value: guardian.lastName, table: 'guardians', col: 'last_name', id: guardian.id, newRowMeta: { student_id: s.id } },
       ]) + ' อาชีพ ' + _efld(guardian.occupation, 'fld-sm', 'guardians', 'occupation', guardian.id, {student_id: s.id}) + '</div>' +
     (function () {
-      // The guardian address's continuation line shares its _efldSeq
-      // with the address field above (both same table/col/id) so
-      // _saveEdits() concatenates whatever's typed on either line into
-      // one guardians.address string, instead of the second line
-      // silently overwriting the first (or being ignored).
-      var addrSeq = _efldSeq++;
-      var addrMeta = { student_id: s.id };
-      var line1 = '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่ ' +
-        '<span class="fld editable fld-xl">' + _ecell({ value: guardian.address, table: 'guardians', col: 'address', id: guardian.id, newRowMeta: addrMeta }, addrSeq) + '</span>' +
-        '</div>';
-      // Blank continuation line for a long guardian address — one solid
-      // dotted line spanning the same width as the row above, contenteditable
-      // so staff can keep typing the address onto it.
-      var line2 = '<div class="row indent ecell line-editable" contenteditable="true" data-table="guardians" data-col="address" data-id="' + (guardian.id || '') + '" data-seq="' + addrSeq + '"' +
-        (!guardian.id ? ' data-new="' + _esc(JSON.stringify(addrMeta)).replace(/"/g, '&quot;') + '"' : '') +
-        ' style="border-bottom:1px dotted #000;height:1.3em"></div>';
-      return line1 + line2;
+      var relocPhone = '<div class="row indent">เกี่ยวข้องเป็น ' + _efld(guardian.relation, 'fld-sm', 'guardians', 'relation', guardian.id, {student_id: s.id}) + ' โทรศัพท์ ' + _efld(guardian.phone, 'fld-md', 'guardians', 'phone', guardian.id, {student_id: s.id}) + ' ที่อยู่</div>';
+      // One real multi-line contenteditable block (not a single-line .fld
+      // box) so a long address actually wraps onto the blank line below
+      // by itself — previously this was two separately-typed boxes that
+      // never auto-wrapped into each other.
+      var addrBlock = '<div class="row indent addr-multiline line-editable" contenteditable="true" data-table="guardians" data-col="address" data-id="' + (guardian.id || '') + '"' +
+        (!guardian.id ? ' data-new="' + _esc(JSON.stringify({ student_id: s.id })).replace(/"/g, '&quot;') + '"' : '') +
+        '>' + _esc(guardian.address) + '</div>';
+      return relocPhone + addrBlock;
     })() +
 
     '<div class="row" style="margin-top:8px">' +
@@ -540,11 +545,13 @@ function _docPages(docs, studentName) {
     edu_cert: 'สำเนาวุฒิการศึกษา',
     payment_slip: 'หลักฐานการชำระเงิน',
   };
-  var sigBlock = '<div class="doc-sig"><div class="sig-line" style="width:260px;margin:30px auto 4px"></div>(' + _esc(studentName) + ')<br><span style="font-size:0.8rem;color:#555">ผู้สมัคร</span></div>';
+  var sigBlock = '<div class="doc-sig"><div class="sig-line" style="width:280px;margin:40px auto 4px"></div>(' + _esc(studentName) + ')<br><span style="font-size:0.8rem;color:#000">ผู้สมัคร</span></div>';
 
-  var idCardBlock = function (doc, sideLabel) {
+  var idCardBlock = function (doc, sideLabel, idx) {
+    var imgId = 'doc-img-' + idx;
     var img = doc && doc.url
-      ? '<img src="' + doc.url + '" class="idcard-img" alt="' + _esc(sideLabel) + '">'
+      ? '<img id="' + imgId + '" src="' + doc.url + '" class="idcard-img" alt="' + _esc(sideLabel) + '">' +
+        '<div class="no-print img-tools"><button type="button" class="img-filter-btn" data-target="' + imgId + '">🔍 ปรับความคมชัด</button></div>'
       : '<div class="idcard-placeholder">(ไม่มีรูป' + _esc(sideLabel) + ')</div>';
     return '<div class="idcard-item">' + img + '<div class="idcard-cap">' + _esc(sideLabel) + '</div></div>';
   };
@@ -555,7 +562,7 @@ function _docPages(docs, studentName) {
   if (front || back) {
     idCardPage = '<div class="page doc-page"><div class="doc-page-inner"><div class="doc-page-content">' +
       '<div class="doc-title">สำเนาบัตรประจำตัวประชาชน</div>' +
-      '<div class="idcard-stack">' + idCardBlock(front, 'ด้านหน้า') + idCardBlock(back, 'ด้านหลัง') + '</div>' +
+      '<div class="idcard-stack">' + idCardBlock(front, 'ด้านหน้า', 'idcard-front') + idCardBlock(back, 'ด้านหลัง', 'idcard-back') + '</div>' +
       '<div class="stamp-wrap"><span class="stamp">สำเนาถูกต้อง</span></div>' +
       sigBlock +
     '</div></div></div>';
@@ -563,10 +570,12 @@ function _docPages(docs, studentName) {
 
   var restPages = docs.filter(function (d) {
     return d.doc_type !== 'id_card_front' && d.doc_type !== 'id_card_back';
-  }).map(function (doc) {
+  }).map(function (doc, i) {
     var label = labels[doc.doc_type] || doc.doc_type;
+    var imgId = 'doc-img-rest-' + i;
     var img = doc.url
-      ? '<img src="' + doc.url + '" class="doc-img" alt="' + _esc(label) + '">'
+      ? '<img id="' + imgId + '" src="' + doc.url + '" class="doc-img" alt="' + _esc(label) + '">' +
+        '<div class="no-print img-tools"><button type="button" class="img-filter-btn" data-target="' + imgId + '">🔍 ปรับความคมชัด</button></div>'
       : '<div class="doc-placeholder">(ไม่มีรูปเอกสาร)</div>';
     return '<div class="page doc-page"><div class="doc-page-inner"><div class="doc-page-content">' +
       '<div class="doc-title">' + _esc(label) + '</div>' + img +
@@ -690,13 +699,30 @@ async function init() {
   document.head.appendChild(style);
 
   root.innerHTML =
-    '<button class="print-btn no-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
-    (ids.length > 1 ? '' : '<button class="save-btn no-print" id="btn-save">💾 บันทึกการแก้ไข</button>') +
+    '<div class="action-bar no-print">' +
+      '<button class="action-btn btn-back" id="btn-back">← ย้อนกลับ</button>' +
+      (ids.length > 1 ? '' : '<button class="action-btn btn-save" id="btn-save">💾 บันทึกการแก้ไข</button>') +
+      '<button class="action-btn btn-print" id="btn-print">🖨️ พิมพ์ / บันทึก PDF</button>' +
+    '</div>' +
     formsHtml;
 
-  document.getElementById('btn-print').onclick = () => window.print();
+  document.getElementById('btn-back').onclick = () => {
+    // Opened via window.open() from admin.js in its own tab — history has
+    // nothing to go back to, so close the tab instead of leaving the
+    // button do nothing.
+    if (window.history.length > 1) window.history.back();
+    else window.close();
+  };
+  document.getElementById('btn-print').onclick = () => {
+    // Some mobile browsers (notably in-app webviews) silently no-op on
+    // window.print() with no error and no visible feedback — this toast
+    // tells the admin what to do instead of a dead button with zero signal.
+    showFormToast('ถ้าหน้าต่างพิมพ์ไม่เปิด ให้กดเมนู ⋮ ของเบราว์เซอร์แล้วเลือก "พิมพ์"', 4000);
+    try { window.print(); } catch (err) { alert('พิมพ์ไม่สำเร็จ: ' + err.message); }
+  };
   if (ids.length <= 1) document.getElementById('btn-save').onclick = () => _saveEdits(studentId);
   _wireIdBoxInput();
+  _wireDocImageContrast();
 }
 
 // Loads one student and builds their form HTML — shared by both the
@@ -766,6 +792,28 @@ function _placeCaretAtEnd(el) {
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
+}
+
+// Cycles each doc image through a few readability filter presets on tap
+// — uploaded ID/certificate photos are often faint or low-contrast phone
+// scans, and this lets staff try to make small print legible without
+// needing the applicant to re-upload.
+const _IMG_FILTER_PRESETS = [
+  'none',
+  'contrast(1.6) brightness(1.15)',
+  'contrast(2.2) grayscale(1) brightness(1.1)',
+  'invert(1) contrast(1.4)',
+];
+function _wireDocImageContrast() {
+  document.querySelectorAll('.img-filter-btn').forEach(btn => {
+    let step = 0;
+    btn.addEventListener('click', () => {
+      const img = document.getElementById(btn.dataset.target);
+      if (!img) return;
+      step = (step + 1) % _IMG_FILTER_PRESETS.length;
+      img.style.filter = _IMG_FILTER_PRESETS[step];
+    });
+  });
 }
 
 // Reads every [contenteditable][data-table] field on the page, groups
@@ -866,12 +914,13 @@ async function _saveEdits(studentId) {
   }
 }
 
-function showFormToast(msg) {
+function showFormToast(msg, durationMs) {
   const el = document.createElement('div');
   el.className = 'no-print';
-  el.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#0066cc;color:#fff;padding:10px 20px;border-radius:8px;font-weight:700;z-index:1000';
+  el.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#0066cc;color:#fff;padding:10px 20px;border-radius:8px;font-weight:700;z-index:1000;max-width:90vw;text-align:center';
   el.textContent = msg;
   document.body.appendChild(el);
+  if (durationMs) setTimeout(() => el.remove(), durationMs);
 }
 
 init();

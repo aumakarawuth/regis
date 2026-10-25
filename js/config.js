@@ -30,7 +30,7 @@ const CONFIG = {
   VAPID_PUBLIC_KEY: 'BJO1y1KYT2AzZMReHJzvI_O1eaI7P5oukrah2nsXFBw3qpimu179dMlYVYklBsdb7SM8I6uJV1z4ZkObrrpE5EE',
 
   // ปีการศึกษา
-  ACADEMIC_YEAR: 2569,
+  ACADEMIC_YEAR: 2570,
 };
 
 // อย่า export ถ้าใช้ใน plain HTML — ใช้ CONFIG object โดยตรง

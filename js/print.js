@@ -186,6 +186,14 @@ const FORM_CSS = [
   '.cover-page{height:280mm}',
   '@media print{.no-print{display:none!important}}',
   '@media screen{body{background:#ddd;overflow-x:auto}.page{background:#fff;width:210mm;max-width:210mm;min-width:210mm;margin:0 auto 18px;padding:15mm;box-shadow:0 2px 12px rgba(0,0,0,.25)}}',
+  // Phones: shrink each A4 page to the screen width (see _fitPagesToScreen)
+  // instead of opening zoomed-in on the top-left corner.
+  '@media screen{.page{zoom:var(--page-zoom,1)}}',
+  // While _exportPdf() captures the pages: real size, no on-screen chrome
+  // (yellow edit boxes, shadows, buttons) baked into the PDF.
+  '.pdf-export .page{zoom:1!important;box-shadow:none!important;margin:0!important}',
+  '.pdf-export .fld.editable,.pdf-export .sig-edit{background:none!important}',
+  '.pdf-export .no-print{display:none!important}',
 
   '.chk{font-weight:700;white-space:nowrap;font-family:monospace}',
   // vertical-align:bottom keeps every .fld's baseline consistent whether
@@ -729,7 +737,13 @@ async function init() {
     if (window.history.length > 1) window.history.back();
     else window.close();
   };
+  _fitPagesToScreen();
+  window.addEventListener('resize', _fitPagesToScreen);
   document.getElementById('btn-print').onclick = () => {
+    // window.print() on phones is unreliable (dead in LINE/in-app
+    // webviews, and mobile Chrome/Safari print the zoomed screen layout),
+    // so phones get a real A4 PDF file generated in the page instead.
+    if (_isMobile()) return _exportPdf();
     // Some mobile browsers (notably in-app webviews) silently no-op on
     // window.print() with no error and no visible feedback — this toast
     // tells the admin what to do instead of a dead button with zero signal.
@@ -927,6 +941,69 @@ async function _saveEdits(studentId) {
     alert('บันทึกล้มเหลว: ' + err.message);
     btn.disabled = false;
     btn.textContent = '💾 บันทึกการแก้ไข';
+  }
+}
+
+const _A4_WIDTH_PX = 210 * 96 / 25.4;
+
+function _isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+}
+
+function _fitPagesToScreen() {
+  const zoom = Math.min(1, (document.documentElement.clientWidth - 56) / _A4_WIDTH_PX);
+  document.documentElement.style.setProperty('--page-zoom', String(Math.max(0.3, zoom)));
+}
+
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('โหลดไม่สำเร็จ ' + src));
+    document.head.appendChild(el);
+  });
+}
+
+async function _exportPdf() {
+  const btn = document.getElementById('btn-print');
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'กำลังสร้าง PDF...';
+  if (document.activeElement) document.activeElement.blur();
+  document.body.classList.add('pdf-export');
+  try {
+    if (!window.html2pdf) await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+    const pages = document.querySelectorAll('.page');
+    const filename = (document.title || 'ใบสมัคร') + '.pdf';
+    const worker = html2pdf().set({
+      margin: 0,
+      filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    });
+    // One canvas per .page, each on its own A4 sheet.
+    let chain = worker.from(pages[0]).toPdf();
+    for (let i = 1; i < pages.length; i++) {
+      chain = chain.get('pdf').then(pdf => { pdf.addPage(); }).from(pages[i]).toContainer().toCanvas().toPdf();
+    }
+    const blob = await chain.output('blob');
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: filename }); return; }
+      catch (err) { if (err.name === 'AbortError') return; }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    alert('สร้าง PDF ไม่สำเร็จ: ' + err.message);
+  } finally {
+    document.body.classList.remove('pdf-export');
+    btn.disabled = false;
+    btn.textContent = label;
   }
 }
 

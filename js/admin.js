@@ -966,7 +966,14 @@ const Admin = {
 
     const note = document.getElementById('dp-receipt-note').value.trim();
     const { data, error } = await _sb.functions.invoke('send-receipt', { body: { studentId: s.id, storagePath: path, note } });
-    if (error || (data && data.success === false)) { done(); return showToast('ส่งใบเสร็จล้มเหลว: ' + ((data && data.message) || error.message), 'error'); }
+    if (error || (data && data.success === false)) {
+      // On a non-2xx, supabase-js only says "non-2xx status code" — the
+      // function's own message is in the response body on error.context.
+      let msg = (data && data.message) || (error && error.message);
+      try { msg = (await error.context.json()).message || msg; } catch (e) { /* not JSON */ }
+      done();
+      return showToast('ส่งใบเสร็จล้มเหลว: ' + msg, 'error');
+    }
 
     this._receiptFile = null;
     done();

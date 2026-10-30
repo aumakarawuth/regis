@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
 
   if (!lineRes.ok) {
     const body = await lineRes.text();
+    console.error('LINE push failed', lineRes.status, body, 'url length', signed.signedUrl.length);
     return json({ success: false, message: `LINE API error (${lineRes.status}): ${body}` }, 502);
   }
   await supabase.from('receipts').update({ line_sent: true }).eq('id', inserted.id);

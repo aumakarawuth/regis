@@ -671,6 +671,16 @@ const Admin = {
         '<textarea class="form-control" id="dp-doc-request-note" placeholder="เช่น รูปเบลอ ขอถ่ายใหม่ให้เห็นชัด / กรุณาอัปเดตเลขบัตร ปชช. พ่อ / เอกสารของคุณผ่านการตรวจสอบแล้ว"></textarea>' +
         '<button class="btn btn-sm btn-send-request" id="dp-btn-send-doc-request">📤 ส่งทาง LINE</button>' +
         '<div class="doc-request-history" id="dp-doc-requests"></div>' +
+      '</div>' +
+      '<div class="receipt-panel">' +
+        '<div class="section-label">🧾 ส่งใบเสร็จรับเงินทาง LINE</div>' +
+        '<label class="receipt-drop" id="dp-receipt-drop">' +
+          '<input type="file" accept="image/*" id="dp-receipt-file" hidden>' +
+          '<span id="dp-receipt-preview">📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้</span>' +
+        '</label>' +
+        '<textarea class="form-control" id="dp-receipt-note" placeholder="ข้อความเพิ่มเติม (ไม่บังคับ) เช่น ชำระค่าสมัครเรียบร้อยแล้ว"></textarea>' +
+        '<button class="btn btn-sm btn-send-receipt" id="dp-btn-send-receipt" disabled>📤 ส่งใบเสร็จทาง LINE</button>' +
+        '<div class="doc-request-history" id="dp-receipts"></div>' +
       '</div>';
 
     this._renderInfoGrid();
@@ -685,6 +695,10 @@ const Admin = {
     this._loadFollowUps(id);
     document.getElementById('dp-btn-send-doc-request').onclick = () => this._sendDocRequest();
     this._loadDocRequests(id);
+    this._receiptFile = null;
+    document.getElementById('dp-receipt-file').onchange = e => this._pickReceipt(e.target.files[0]);
+    document.getElementById('dp-btn-send-receipt').onclick = () => this._sendReceipt();
+    this._loadReceipts(id);
 
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-panel').classList.add('open');
@@ -919,6 +933,69 @@ const Admin = {
     if (error) return showToast('เกิดข้อผิดพลาด', 'error');
     showToast('ทำเครื่องหมายว่าครบแล้ว', 'success', 1500);
     this._loadDocRequests(studentId);
+  },
+
+  // LINE image messages must be JPEG/PNG ≤10MB (preview ≤1MB), so phone
+  // photos are downscaled to a JPEG before upload.
+  async _pickReceipt(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return showToast('กรุณาเลือกไฟล์รูปภาพ', 'error');
+    const img = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    this._receiptFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
+    document.getElementById('dp-receipt-preview').innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.6)}" alt="ใบเสร็จ">`;
+    document.getElementById('dp-btn-send-receipt').disabled = false;
+  },
+
+  async _sendReceipt() {
+    const s = this.currentStudent;
+    if (!s || !this._receiptFile) return showToast('กรุณาเลือกรูปใบเสร็จ', 'error');
+    const btn = document.getElementById('dp-btn-send-receipt');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'กำลังส่ง...';
+    const done = () => { btn.disabled = !this._receiptFile; btn.textContent = originalLabel; };
+
+    const path = `${s.id}/${Date.now()}.jpg`;
+    const { error: upErr } = await _sb.storage.from('receipts').upload(path, this._receiptFile, { contentType: 'image/jpeg' });
+    if (upErr) { done(); return showToast('อัปโหลดใบเสร็จล้มเหลว: ' + upErr.message, 'error'); }
+
+    const note = document.getElementById('dp-receipt-note').value.trim();
+    const { data, error } = await _sb.functions.invoke('send-receipt', { body: { studentId: s.id, storagePath: path, note } });
+    if (error || (data && data.success === false)) { done(); return showToast('ส่งใบเสร็จล้มเหลว: ' + ((data && data.message) || error.message), 'error'); }
+
+    this._receiptFile = null;
+    done();
+    document.getElementById('dp-receipt-file').value = '';
+    document.getElementById('dp-receipt-note').value = '';
+    document.getElementById('dp-receipt-preview').textContent = '📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้';
+    showToast(data && data.skipped ? data.message : 'ส่งใบเสร็จทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
+    this._loadReceipts(s.id);
+  },
+
+  async _loadReceipts(studentId) {
+    const el = document.getElementById('dp-receipts');
+    const { data, error } = await _sb.from('receipts')
+      .select('id, storage_path, note, sent_at, line_sent')
+      .eq('student_id', studentId)
+      .order('sent_at', { ascending: false });
+    if (error) { el.innerHTML = '<p class="doc-request-history-empty">โหลดประวัติใบเสร็จไม่สำเร็จ</p>'; return; }
+    el.innerHTML = (data && data.length)
+      ? data.map(r => `
+        <div class="doc-row">
+          <div class="doc-thumb" data-thumb-for="${r.id}" data-bucket="receipts" data-path="${_esc(r.storage_path)}">🧾</div>
+          <div style="flex:1">
+            <div class="doc-name">ใบเสร็จ <span class="badge ${r.line_sent ? 'badge-success' : 'badge-warning'}">${r.line_sent ? '✓ ส่งแล้ว' : 'ยังไม่ได้ส่ง LINE'}</span></div>
+            <div class="doc-date">${_thDate(r.sent_at)}</div>
+            ${r.note ? `<div class="doc-request-item-note">"${_esc(r.note)}"</div>` : ''}
+          </div>
+        </div>`).join('')
+      : '<p class="doc-request-history-empty">ยังไม่เคยส่งใบเสร็จ</p>';
+    if (this.currentStudent && this.currentStudent.id === studentId) this._loadDocThumbs(el.querySelectorAll('[data-thumb-for]'));
   },
 
   _closeDetail() {

@@ -81,6 +81,19 @@ function _efldGroup(sizeClass, parts) {
   return '<span class="fld editable ' + (sizeClass || '') + '">' + parts.map(function (p) { return _ecell(p, seq); }).join('') + '</span>';
 }
 
+// Name inside the ( ) under a signature — a yellow on-screen box staff
+// can type into before printing. Not tied to any Supabase column: the
+// applicant/guardian boxes start from the name on file, and the staff
+// ones (ผู้รับสมัคร/ฝ่ายการเงิน, value null) remember whatever was last
+// typed in this browser, since it's usually the same person every time.
+function _sigName(role, value) {
+  if (value == null) {
+    try { value = localStorage.getItem('print-sig-' + role) || ''; } catch (e) { value = ''; }
+  }
+  return '<span class="name-blank sig-edit" contenteditable="true" data-sig-role="' + role + '"' +
+    (role === 'receiver' || role === 'finance' ? ' data-sig-remember="1"' : '') + '>' + _esc(value) + '</span>';
+}
+
 function _dateSlots(d) {
   var day = '', month = '', year = '';
   if (d) {
@@ -251,6 +264,8 @@ const FORM_CSS = [
   // dots — fine as a print-only placeholder, but far too short to
   // actually hand-write a full name into. A sized box gives real room.
   '.name-blank{display:inline-block;width:220px;border-bottom:1px dotted #000;height:1.3em;vertical-align:bottom}',
+  '.sig-edit{min-height:1.3em;height:auto;text-align:center;outline:none}',
+  '@media screen{.sig-edit{cursor:text;background:#FFF3B0;border-radius:2px}.sig-edit:hover{background:#FFE580}.sig-edit:focus{outline:2px solid #0066cc;outline-offset:1px;background:#fff}}',
 
   // Single responsive bottom bar instead of two independently-positioned
   // fixed buttons — on narrow mobile widths, two (or three, once the back
@@ -523,10 +538,10 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _esc((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + (guardianSignName ? _esc(guardianSignName) : '<span class="name-blank"></span>') + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(<span class="name-blank"></span>)<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(<span class="name-blank"></span>)<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _sigName('applicant', (s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + _sigName('guardian', guardianSignName || '') + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(' + _sigName('receiver', null) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(' + _sigName('finance', null) + ')<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
@@ -925,3 +940,11 @@ function showFormToast(msg, durationMs) {
 }
 
 init();
+
+// Remember ผู้รับสมัคร/ฝ่ายการเงิน names typed under the signatures (see
+// _sigName) so the next printout starts with them already filled in.
+document.addEventListener('input', function (e) {
+  var el = e.target;
+  if (!el.dataset || !el.dataset.sigRemember) return;
+  try { localStorage.setItem('print-sig-' + el.dataset.sigRole, el.textContent.trim()); } catch (err) { /* storage blocked */ }
+});

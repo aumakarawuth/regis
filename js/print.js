@@ -228,6 +228,11 @@ const FORM_CSS = [
   '.fill-form .fld-md{flex:1.6 1 60px}',
   '.fill-form .fld-lg{flex:2.6 1 90px}',
   '.fill-form .fld-xl{flex:3.6 1 120px}',
+  // Sized by their own text instead of a share of the row: สาขา takes
+  // exactly the width of the branch name (never wrapping to a 2nd line),
+  // and โรงเรียน takes its own name's width and grows into what's left.
+  '.fill-form .fld-fit{flex:0 0 auto;white-space:nowrap;min-width:55px}',
+  '.fill-form .fld-fill{flex:1 0 auto;white-space:nowrap;min-width:90px}',
   '.fill-form .fld-date{flex:0 0 auto;min-width:22px}',
   '.fill-form .fld-date2{flex:0 0 auto;min-width:38px}',
 
@@ -418,8 +423,8 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
     var levelGradText = isPvchGrad ? 'ปวช.' : (edu.indexOf('ม.6') !== -1 ? 'ม.6' : edu);
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' + _esc(levelGradText) +
-      (isPvchGrad ? ' สาขา ' + _efld(s.oldBranch, 'fld-sm', 'students', 'old_branch', s.id) : '') +
-      ' โรงเรียน ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) +
+      (isPvchGrad ? ' สาขา ' + _efld(s.oldBranch, 'fld-fit', 'students', 'old_branch', s.id) : '') +
+      ' โรงเรียน ' + _efld(s.oldSchool, 'fld-fill', 'students', 'old_school', s.id) +
       '</div>' +
       '<div class="row indent">' +
         'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-lg', 'students', 'old_school_subdistrict', s.id) +
@@ -429,7 +434,7 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.3') !== -1) + ' ม.3' +
-      ' โรงเรียน/วิทยาลัย ' + _efld(s.oldSchool, 'fld-lg', 'students', 'old_school', s.id) + '</div>';
+      ' โรงเรียน/วิทยาลัย ' + _efld(s.oldSchool, 'fld-fill', 'students', 'old_school', s.id) + '</div>';
   }
 
   var transferRow = isPvs

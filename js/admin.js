@@ -676,10 +676,10 @@ const Admin = {
         '<div class="section-label">🧾 ส่งใบเสร็จรับเงินทาง LINE</div>' +
         '<label class="receipt-drop" id="dp-receipt-drop">' +
           '<input type="file" accept="image/*" id="dp-receipt-file" hidden>' +
-          '<span id="dp-receipt-preview">📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้</span>' +
+          '<span id="dp-receipt-preview">📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้ (ไม่บังคับ)</span>' +
         '</label>' +
-        '<textarea class="form-control" id="dp-receipt-note" placeholder="ข้อความเพิ่มเติม (ไม่บังคับ) เช่น ชำระค่าสมัครเรียบร้อยแล้ว"></textarea>' +
-        '<button class="btn btn-sm btn-send-receipt" id="dp-btn-send-receipt" disabled>📤 ส่งใบเสร็จทาง LINE</button>' +
+        '<textarea class="form-control" id="dp-receipt-note" placeholder="ข้อความถึงผู้สมัคร (ส่งได้แม้ไม่มีรูป) เช่น ชำระค่าสมัครเรียบร้อยแล้ว"></textarea>' +
+        '<button class="btn btn-sm btn-send-receipt" id="dp-btn-send-receipt">📤 ส่งใบเสร็จทาง LINE</button>' +
         '<div class="doc-request-history" id="dp-receipts"></div>' +
       '</div>';
 
@@ -948,23 +948,25 @@ const Admin = {
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
     this._receiptFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
     document.getElementById('dp-receipt-preview').innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.6)}" alt="ใบเสร็จ">`;
-    document.getElementById('dp-btn-send-receipt').disabled = false;
   },
 
   async _sendReceipt() {
     const s = this.currentStudent;
-    if (!s || !this._receiptFile) return showToast('กรุณาเลือกรูปใบเสร็จ', 'error');
+    const note = document.getElementById('dp-receipt-note').value.trim();
+    if (!s || (!this._receiptFile && !note)) return showToast('เลือกรูปใบเสร็จ หรือพิมพ์ข้อความอย่างน้อยหนึ่งอย่าง', 'error');
     const btn = document.getElementById('dp-btn-send-receipt');
     const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'กำลังส่ง...';
-    const done = () => { btn.disabled = !this._receiptFile; btn.textContent = originalLabel; };
+    const done = () => { btn.disabled = false; btn.textContent = originalLabel; };
 
-    const path = `${s.id}/${Date.now()}.jpg`;
-    const { error: upErr } = await _sb.storage.from('receipts').upload(path, this._receiptFile, { contentType: 'image/jpeg' });
-    if (upErr) { done(); return showToast('อัปโหลดใบเสร็จล้มเหลว: ' + upErr.message, 'error'); }
+    let path = null;
+    if (this._receiptFile) {
+      path = `${s.id}/${Date.now()}.jpg`;
+      const { error: upErr } = await _sb.storage.from('receipts').upload(path, this._receiptFile, { contentType: 'image/jpeg' });
+      if (upErr) { done(); return showToast('อัปโหลดใบเสร็จล้มเหลว: ' + upErr.message, 'error'); }
+    }
 
-    const note = document.getElementById('dp-receipt-note').value.trim();
     const { data, error } = await _sb.functions.invoke('send-receipt', { body: { studentId: s.id, storagePath: path, note } });
     if (error || (data && data.success === false)) {
       // On a non-2xx, supabase-js only says "non-2xx status code" — the
@@ -979,7 +981,7 @@ const Admin = {
     done();
     document.getElementById('dp-receipt-file').value = '';
     document.getElementById('dp-receipt-note').value = '';
-    document.getElementById('dp-receipt-preview').textContent = '📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้';
+    document.getElementById('dp-receipt-preview').textContent = '📷 แตะเพื่อเลือกรูปใบเสร็จที่การเงินออกให้ (ไม่บังคับ)';
     showToast(data && data.skipped ? data.message : 'ส่งใบเสร็จทาง LINE แล้ว', data && data.skipped ? 'warning' : 'success');
     this._loadReceipts(s.id);
   },
@@ -994,9 +996,9 @@ const Admin = {
     el.innerHTML = (data && data.length)
       ? data.map(r => `
         <div class="doc-row">
-          <div class="doc-thumb" data-thumb-for="${r.id}" data-bucket="receipts" data-path="${_esc(r.storage_path)}">🧾</div>
+          ${r.storage_path ? `<div class="doc-thumb" data-thumb-for="${r.id}" data-bucket="receipts" data-path="${_esc(r.storage_path)}">🧾</div>` : '<div class="doc-thumb">💬</div>'}
           <div style="flex:1">
-            <div class="doc-name">ใบเสร็จ <span class="badge ${r.line_sent ? 'badge-success' : 'badge-warning'}">${r.line_sent ? '✓ ส่งแล้ว' : 'ยังไม่ได้ส่ง LINE'}</span></div>
+            <div class="doc-name">${r.storage_path ? 'ใบเสร็จ' : 'ข้อความ'} <span class="badge ${r.line_sent ? 'badge-success' : 'badge-warning'}">${r.line_sent ? '✓ ส่งแล้ว' : 'ยังไม่ได้ส่ง LINE'}</span></div>
             <div class="doc-date">${_thDate(r.sent_at)}</div>
             ${r.note ? `<div class="doc-request-item-note">"${_esc(r.note)}"</div>` : ''}
           </div>

@@ -82,16 +82,14 @@ function _efldGroup(sizeClass, parts) {
 }
 
 // Name inside the ( ) under a signature — a yellow on-screen box staff
-// can type into before printing. Not tied to any Supabase column: the
-// applicant/guardian boxes start from the name on file, and the staff
-// ones (ผู้รับสมัคร/ฝ่ายการเงิน, value null) remember whatever was last
-// typed in this browser, since it's usually the same person every time.
-function _sigName(role, value) {
-  if (value == null) {
-    try { value = localStorage.getItem('print-sig-' + role) || ''; } catch (e) { value = ''; }
-  }
-  return '<span class="name-blank sig-edit" contenteditable="true" data-sig-role="' + role + '"' +
-    (role === 'receiver' || role === 'finance' ? ' data-sig-remember="1"' : '') + '>' + _esc(value) + '</span>';
+// can type into before printing. ผู้รับสมัคร/ฝ่ายการเงิน (given `col`)
+// save per applicant to that students column via the normal
+// "บันทึกการแก้ไข" button; applicant/guardian just start from the name
+// on file and aren't saved.
+function _sigName(value, col, studentId) {
+  var attrs = ' class="name-blank sig-edit" contenteditable="true"';
+  if (col) attrs += ' data-table="students" data-col="' + col + '" data-id="' + studentId + '" data-seq="' + (_efldSeq++) + '"';
+  return '<span' + attrs + '>' + _esc(value || '') + '</span>';
 }
 
 function _dateSlots(d) {
@@ -554,10 +552,10 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     '</div>' +
 
     '<div class="sig-grid">' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _sigName('applicant', (s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + _sigName('guardian', guardianSignName || '') + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(' + _sigName('receiver', null) + ')<br>' + _dateSlots(null) + '</div>' +
-      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(' + _sigName('finance', null) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้สมัคร<br>(' + _sigName((s.prefix || '') + (s.firstName || '') + ' ' + (s.lastName || '')) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้ปกครอง<br>(' + _sigName(guardianSignName) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ผู้รับสมัคร<br>(' + _sigName(s.receiverName, 'receiver_name', s.id) + ')<br>' + _dateSlots(null) + '</div>' +
+      '<div>ลงชื่อ<span class="sig-blank"></span>ฝ่ายการเงิน<br>(' + _sigName(s.financeName, 'finance_name', s.id) + ')<br>' + _dateSlots(null) + '</div>' +
     '</div>' +
 
     '<div class="row" style="margin-top:10px"><span class="b">บันทึกฝ่ายการเงิน</span></div>' +
@@ -662,7 +660,7 @@ async function _loadStudent(studentId) {
       id, application_no, prefix, first_name, last_name, first_name_en, last_name_en,
       nationality, ethnicity, religion, weight, height, blood_type,
       id_card, phone, birth_date, applied_at, education, old_school, old_branch, education_province,
-      old_school_subdistrict, old_school_district,
+      old_school_subdistrict, old_school_district, receiver_name, finance_name,
       addresses(id, province_text, district_text, subdistrict_text, zipcode, detail),
       parents(id, type, id_card, prefix, first_name, last_name, first_name_en, last_name_en, phone, occupation, is_deceased),
       guardians(id, id_card, prefix, first_name, last_name, phone, relation, address),
@@ -796,6 +794,7 @@ async function _buildStudentFormHtml(studentId) {
     birthDate: s.birth_date, phone: s.phone, education: s.education, oldSchool: s.old_school,
     oldBranch: s.old_branch, educationProvince: s.education_province,
     oldSchoolSubDistrict: s.old_school_subdistrict, oldSchoolDistrict: s.old_school_district,
+    receiverName: s.receiver_name, financeName: s.finance_name,
     applyDate: s.applied_at, applicationNo: s.application_no,
   };
 
@@ -1026,10 +1025,3 @@ function showFormToast(msg, durationMs) {
 
 init();
 
-// Remember ผู้รับสมัคร/ฝ่ายการเงิน names typed under the signatures (see
-// _sigName) so the next printout starts with them already filled in.
-document.addEventListener('input', function (e) {
-  var el = e.target;
-  if (!el.dataset || !el.dataset.sigRemember) return;
-  try { localStorage.setItem('print-sig-' + el.dataset.sigRole, el.textContent.trim()); } catch (err) { /* storage blocked */ }
-});

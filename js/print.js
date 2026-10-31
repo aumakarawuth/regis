@@ -418,6 +418,13 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
   var roundLabel = { morning: 'เช้า', afternoon: 'บ่าย', dual: 'ทวิภาคี' }[studyRound] || '';
   var edu = String(s.education || '');
 
+  // School location row — shown for both ปวส. (จบ ปวช./ม.6) and ปวช. (จบ ม.3).
+  var schoolAddrRow = '<div class="row indent">' +
+    'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-lg', 'students', 'old_school_subdistrict', s.id) +
+    ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-lg', 'students', 'old_school_district', s.id) +
+    ' จังหวัด ' + _efld(s.educationProvince, 'fld-lg', 'students', 'education_province', s.id) +
+    '</div>';
+
   var eduRow;
   if (isPvs) {
     var isPvchGrad = edu.toLowerCase().indexOf('ปวช') !== -1;
@@ -425,16 +432,12 @@ function _fillPage(level, s, addr, father, mother, guardian, studyRound, branchN
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' + _esc(levelGradText) +
       (isPvchGrad ? ' สาขา ' + _efld(s.oldBranch, 'fld-fit', 'students', 'old_branch', s.id) : '') +
       ' โรงเรียน ' + _efld(s.oldSchool, 'fld-fill', 'students', 'old_school', s.id) +
-      '</div>' +
-      '<div class="row indent">' +
-        'ตำบล/แขวง ' + _efld(s.oldSchoolSubDistrict, 'fld-lg', 'students', 'old_school_subdistrict', s.id) +
-        ' อำเภอ/เขต ' + _efld(s.oldSchoolDistrict, 'fld-lg', 'students', 'old_school_district', s.id) +
-        ' จังหวัด ' + _efld(s.educationProvince, 'fld-lg', 'students', 'education_province', s.id) +
-      '</div>';
+      '</div>' + schoolAddrRow;
   } else {
     eduRow = '<div class="row"><span class="b">3. จบการศึกษา</span> ' +
       _chk(edu.indexOf('ม.3') !== -1) + ' ม.3' +
-      ' โรงเรียน/วิทยาลัย ' + _efld(s.oldSchool, 'fld-fill', 'students', 'old_school', s.id) + '</div>';
+      ' โรงเรียน/วิทยาลัย ' + _efld(s.oldSchool, 'fld-fill', 'students', 'old_school', s.id) + '</div>' +
+      schoolAddrRow;
   }
 
   var transferRow = isPvs

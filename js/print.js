@@ -626,8 +626,8 @@ function _buildFormHtml(isPvs, s, addr, father, mother, guardian, docs, branchNa
   var hasDoc = function (t) { return docs.some(function (d) { return d.doc_type === t; }); };
   var level = isPvs ? 'pvs' : 'pvch';
   var extraRow = isPvs
-    ? (_chk(false) + ' กู้กยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'))
-    : (_chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้กยศ.&emsp;' + _chk(false) + ' อื่นๆ' + _fld('', 'fld-md'));
+    ? (_chk(false) + ' กู้กยศ.')
+    : (_chk(false) + ' ทุนสัณห์ พรนิมิตร&emsp;' + _chk(false) + ' กู้กยศ.');
 
   var page1 = _coverPage(isPvs ? 'ปวส.' : 'ปวช.', fullName, roundLabel, s, _checklistItems(level, hasDoc), extraRow);
   var page2 = _fillPage(level, s, addr, father, mother, guardian, studyRound, branchName, studyCategory, workLocation);

@@ -49,10 +49,13 @@ Deno.serve(async (req) => {
   }
 
   const { studentId, storagePath, note } = await req.json().catch(() => ({}));
-  if (!studentId || typeof storagePath !== 'string' || !storagePath.startsWith(`${studentId}/`)) {
-    return json({ success: false, message: 'studentId and storagePath required' }, 400);
-  }
+  // The image is optional — staff can also send just a text notice
+  // (e.g. "ชำระค่าสมัครเรียบร้อยแล้ว") with no receipt photo.
+  const hasImage = typeof storagePath === 'string' && storagePath !== '';
   const noteText = typeof note === 'string' ? note.trim() : '';
+  if (!studentId || (hasImage && !storagePath.startsWith(`${studentId}/`)) || (!hasImage && !noteText)) {
+    return json({ success: false, message: 'studentId and storagePath/note required' }, 400);
+  }
 
   const { data: student, error } = await supabase
     .from('students')
@@ -63,7 +66,7 @@ Deno.serve(async (req) => {
 
   const { data: inserted, error: insertErr } = await supabase.from('receipts').insert({
     student_id: studentId,
-    storage_path: storagePath,
+    storage_path: hasImage ? storagePath : null,
     note: noteText || null,
     sent_by: user.id,
   }).select('id').single();
@@ -73,10 +76,17 @@ Deno.serve(async (req) => {
     return json({ success: true, skipped: true, message: 'บันทึกใบเสร็จแล้ว แต่ผู้สมัครไม่มี LINE user id จึงส่งไม่ได้' });
   }
 
-  const { data: signed, error: signErr } = await supabase.storage.from('receipts').createSignedUrl(storagePath, SIGNED_URL_TTL);
-  if (signErr || !signed?.signedUrl) return json({ success: false, message: 'สร้างลิงก์รูปใบเสร็จไม่สำเร็จ' }, 500);
+  const messages: any[] = [];
+  let signedUrl = '';
+  if (hasImage) {
+    const { data: signed, error: signErr } = await supabase.storage.from('receipts').createSignedUrl(storagePath, SIGNED_URL_TTL);
+    if (signErr || !signed?.signedUrl) return json({ success: false, message: 'สร้างลิงก์รูปใบเสร็จไม่สำเร็จ' }, 500);
+    signedUrl = signed.signedUrl;
+  }
 
-  const text = `🧾 ใบเสร็จรับเงิน\nเลขที่ใบสมัคร ${student.application_no}` + (noteText ? `\n\n${noteText}` : '');
+  const text = `${hasImage ? "🧾 ใบเสร็จรับเงิน" : "💬 ข้อความจากฝ่ายการเงิน"}\nเลขที่ใบสมัคร ${student.application_no}` + (noteText ? `\n\n${noteText}` : '');
+  messages.push({ type: 'text', text });
+  if (hasImage) messages.push({ type: 'image', originalContentUrl: signedUrl, previewImageUrl: signedUrl });
   const lineRes = await fetch('https://api.line.me/v2/bot/message/push', {
     method: 'POST',
     headers: {
@@ -85,16 +95,13 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       to: student.line_user_id,
-      messages: [
-        { type: 'text', text },
-        { type: 'image', originalContentUrl: signed.signedUrl, previewImageUrl: signed.signedUrl },
-      ],
+      messages,
     }),
   });
 
   if (!lineRes.ok) {
     const body = await lineRes.text();
-    console.error('LINE push failed', lineRes.status, body, 'url length', signed.signedUrl.length);
+    console.error('LINE push failed', lineRes.status, body, 'url length', signedUrl.length);
     return json({ success: false, message: `LINE API error (${lineRes.status}): ${body}` }, 502);
   }
   await supabase.from('receipts').update({ line_sent: true }).eq('id', inserted.id);
